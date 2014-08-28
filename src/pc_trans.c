@@ -54,6 +54,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
     if (pending) {
         assert(client->config.enable_polling);
 
+        pc_lib_log(PC_LOG_INFO, "pc_trans_fire_event - add pending event: %s", pc_client_ev_str(ev_type));
         pc_mutex_lock(&client->event_mutex);
 
         ev = NULL;
@@ -96,6 +97,8 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
         return ;
     }
 
+    pc_lib_log(PC_LOG_INFO, "pc_trans_fire_event - fire event: %s, arg1: %s, arg2: %s", 
+            pc_client_ev_str(ev_type), arg1 ? arg1 : "", arg2 ? arg2 : "");
     pc_mutex_lock(&client->state_mutex);
     switch(ev_type) {
         case PC_EV_CONNECTED:
@@ -124,7 +127,8 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
 
         case PC_EV_UNEXPECTED_DISCONNECT:
         case PC_EV_PROTO_ERROR:
-            assert(client->state == PC_ST_CONNECTING || client->state == PC_ST_CONNECTED || client->state == PC_ST_DISCONNECTING);
+            assert(client->state == PC_ST_CONNECTING || client->state == PC_ST_CONNECTED
+                    || client->state == PC_ST_DISCONNECTING);
             client->state = PC_ST_CONNECTING;
             break;
         case PC_EV_USER_DEFINED_PUSH:
@@ -180,6 +184,8 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
 
+        pc_lib_log(PC_LOG_INFO, "pc_trans_sent - add pending sent event, seq_num: %u, rc: %s",
+                seq_num, pc_client_rc_str(rc));
         ev = NULL;
         for (i = 0; i < PC_PRE_ALLOC_EVENT_SLOT_COUNT; ++i) {
             if (PC_PRE_ALLOC_IS_IDLE(client->pending_events[i].type)) {
@@ -224,19 +230,21 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
             notify->base.msg = NULL;
             notify->base.route = NULL;
 
-            if (PC_IS_PRE_ALLOC(ev->type)) {
-                PC_PRE_ALLOC_SET_IDLE(ev->type);
+            if (PC_IS_PRE_ALLOC(notify->base.type)) {
+                PC_PRE_ALLOC_SET_IDLE(notify->base.type);
             } else {
                 pc_lib_free(notify);
             }
 
+            pc_lib_log(PC_LOG_INFO, "pc_trans_sent - fire sent event, seq_num: %u, rc: %s",
+                    seq_num, pc_client_rc_str(rc));
             break;
         }
     }
-    pc_mutex_unlock(&client->req_mutex);
+    pc_mutex_unlock(&client->notify_mutex);
 
     if (!flag)
-        pc_lib_log(PC_LOG_ERROR, "no pending notify found when transport has sent it, seq num: %u", seq_num);
+        pc_lib_log(PC_LOG_ERROR, "pc_trans_sent - no pending notify found when transport has sent it, seq num: %u", seq_num);
 }
 
 void pc_trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char* resp)
@@ -266,6 +274,8 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
 
+        pc_lib_log(PC_LOG_INFO, "pc_trans_resp - add pending resp event, req_id: %u, rc: %s",
+                req_id, pc_client_rc_str(rc));
         ev = NULL;
         for (i = 0; i < PC_PRE_ALLOC_EVENT_SLOT_COUNT; ++i) {
             if (PC_PRE_ALLOC_IS_IDLE(client->pending_events[i].type)) {
@@ -317,12 +327,16 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
             } else {
                 pc_lib_free(req);
             }
+
+            pc_lib_log(PC_LOG_INFO, "pc_trans_resp - fire resp event, req_id: %u, rc: %s",
+                    req_id, pc_client_rc_str(rc));
             break;
         }
     }
     pc_mutex_unlock(&client->req_mutex);
 
-    if (!flag)
-        pc_lib_log(PC_LOG_ERROR, "no pending request found when get a response, req id: %u", req_id);
+    if (!flag) {
+        pc_lib_log(PC_LOG_ERROR, "pc_trans_resp - no pending request found when get a response, req id: %u", req_id);
+    }
 }
 

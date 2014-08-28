@@ -41,6 +41,7 @@ extern "C" {
 #define PC_RC_INVALID_STATE -9
 #define PC_RC_NOT_FOUND -10
 #define PC_RC_RESET -11
+#define PC_RC_MIN -12
 
 typedef struct pc_client_s pc_client_t;
 typedef struct pc_request_s pc_request_t;
@@ -55,6 +56,8 @@ typedef struct pc_notify_s pc_notify_t;
 #define PC_ST_CONNECTED 3
 #define PC_ST_DISCONNECTING 4
 #define PC_ST_UNKNOWN 5
+#define PC_ST_COUNT 6
+
 
 /**
  * log level
@@ -233,8 +236,13 @@ PC_EXPORT void* pc_notify_ex_data(const pc_notify_t* notify);
 PC_EXPORT int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* msg,
         void* ex_data, int timeout, pc_notify_cb_t cb);
 
-#define pc_lib_version() (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
-#define pc_lib_version_str() ("0.0.1")
+/**
+ * Utilities
+ */
+
+PC_EXPORT const char* pc_client_state_str(int state);
+PC_EXPORT const char* pc_client_ev_str(int ev_type);
+PC_EXPORT const char* pc_client_rc_str(int rc);
 
 /**
  * set ca file for tls transports
@@ -245,6 +253,12 @@ PC_EXPORT int pc_notify_with_timeout(pc_client_t* client, const char* route, con
 void tr_uv_tls_set_ca_file(const char* ca_file, const char* ca_path);
 
 #endif // uv_tls
+
+/**
+ * Macro implementation
+ */
+#define pc_lib_version() (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
+#define pc_lib_version_str() ("0.0.1")
 
 #ifdef __cplusplus
 }

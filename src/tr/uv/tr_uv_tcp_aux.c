@@ -20,8 +20,10 @@ static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 {
     if (TR_UV_WI_IS_RESP(wi->type)) {
         pc_trans_resp(client, wi->req_id, PC_RC_RESET, NULL);
+        pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset request, req_id: %u", wi->req_id);
     } else if (TR_UV_WI_IS_NOTIFY(wi->type)) {
         pc_trans_sent(client, wi->seq_num, PC_RC_RESET);
+        pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset notify, seq_num: %u", wi->seq_num);
     }
     // drop internal write item
 
@@ -57,7 +59,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
         uv_close((uv_handle_t* )&tt->write_req, NULL);
     }
 
-    if (tt->state == TR_UV_TCP_CONNECTING) {
+    if (tt->is_connecting) {
         uv_close((uv_handle_t* )&tt->conn_req, NULL);
     }
 
@@ -65,8 +67,6 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     tt->hb_rtt = -1;
 
     uv_read_stop((uv_stream_t* )&tt->socket);
-    uv_close((uv_handle_t* )&tt->socket, NULL);
-
     uv_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
@@ -149,6 +149,8 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
 
     if (timeout > config->reconn_delay_max) 
         timeout = config->reconn_delay_max;
+
+    pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - reconnect, delay: %d", timeout);
     
     uv_timer_start(&tt->reconn_delay_timer, tcp__reconn_delay_timer_cb, timeout * 1000, 0);
 }
@@ -223,7 +225,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (ret) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "UV Conn Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp_conn_async_cb - uv tcp connect error: %s", uv_strerror(ret));
+        pc_lib_log(PC_LOG_ERROR, "tcp_conn_async_cb - uv tcp connect error: %s, will reconn", uv_strerror(ret));
         tt->reconn_fn(tt);
         return ;
     }
@@ -242,6 +244,7 @@ void tcp__conn_timeout_cb(uv_timer_t* t)
     assert(&tt->conn_timeout == t);
     assert(tt->is_connecting);
     uv_timer_stop(t);
+    pc_lib_log(PC_LOG_INFO, "tcp__conn_timeout_cb - conn timeout, cancel it");
     uv_close((uv_handle_t* )&tt->conn_req, NULL);
 }
 
@@ -269,14 +272,19 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     if (status == 0) {
         // tcp connected.
         tt->state = TR_UV_TCP_HANDSHAKEING;
+        tt->reconn_times = 0;
+
+        ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
+
+        if (ret) {
+            pc_lib_log(PC_LOG_ERROR, "tcp__conn_done - start read from tcp error, reconn");
+            tt->reconn_fn(tt);
+            return ;
+        }
 
         pc_lib_log(PC_LOG_INFO, "tcp__conn_done - tcp connected, send handshake");
 
-        tt->reconn_times = 0;
         tcp__send_handshake(tt);
-
-        // TODO: error handling
-        uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
 
         if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
             uv_timer_start( &tt->handshake_timer, tcp__handshake_timer_cb, hb_timeout, 0);
@@ -299,7 +307,7 @@ void tcp__write_async_cb(uv_async_t* a)
 {
     int buf_cnt;
     int i;
-    int state;
+    int ret;
     QUEUE* q;
     tr_uv_wi_t* wi;
     GET_TT(a);
@@ -311,9 +319,17 @@ void tcp__write_async_cb(uv_async_t* a)
         return;
     }
 
+    uv_mutex_lock(&tt->wq_mutex);
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
+            
+            wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+            if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
+                pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - move wi from conn pending to write wait,"
+                    "seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
+            }
+
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
             QUEUE_INSERT_TAIL(&tt->write_wait_queue, q);
@@ -322,7 +338,6 @@ void tcp__write_async_cb(uv_async_t* a)
 
     buf_cnt = 0;
 
-    uv_mutex_lock(&tt->wq_mutex);
     QUEUE_FOREACH(q, &tt->write_wait_queue) {
        buf_cnt++; 
     }
@@ -339,6 +354,11 @@ void tcp__write_async_cb(uv_async_t* a)
         q = QUEUE_HEAD(&tt->write_wait_queue);
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
+        if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
+            pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - move wi from write wait to writing queue,"
+                    "seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
+        }
+
         bufs[i++] = wi->buf;
 
         QUEUE_REMOVE(q);
@@ -353,10 +373,43 @@ void tcp__write_async_cb(uv_async_t* a)
 
     tt->write_req.data = tt;
 
-    // TODO: error handling
-    uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb); 
+    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb); 
 
     pc_lib_free(bufs);
+
+    if (ret) {
+        pc_lib_log(PC_LOG_ERROR, "tcp__write_async_cb - uv write error: %s", uv_strerror(ret));
+
+        uv_mutex_lock(&tt->wq_mutex);
+        while(!QUEUE_EMPTY(&tt->writing_queue)) {
+            q = QUEUE_HEAD(&tt->writing_queue); 
+            QUEUE_REMOVE(q);
+            QUEUE_INIT(q);
+
+            wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+
+            pc_lib_free(wi->buf.base);
+            wi->buf.base = NULL;
+            wi->buf.len = 0;
+
+            if (TR_UV_WI_IS_NOTIFY(wi->type)) {
+                pc_trans_sent(tt->client, wi->seq_num, ret);
+            }
+
+            if (TR_UV_WI_IS_RESP(wi->type)) {
+                pc_trans_resp(tt->client, wi->req_id, ret, NULL);
+            }
+            // if internal, do nothing here.
+
+            if (PC_IS_PRE_ALLOC(wi->type)) {
+                PC_PRE_ALLOC_SET_IDLE(wi->type);
+            } else {
+                pc_lib_free(wi);
+            }
+        }
+        uv_mutex_unlock(&tt->wq_mutex);
+        return ;
+    }
 
     tt->is_writing = 1;
 
@@ -395,6 +448,10 @@ void tcp__write_done_cb(uv_write_t* w, int status)
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
         if (!status && TR_UV_WI_IS_RESP(wi->type)) {
+
+            pc_lib_log(PC_LOG_DEBUG, "tcp__write_done_cb - move wi from writing to resp pending queue,"
+                " req_id: %u", wi->req_id);
+
             QUEUE_INSERT_TAIL(&tt->resp_pending_queue, q);
             continue;
         };
@@ -442,10 +499,10 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
             if (ct > wi->ts + wi->timeout) {
                 if (TR_UV_WI_IS_NOTIFY(wi->type)) {
                     pc_trans_sent(client, wi->seq_num, PC_RC_TIMEOUT);
-                    pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
+                    pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
                 } else if (TR_UV_WI_IS_RESP(wi->type)) {
                     pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
-                    pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
+                    pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
                 }
 
                 // if internal, just drop it.
@@ -486,14 +543,15 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
     assert(w == &tt->check_timeout);
 
     cont = 0;
-    uv_mutex_lock(&tt->wq_mutex);
 
+    uv_mutex_lock(&tt->wq_mutex);
     cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont); 
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
+    uv_mutex_unlock(&tt->wq_mutex);
+
     cont = tcp__check_queue_timeout(&tt->writing_queue, tt->client, cont);
     cont = tcp__check_queue_timeout(&tt->resp_pending_queue, tt->client, cont);
 
-    uv_mutex_unlock(&tt->wq_mutex);
     if (cont && !uv_is_active((uv_handle_t* )w)) {
         uv_timer_start(w, tt->write_check_timeout_cb, PC_TIMEOUT_CHECK_INTERVAL* 1000, 0);
     }
@@ -546,6 +604,7 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     tcp__cleanup_json_t(&tt->client_protos);
     tcp__cleanup_json_t(&tt->proto_ver);
 
+    uv_loop_close(&tt->uv_loop);
     uv_stop(&tt->uv_loop);
 }
 
@@ -563,12 +622,16 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     uv_buf_t buf;
     int i;
     tr_uv_wi_t* wi;
+    wi = NULL;
 
     assert(tt->state == TR_UV_TCP_DONE);
 
-    pc_lib_log(PC_LOG_INFO, "tcp send heartbeat");
-    wi = NULL;
+    pc_lib_log(PC_LOG_DEBUG, "tcp__send__heartbeat - send heartbeat");
+
     buf = pc_pkg_encode(PC_PKG_HEARBEAT, NULL, 0);
+
+    assert(buf.len && buf.base);
+
     uv_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
@@ -602,10 +665,12 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     int rtt = 0;
     int start = 0;
 
-    if (!tt->is_waiting_hb)
+    if (!tt->is_waiting_hb) {
+        pc_lib_log(PC_LOG_WARN, "tcp__on_heartbeat - tcp is not waiting for heartbeat, ignore");
         return;
+    }
 
-    pc_lib_log(PC_LOG_INFO, "tcp get heartbeat");
+    pc_lib_log(PC_LOG_DEBUG, "tcp__on_heartbeat - tcp get heartbeat");
     assert(tt->state == TR_UV_TCP_DONE);
     assert(uv_is_active((uv_handle_t*)&tt->hb_timeout_timer));
 
@@ -620,8 +685,8 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     if (tt->hb_rtt == -1 ) {
         tt->hb_rtt = rtt;
     } else {
-        // do some smoothing
         tt->hb_rtt = (tt->hb_rtt * 2 + rtt) / 3;
+        pc_lib_log(PC_LOG_INFO, "tcp__on_heartbeat - calc rtt: %d", tt->hb_rtt);
     }
 
     uv_timer_start(&tt->hb_timer, tcp__heartbeat_timer_cb, tt->hb_interval * 1000, 0);
@@ -637,6 +702,7 @@ void tcp__heartbeat_timer_cb(uv_timer_t* t)
 
     tcp__send_heartbeat(tt);
     tt->is_waiting_hb = 1;
+    pc_lib_log(PC_LOG_DEBUG, "tcp__heartbeat_timer_cb - start heartbeat timeout timer");
 
     uv_timer_start(&tt->hb_timeout_timer, tcp__heartbeat_timeout_cb, tt->hb_timeout * 1000, 0);
 }
@@ -649,7 +715,7 @@ void tcp__heartbeat_timeout_cb(uv_timer_t* t)
     assert(t == &tt->hb_timeout_timer);
 
     pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "HB Timeout", NULL);
-    pc_lib_log(PC_LOG_WARN, "tcp heartbeat timeout");
+    pc_lib_log(PC_LOG_WARN, "tcp__heartbeat_timeout_cb - will reconn, hb timeout");
     tt->reconn_fn(tt);
 }
 
@@ -659,6 +725,7 @@ void tcp__handshake_timer_cb(uv_timer_t* t)
 
     assert(t == &tt->handshake_timer);
 
+    pc_lib_log(PC_LOG_ERROR, "tcp__handshake_timer_cb - tcp handshake timeout, will reconn");
     pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Timeout", NULL);
     tt->reconn_fn(tt);
 }
@@ -668,8 +735,10 @@ void tcp__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
     GET_TT(stream);
 
     if (nread < 0) {
-        pc_lib_log(PC_LOG_ERROR, "tcp__on_tcp_read_cb - read from tcp error or tcp close, reconnecting");
         pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "Read Error Or Close", NULL);
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_tcp_read_cb - read from tcp error: %s,"
+                "will reconn", uv_strerror(nread));
+        pc_lib_free(buf->base);
         tt->reconn_fn(tt);
         return;
     }
@@ -688,6 +757,8 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 {
     pc_msg_t msg;
     uv_buf_t buf;
+    QUEUE* q;
+    tr_uv_wi_t* wi = NULL;
     tr_uv_tcp_transport_plugin_t* plugin = (tr_uv_tcp_transport_plugin_t* )tt->base.plugin(tt);
 
     buf.base = (char* )data;
@@ -697,16 +768,41 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 
     if (!msg.msg) {
         pc_trans_fire_event(tt->client, PC_EV_PROTO_ERROR, "Decode Error", NULL);
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_data_recieved - decode error, will reconn");
         tt->reconn_fn(tt);
         return ;
     }
 
+    // TODO:
     //assert(msg.id == PC_INVALID_REQ_ID && msg.route);
     //assert(msg.id != PC_INVALID_REQ_ID);
 
+    pc_lib_log(PC_LOG_INFO, "tcp__on_data_recieved - recived data, req_id: %d", msg.id);
     if (msg.id != PC_INVALID_REQ_ID) {
         // request
         pc_trans_resp(tt->client, msg.id, PC_RC_OK, msg.msg);
+
+        QUEUE_FOREACH(q, &tt->resp_pending_queue) {
+            wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+            assert(TR_UV_WI_IS_RESP(wi->type));
+
+            if (wi->req_id != msg.id)
+                continue;
+
+            QUEUE_REMOVE(q);
+            QUEUE_INIT(q);
+
+            pc_lib_free(wi->buf.base);
+            wi->buf.base = NULL;
+            wi->buf.len = 0;
+
+            if (PC_IS_PRE_ALLOC(wi->type)) {
+                PC_PRE_ALLOC_SET_IDLE(wi->type);
+            } else {
+                pc_lib_free(wi);
+            }
+            break;
+        }
     } else {
         // push
         pc_trans_fire_event(tt->client, PC_EV_USER_DEFINED_PUSH, msg.route, msg.msg);
@@ -719,6 +815,7 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 void tcp__on_kick_recieved(tr_uv_tcp_transport_t* tt)
 {
     pc_trans_fire_event(tt->client, PC_EV_KICKED_BY_SERVER, NULL, NULL);
+    pc_lib_log(PC_LOG_INFO, "tcp__on_kick_recieved - kicked by server");
     tt->reset_fn(tt);
 }
 
@@ -825,6 +922,10 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
     pc_lib_log(PC_LOG_INFO, "tcp send get handshake resp");
 
+    if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
+        uv_timer_stop(&tt->handshake_timer);
+    }
+
     if (!res) {
         pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake resp is not valid json, error: %s", error.text);
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
@@ -842,6 +943,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     sys = json_object_get(res, "sys");
     assert(sys);
 
+    pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - handshake ok");
     // setup heartbeat
     i = json_integer_value(json_object_get(sys, "heartbeat"));
 
@@ -849,11 +951,14 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         // no need heartbeat
         tt->hb_interval= -1;
         tt->hb_timeout = -1;
+        pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - no heartbeat specified");
     } else {
         tt->hb_interval = i;
+        pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - set heartbeat interval: %d", i);
         tt->hb_timeout = tt->hb_interval * PC_HEARTBEAT_TIMEOUT_FACTOR;
     }
 
+    // TODO:
     tmp = json_object_get(sys, "useDict");
     if (!tmp || json_equal(tmp, json_false())) {
         if (tt->dict_ver && tt->route_to_code && tt->code_to_route) {
@@ -973,9 +1078,11 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
     tcp__send_handshake_ack(tt);
     if (tt->hb_interval != -1) {
+        pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - start heartbeat interval timer");
         uv_timer_start(&tt->hb_timer, tcp__heartbeat_timer_cb, tt->hb_interval * 1000, 0);
     }
     tt->state = TR_UV_TCP_DONE;
+    pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake completely");
     uv_async_send(&tt->write_async);
 }
 
@@ -986,7 +1093,8 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     tr_uv_wi_t* wi;
 
     buf = pc_pkg_encode(PC_PKG_HANDSHAKE_ACK, NULL, 0);
-    pc_lib_log(PC_LOG_INFO, "tcp send handshake ack");
+
+    pc_lib_log(PC_LOG_INFO, "tcp__send_handshake_ack - send handshake ack");
 
     assert(buf.base && buf.len);
 
@@ -1010,12 +1118,11 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     TR_UV_WI_SET_INTERNAL(wi->type);
     uv_mutex_unlock(&tt->wq_mutex);
 
-
     wi->buf = buf;
     wi->seq_num = -1; //internal data
     wi->req_id = -1; // internal data 
     wi->timeout = TR_UV_INTERNAL_PKG_TIMEOUT; // internal timeout
-    wi->ts = time(NULL); // TODO: time() 
+    wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }
 

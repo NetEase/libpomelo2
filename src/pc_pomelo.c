@@ -145,7 +145,7 @@ int pc_client_connect(pc_client_t* client, const char* host, int port, const cha
     switch(state) {
     case PC_ST_NOT_INITED:
     case PC_ST_DISCONNECTING:
-        pc_lib_log(PC_LOG_ERROR, "pc_client_connect - invalid state, state: %d", state);
+        pc_lib_log(PC_LOG_ERROR, "pc_client_connect - invalid state, state: %s", pc_client_state_str(state));
         return PC_RC_INVALID_STATE;
 
     case PC_ST_CONNECTED:
@@ -163,7 +163,7 @@ int pc_client_connect(pc_client_t* client, const char* host, int port, const cha
         ret = client->trans->connect(client->trans, host, port, handshake_opts); 
 
         if (ret != PC_RC_OK) {
-            pc_lib_log(PC_LOG_ERROR, "pc_client_connect - transport connect error");
+            pc_lib_log(PC_LOG_ERROR, "pc_client_connect - transport connect error, rc: %s", pc_client_rc_str(ret));
             pc_mutex_lock(&client->state_mutex);
             client->state = PC_ST_INITED;
             pc_mutex_unlock(&client->state_mutex);
@@ -193,7 +193,8 @@ int pc_client_disconnect(pc_client_t* client)
     switch(state) {
         case PC_ST_NOT_INITED:
         case PC_ST_INITED:
-            pc_lib_log(PC_LOG_ERROR, "pc_client_disconnect - invalid state, state: %d", state);
+            pc_lib_log(PC_LOG_ERROR, "pc_client_disconnect - invalid state, state: %s",
+                    pc_client_state_str(state));
             return PC_RC_INVALID_STATE;
 
         case PC_ST_CONNECTING:
@@ -207,7 +208,8 @@ int pc_client_disconnect(pc_client_t* client)
             ret = client->trans->disconnect(client->trans); 
 
             if (ret != PC_RC_OK) {
-                pc_lib_log(PC_LOG_ERROR, "pc_client_disconnect - transport disconnect error");
+                pc_lib_log(PC_LOG_ERROR, "pc_client_disconnect - transport disconnect error: %s",
+                        pc_client_rc_str(ret));
                 pc_mutex_lock(&client->state_mutex);
                 client->state = state;
                 pc_mutex_unlock(&client->state_mutex);
@@ -231,6 +233,7 @@ int pc_client_cleanup(pc_client_t* client)
     pc_request_t* req;
     pc_notify_t* notify;
     pc_ev_handler_t* ev;
+    pc_transport_plugin_t* plugin;
 
     if (!client) {
         pc_lib_log(PC_LOG_ERROR, "pc_client_cleanup - client is null");
@@ -251,11 +254,13 @@ int pc_client_cleanup(pc_client_t* client)
      * transport->cleanup may be blocking.
      */
     ret = client->trans->cleanup(client->trans);
-
     if (ret != PC_RC_OK) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_cleanup - transport cleanup error");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_cleanup - transport cleanup error: %s", pc_client_rc_str(ret));
         return ret;
     }
+
+    plugin = client->trans->plugin(client->trans);
+    plugin->transport_release(plugin, client->trans);
 
     client->trans = NULL;
 
@@ -302,13 +307,19 @@ static void pc__handle_event(pc_client_t* client, pc_event_t* ev)
 
     if (PC_EV_IS_RESP(ev->type)) {
         pc__trans_resp(client, ev->data.req.req_id, ev->data.req.rc, ev->data.req.resp, 0/* not pending */);
+        pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans resp, req_id: %u, rc: %s",
+                ev->data.req.req_id, pc_client_rc_str(ev->data.req.rc));
         pc_lib_free((char* )ev->data.req.resp);
         ev->data.req.resp = NULL;
 
     } else if (PC_EV_IS_NOTIFY_SENT(ev->type)) {
         pc__trans_sent(client, ev->data.notify.seq_num, ev->data.notify.rc, 0/* not pending */);
+        pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans sent, seq_num: %u, rc: %s",
+                ev->data.notify.seq_num, pc_client_rc_str(ev->data.notify.rc));
     } else { 
         pc__trans_fire_event(client, ev->data.ev.ev_type, ev->data.ev.arg1, ev->data.ev.arg2, 0/* not pending */);
+        pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans event: %s, arg1: %s",
+                pc_client_ev_str(ev->data.ev.ev_type), ev->data.ev.arg1 ? ev->data.ev.arg1 : "");
         pc_lib_free((char* )ev->data.ev.arg1);
         pc_lib_free((char* )ev->data.ev.arg2);
 
@@ -333,12 +344,12 @@ int pc_client_poll(pc_client_t* client)
     QUEUE* q;
 
     if (!client) {
-        pc_lib_log(PC_LOG_DEBUG, "pc_client_poll - client is null");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_poll - client is null");
         return PC_RC_INVALID_ARG;
     }
 
     if (!client->config.enable_polling) {
-        pc_lib_log(PC_LOG_DEBUG, "pc_client_poll - client did not enable polling");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_poll - client did not enable polling");
         return PC_RC_ERROR;
     }
 
@@ -388,6 +399,7 @@ int pc_client_add_ev_handler(pc_client_t* client, int ev_type, void* ex_data, co
 
     head = &client->ev_handlers[ev_type];
     QUEUE_INSERT_TAIL(head, &handler->queue);
+    pc_lib_log(PC_LOG_INFO, "pc_client_add_ev_handler - add ev_type: %s", pc_client_ev_str(ev_type));
 
     pc_mutex_unlock(&client->handler_mutex);
 
@@ -398,14 +410,15 @@ int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, con
 {
     QUEUE* q;
     pc_ev_handler_t* handler;
+    int flag = 0;
 
     if (!client || ev_type < 0 || ev_type >= PC_EV_COUNT || !cb) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_add_ev_handler - invalid args");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_rm_ev_handler - invalid args");
         return PC_RC_INVALID_ARG;
     }
 
     if (ev_type == PC_EV_USER_DEFINED_PUSH && !push_route) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_add_ev_handler - route push event should be with a route");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_rm_ev_handler - route push event should be with a route");
         return PC_RC_INVALID_ARG;
     }
 
@@ -420,6 +433,8 @@ int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, con
         if (ev_type == PC_EV_USER_DEFINED_PUSH && strcmp(handler->push_route, push_route))
             continue;
 
+        pc_lib_log(PC_LOG_INFO, "pc_client_rm_ev_handler - rm ev_type: %s", pc_client_ev_str(ev_type));
+        flag = 1;
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
         pc_lib_free((char* )handler->push_route);
@@ -428,6 +443,10 @@ int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, con
     }
 
     pc_mutex_unlock(&client->handler_mutex);
+
+    if (!flag) {
+        pc_lib_log(PC_LOG_WARN, "pc_client_rm_ev_handler - no matched event handler found, ev_type: %s", pc_client_ev_str(ev_type));
+    }
 
     return PC_RC_OK;
 }
@@ -504,10 +523,17 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     pc_request_t* req;
     int i;
     int ret;
+    int state;
 
     if (!client || !route || !msg || !cb) {
         pc_lib_log(PC_LOG_ERROR, "pc_request_with_timeout - invalid args");
         return PC_RC_INVALID_ARG;
+    }
+
+    state = pc_client_state(client);
+    if(state != PC_ST_CONNECTED && state != PC_ST_CONNECTING) {
+        pc_lib_log(PC_LOG_ERROR, "pc_request_with_timeout - invalid state, state: %s", pc_client_state_str(state));
+        return PC_RC_INVALID_STATE;
     }
 
     if (timeout != PC_WITHOUT_TIMEOUT && timeout <= 0) {
@@ -531,6 +557,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
             PC_PRE_ALLOC_SET_BUSY(req->base.type);
             assert(!req->base.route && !req->base.msg);
             assert(PC_IS_PRE_ALLOC(req->base.type));
+            pc_lib_log(PC_LOG_DEBUG, "pc_request_with_timeout - use pre alloc request");
 
             break;
         }
@@ -540,6 +567,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
         req = pc_lib_malloc(sizeof(pc_request_t));
         memset(req, 0, sizeof(pc_request_t));
         
+        pc_lib_log(PC_LOG_DEBUG, "pc_request_with_timeout - use dynamic alloc request");
         req->base.type = PC_DYN_ALLOC | PC_REQ_TYPE_REQUEST;
         req->base.client = client;
     }
@@ -557,9 +585,6 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     if (client->req_id_seq == PC_NOTIFY_REQ_ID || client->req_id_seq == PC_INVALID_REQ_ID)
         client->req_id_seq = 1;
     req->req_id = client->req_id_seq++;
-
-    pc_lib_log(PC_LOG_INFO, "pc_request_with_timeout - add request to queue, req id: %u", req->req_id);
-
     req->cb = cb;
 
     pc_mutex_unlock(&client->req_mutex);
@@ -567,7 +592,8 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     ret = client->trans->send(client->trans, req->base.route, req->base.seq_num, req->base.msg, req->req_id, req->base.timeout);
 
     if (ret != PC_RC_OK) {
-        pc_lib_log(PC_LOG_ERROR, "pc_request_with_timeout - send to transport error, req id: %u", req->req_id);
+        pc_lib_log(PC_LOG_ERROR, "pc_request_with_timeout - send to transport error,"
+                " req id: %u, error: %s", req->req_id, pc_client_rc_str(ret));
 
         pc_mutex_lock(&client->req_mutex);
 
@@ -589,6 +615,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
         pc_mutex_unlock(&client->req_mutex);
     }
 
+    pc_lib_log(PC_LOG_INFO, "pc_request_with_timeout - add request to queue, req id: %u", req->req_id);
     return ret;
 }
 
@@ -628,6 +655,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
     pc_notify_t* notify;
     int i;
     int ret;
+    int state;
 
     if (!client || !route || !msg || !cb) {
         pc_lib_log(PC_LOG_ERROR, "pc_notify_with_timeout - invalid args");
@@ -638,6 +666,13 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
         pc_lib_log(PC_LOG_ERROR, "pc_notify_with_timeout - invalid timeout value");
         return PC_RC_INVALID_ARG;
     }
+
+    state = pc_client_state(client);
+    if(state != PC_ST_CONNECTED && state != PC_ST_CONNECTING) {
+        pc_lib_log(PC_LOG_ERROR, "pc_request_with_timeout - invalid state, state: %s", pc_client_state_str(state));
+        return PC_RC_INVALID_STATE;
+    }
+
 
     assert(client->trans && client->trans->send);
 
@@ -654,6 +689,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
 
             PC_PRE_ALLOC_SET_BUSY(notify->base.type);
 
+            pc_lib_log(PC_LOG_DEBUG, "pc_notify_with_timeout - use pre alloc notify");
             assert(!notify->base.route && !notify->base.msg);
             assert(PC_IS_PRE_ALLOC(notify->base.type));
 
@@ -665,6 +701,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
         notify = pc_lib_malloc(sizeof(pc_notify_t));
         memset(notify, 0, sizeof(pc_notify_t));
 
+        pc_lib_log(PC_LOG_DEBUG, "pc_notify_with_timeout - use dynamic alloc notify");
         notify->base.type = PC_REQ_TYPE_NOTIFY | PC_DYN_ALLOC;
         notify->base.client = client;
     }
@@ -676,7 +713,6 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
     notify->base.msg = pc_lib_strdup(msg);
 
     notify->base.seq_num = client->seq_num++;
-    pc_lib_log(PC_LOG_INFO, "pc_notify_with_timeout - add notify to queue, seq num: %u", notify->base.seq_num);
 
     notify->base.timeout = timeout;
     notify->base.ex_data = ex_data;
@@ -689,7 +725,8 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
             notify->base.msg, PC_NOTIFY_REQ_ID, notify->base.timeout);
 
     if (ret != PC_RC_OK) {
-        pc_lib_log(PC_LOG_ERROR, "pc_notify_with_timeout - send to transport error, seq num: %u", notify->base.seq_num);
+        pc_lib_log(PC_LOG_ERROR, "pc_notify_with_timeout - send to transport error,"
+                " seq num: %u, error: %s", notify->base.seq_num, pc_client_rc_str(ret));
 
         pc_mutex_lock(&client->req_mutex);
 
@@ -710,6 +747,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
 
         pc_mutex_unlock(&client->req_mutex);
     }
+    pc_lib_log(PC_LOG_INFO, "pc_notify_with_timeout - add notify to queue, seq num: %u", notify->base.seq_num);
     return ret;
 }
 

@@ -9,9 +9,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "pc_lib.h"
 #include "pomelo.h"
 #include "pomelo_trans.h"
-#include "pc_lib.h"
 
 #if !defined(PC_NO_DUMMY_TRANS)
 #  include "tr/dummy/tr_dummy.h"
@@ -92,15 +92,17 @@ void pc_lib_init(void (*pc_log)(int level, const char* msg, ...), void* (*pc_all
 #if !defined(PC_NO_DUMMY_TRANS)
     tp = pc_tr_dummy_trans_plugin();
     pc_transport_plugin_register(tp);
+    pc_lib_log(PC_LOG_INFO, "pc_lib_init - register dummy plugin");
 #endif
 
 #if !defined(PC_NO_UV_TCP_TRANS)
     tp = pc_tr_uv_tcp_trans_plugin();
     pc_transport_plugin_register(tp);
-
+    pc_lib_log(PC_LOG_INFO, "pc_lib_init - register tcp plugin");
 #if !defined(PC_NO_UV_TLS_TRANS)
     tp = pc_tr_uv_tls_trans_plugin();
     pc_transport_plugin_register(tp);
+    pc_lib_log(PC_LOG_INFO, "pc_lib_init - register tls plugin");
 #endif
 
 #endif
@@ -110,13 +112,16 @@ void pc_lib_cleanup()
 {
 #if !defined(PC_NO_DUMMY_TRANS)
     pc_transport_plugin_deregister(PC_TR_NAME_DUMMY);
+    pc_lib_log(PC_LOG_INFO, "pc_lib_cleanup - deregister dummy plugin");
 #endif
 
 #if !defined(PC_NO_UV_TCP_TRANS)
     pc_transport_plugin_deregister(PC_TR_NAME_UV_TCP);
+    pc_lib_log(PC_LOG_INFO, "pc_lib_cleanup - deregister tcp plugin");
 
 #if !defined(PC_NO_UV_TLS_TRANS)
     pc_transport_plugin_deregister(PC_TR_NAME_UV_TLS);
+    pc_lib_log(PC_LOG_INFO, "pc_lib_cleanup - deregister tls plugin");
 #endif
 
 #endif
@@ -133,5 +138,62 @@ const char* pc_lib_strdup(const char* str)
     buf[len] = '\0';
 
     return buf;
+}
+
+static const char* state_str[] = {
+    "PC_ST_NOT_INITED",
+    "PC_ST_INITED",
+    "PC_ST_CONNECTING",
+    "PC_ST_CONNECTED", 
+    "PC_ST_DISCONNECTING",
+    "PC_ST_UNKNOWN",
+    NULL
+};
+
+
+const char* pc_client_state_str(int state)
+{
+    assert(state < PC_ST_COUNT && state >= 0);
+    return state_str[state];
+}
+
+static const char* ev_str[] = {
+    "PC_EV_USER_DEFINED_PUSH",
+    "PC_EV_CONNECTED",
+    "PC_EV_CONNECT_ERROR",
+    "PC_EV_CONNECT_FAILED",
+    "PC_EV_DISCONNECT",
+    "PC_EV_KICKED_BY_SERVER",
+    "PC_EV_UNEXPECTED_DISCONNECT",
+    "PC_EV_PROTO_ERROR",
+    NULL
+};
+
+const char* pc_client_ev_str(int ev_type)
+{
+    assert(ev_type >= 0 && ev_type < PC_EV_COUNT);
+    return ev_str[ev_type];
+}
+
+static const char* rc_str[] = {
+    "PC_RC_OK",
+    "PC_RC_ERROR",
+    "PC_RC_TIMEOUT",
+    "PC_RC_INVALID_JSON",
+    "PC_RC_INVALID_ARG",
+    "PC_RC_NO_TRANS",
+    "PC_RC_INVALID_THREAD",
+    "PC_RC_TRANS_ERROR",
+    "PC_RC_INVALID_ROUTE",
+    "PC_RC_INVALID_STATE",
+    "PC_RC_NOT_FOUND",
+    "PC_RC_RESET",
+    NULL
+};
+
+const char* pc_client_rc_str(int rc) 
+{
+    assert(rc <= 0 && rc > PC_RC_MIN);
+    return rc_str[-rc];
 }
 

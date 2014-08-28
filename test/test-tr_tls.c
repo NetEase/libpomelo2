@@ -53,8 +53,6 @@ int main()
 
     pc_client_disconnect(client);
 
-    PC_TEST_ASSERT(pc_client_state(client) == PC_ST_INITED);
-
     pc_client_cleanup(client);
 
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_NOT_INITED);

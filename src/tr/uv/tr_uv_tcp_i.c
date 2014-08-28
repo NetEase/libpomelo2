@@ -106,7 +106,7 @@ static void tr_tcp_on_pkg_handler(pc_pkg_type type, const char* data, size_t len
  * uv_tcp_init always return 0, too
  * uv_async_init only fails in few cases, and  it is safe to ignore.
  *
- * so we do not check their return value here.
+ * so we do not check their returning value here.
  */
 int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 {
@@ -236,9 +236,11 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
             lc = json_loadb(buf, len, 0, &err);
 
             if (!lc) {
-                pc_lib_log(PC_LOG_WARN, "load local storage failed, not valid json: %s", err.text);
+                pc_lib_log(PC_LOG_WARN, "tr_uv_tcp_init - load local storage failed, not valid json: %s", err.text);
                 goto next;
             }
+
+            pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_init - load local storage ok");
 
             // route2code
             if (tmp = json_object_get(lc, TR_UV_LCK_ROUTE_2_CODE)) {
@@ -344,8 +346,6 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
 
     assert(trans && route && msg && req_id != PC_INVALID_REQ_ID);
 
-    assert(tt->state != TR_UV_TCP_NOT_CONN);
-
     m.id = req_id;
     m.msg = msg;
     m.route = route;
@@ -370,6 +370,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
             PC_PRE_ALLOC_SET_BUSY(wi->type);
+            pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use pre alloc write item");
             break;
         }
     }
@@ -377,6 +378,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     if (!wi) {
         wi = (tr_uv_wi_t* )pc_lib_malloc(sizeof(tr_uv_wi_t));
         memset(wi, 0, sizeof(tr_uv_wi_t));
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use dynamic alloc write item");
         wi->type = PC_DYN_ALLOC;
     }
 
@@ -385,8 +387,10 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     // if not done, push it to connecting queue.
     if (tt->state == TR_UV_TCP_DONE) {
         QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to write wait queue");
     } else {
         QUEUE_INSERT_TAIL(&tt->conn_pending_queue, &wi->queue);
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to conn pending queue");
     }
 
     if (PC_NOTIFY_REQ_ID == req_id) {
@@ -401,9 +405,12 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     wi->timeout = timeout;
     wi->ts = time(NULL);
 
+    pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - seq num: %u, req_id: %u", seq_num, req_id);
     uv_mutex_unlock(&tt->wq_mutex);
 
-    uv_async_send(&tt->write_async);
+    if (tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE) {
+        uv_async_send(&tt->write_async);
+    }
 
     return PC_RC_OK;
 }
