@@ -16,15 +16,15 @@
 #define PC_DYN_ALLOC 0x0
 #define PC_ALLOC_MASK 0x1
 
-#define PC_IS_PRE_ALLOC(type) ((type) & PC_ALLOC_MASK == PC_PRE_ALLOC) 
-#define PC_IS_DYN_ALLOC(type) ((type) & PC_ALLOC_MASK == PC_DYN_ALLOC)
+#define PC_IS_PRE_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_PRE_ALLOC) 
+#define PC_IS_DYN_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_DYN_ALLOC)
 
 #define PC_PRE_ALLOC_ST_IDLE 0x0
 #define PC_PRE_ALLOC_ST_BUSY 0x2 
 #define PC_PRE_ALLOC_ST_MASK 0x2
 
-#define PC_PRE_ALLOC_IS_IDLE(type) ((type) & PC_PRE_ALLOC_ST_MASK == PC_PRE_ALLOC_ST_IDLE)
-#define PC_PRE_ALLOC_IS_BUSY(type) ((type) & PC_PRE_ALLOC_ST_MASK == PC_PRE_ALLOC_ST_BUSY)
+#define PC_PRE_ALLOC_IS_IDLE(type) (((type) & PC_PRE_ALLOC_ST_MASK) == PC_PRE_ALLOC_ST_IDLE)
+#define PC_PRE_ALLOC_IS_BUSY(type) (((type) & PC_PRE_ALLOC_ST_MASK) == PC_PRE_ALLOC_ST_BUSY)
 
 #define PC_PRE_ALLOC_SET_IDLE(type) do { (type) &= ~PC_PRE_ALLOC_ST_MASK; (type) |= PC_PRE_ALLOC_ST_IDLE; } while(0)
 #define PC_PRE_ALLOC_SET_BUSY(type) do { (type) &= ~PC_PRE_ALLOC_ST_MASK; (type) |= PC_PRE_ALLOC_ST_BUSY; } while(0)
@@ -33,17 +33,17 @@
 #define PC_REQ_TYPE_REQUEST 0x20
 #define PC_REQ_TYPE_MASK 0xf0
 
-#define PC_REQ_IS_NOTIFY(type) ((type) & PC_REQ_TYPE_MASK == PC_REQ_TYPE_NOTIFY)
-#define PC_REQ_IS_REQUEST(type) ((type) & PC_REQ_TYPE_MASK == PC_REQ_TYPE_REQUEST)
+#define PC_REQ_IS_NOTIFY(type) (((type) & PC_REQ_TYPE_MASK) == PC_REQ_TYPE_NOTIFY)
+#define PC_REQ_IS_REQUEST(type) (((type) & PC_REQ_TYPE_MASK) == PC_REQ_TYPE_REQUEST)
 
 #define PC_EV_TYPE_NOTIFY_SENT 0x10
 #define PC_EV_TYPE_RESP 0x20
 #define PC_EV_TYPE_NET_EVENT 0x40
 #define PC_EV_TYPE_MASK 0xf0
 
-#define PC_EV_IS_NOTIFY_SENT(type) ((type) & PC_EV_TYPE_MASK == PC_EV_TYPE_NOTIFY_SENT)
-#define PC_EV_IS_RESP(type) ((type) & PC_EV_TYPE_MASK == PC_EV_TYPE_RESP)
-#define PC_EV_IS_NET_EVENT(type) ((type) & PC_EV_TYPE_MASK == PC_EV_TYPE_NET_EVENT)
+#define PC_EV_IS_NOTIFY_SENT(type) (((type) & PC_EV_TYPE_MASK) == PC_EV_TYPE_NOTIFY_SENT)
+#define PC_EV_IS_RESP(type) (((type) & PC_EV_TYPE_MASK) == PC_EV_TYPE_RESP)
+#define PC_EV_IS_NET_EVENT(type) (((type) & PC_EV_TYPE_MASK) == PC_EV_TYPE_NET_EVENT)
 
 #define PC_EV_SET_NOTIFY_SENT(type) do { (type) &= ~PC_EV_TYPE_MASK; (type) |= PC_EV_TYPE_NOTIFY_SENT; } while(0)
 #define PC_EV_SET_RESP(type) do { (type) &= ~PC_EV_TYPE_MASK; (type) |= PC_EV_TYPE_RESP; } while(0)

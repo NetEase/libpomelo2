@@ -25,9 +25,9 @@ typedef struct tr_uv_tcp_transport_s tr_uv_tcp_transport_t;
 #define TR_UV_WI_TYPE_INTERNAL 0x80 // handshake and heartbeat
 #define TR_UV_WI_TYPE_MASK 0xf0
 
-#define TR_UV_WI_IS_NOTIFY(type) ((type) & TR_UV_WI_TYPE_MASK == TR_UV_WI_TYPE_NOTIFY)
-#define TR_UV_WI_IS_RESP(type) ((type) & TR_UV_WI_TYPE_MASK == TR_UV_WI_TYPE_RESP)
-#define TR_UV_WI_IS_INTERNAL(type) ((type) & TR_UV_WI_TYPE_MASK == TR_UV_WI_IS_INTERNAL)
+#define TR_UV_WI_IS_NOTIFY(type) (((type) & TR_UV_WI_TYPE_MASK) == TR_UV_WI_TYPE_NOTIFY)
+#define TR_UV_WI_IS_RESP(type) (((type) & TR_UV_WI_TYPE_MASK) == TR_UV_WI_TYPE_RESP)
+#define TR_UV_WI_IS_INTERNAL(type) (((type) & TR_UV_WI_TYPE_MASK) == TR_UV_WI_IS_INTERNAL)
 
 #define TR_UV_WI_SET_NOTIFY(type) do { (type) &= ~TR_UV_WI_TYPE_MASK; (type) |= TR_UV_WI_TYPE_NOTIFY; } while(0)
 #define TR_UV_WI_SET_RESP(type) do { (type) &= ~TR_UV_WI_TYPE_MASK; (type) |= TR_UV_WI_TYPE_RESP; } while(0)

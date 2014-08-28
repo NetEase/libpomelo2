@@ -126,6 +126,7 @@ typedef struct {
 }
 
 PC_EXPORT int pc_lib_version();
+PC_EXPORT const char* pc_lib_version_str();
 
 /**
  * pc_lib_init and pc_lib_cleanup both should be invoked only once.
@@ -233,8 +234,7 @@ PC_EXPORT int pc_notify_with_timeout(pc_client_t* client, const char* route, con
         void* ex_data, int timeout, pc_notify_cb_t cb);
 
 #define pc_lib_version() (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
-
-#define pc_lib_version_str() ("0.0.1") 
+#define pc_lib_version_str() ("0.0.1")
 
 /**
  * set ca file for tls transports
