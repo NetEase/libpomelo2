@@ -1,0 +1,33 @@
+# Object files
+*.o
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Others
+out/
+build/
+.tags
+.tags_sorted_by_file
+**xcodeproj/
+**dSYM/
+*.mk
+gyp-mac-tool
+pomelo.Makefile
+deps/jansson/jansson.Makefile
+deps/uv/uv.Makefile
+Makefile
+tags
+Makefile
