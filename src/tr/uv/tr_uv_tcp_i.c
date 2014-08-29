@@ -72,6 +72,7 @@ static void tr_uv_tcp_thread_fn(void* arg)
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(lp->data);
     
     tt->thread_id = uv_thread_self();
+    pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_thread_fn - start uv loop thread");
     uv_run(lp, UV_RUN_DEFAULT);
 }
 
@@ -370,7 +371,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
             PC_PRE_ALLOC_SET_BUSY(wi->type);
-            pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use pre alloc write item");
+            pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use pre alloc write item, seq_num: %u, req_id: %u", seq_num, req_id);
             break;
         }
     }
@@ -378,7 +379,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     if (!wi) {
         wi = (tr_uv_wi_t* )pc_lib_malloc(sizeof(tr_uv_wi_t));
         memset(wi, 0, sizeof(tr_uv_wi_t));
-        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use dynamic alloc write item");
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - use dynamic alloc write item, seq_num: %u, req_id: %u", seq_num, req_id);
         wi->type = PC_DYN_ALLOC;
     }
 
@@ -387,10 +388,10 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     // if not done, push it to connecting queue.
     if (tt->state == TR_UV_TCP_DONE) {
         QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
-        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to write wait queue");
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to write wait queue, seq_num: %u, req_id: %u", seq_num, req_id);
     } else {
         QUEUE_INSERT_TAIL(&tt->conn_pending_queue, &wi->queue);
-        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to conn pending queue");
+        pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to conn pending queue, seq_num: %u, req_id: %u", seq_num, req_id);
     }
 
     if (PC_NOTIFY_REQ_ID == req_id) {
@@ -438,6 +439,8 @@ int tr_uv_tcp_cleanup(pc_transport_t* trans)
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_cleanup - join uv thread error");
         return PC_RC_ERROR;
     }
+
+    uv_loop_close(&tt->uv_loop);
 
     return PC_RC_OK;
 }

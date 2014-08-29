@@ -177,6 +177,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             } else {
                 route_str = (char* )pc_lib_malloc(strlen(origin_route) + 1);
                 strcpy((char* )route_str, origin_route);
+                origin_route = route_str;
             }
         } else {
             // till now, raw_msg->route.route_str is hold by pc_msg_t
@@ -184,7 +185,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             raw_msg->route.route_str = NULL;
         }
 
-        msg.route = route_str;
+        msg.route = origin_route;
     } else {
         msg.route = NULL;
     }

@@ -122,6 +122,7 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
     }
 
     client->magic_num = pc__init_magic_num;
+    pc_lib_log(PC_LOG_DEBUG, "pc_client_init - init ok");
     client->state = PC_ST_INITED;
 
     return PC_RC_OK;

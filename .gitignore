@@ -33,3 +33,6 @@ tags
 Makefile
 *.log
 node_modules
+.out
+.in
+

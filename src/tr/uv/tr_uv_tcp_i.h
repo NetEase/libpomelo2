@@ -79,7 +79,6 @@ typedef struct tr_uv_tcp_transport_s {
     pc_client_t* client;
     const pc_client_config_t* config;
 
-    // TODO: need a mutex?
     tr_uv_tcp_state_t state;
 
     uv_loop_t uv_loop;
@@ -123,7 +122,6 @@ typedef struct tr_uv_tcp_transport_s {
     uv_timer_t hb_timeout_timer;
     int is_waiting_hb;
 
-    // TODO: need mutex?
     // here, we use heartbeat round-trip time to evaluate the quality of connection.
     int hb_rtt;
 

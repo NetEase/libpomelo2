@@ -19,11 +19,11 @@
 static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 {
     if (TR_UV_WI_IS_RESP(wi->type)) {
-        pc_trans_resp(client, wi->req_id, PC_RC_RESET, NULL);
         pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset request, req_id: %u", wi->req_id);
+        pc_trans_resp(client, wi->req_id, PC_RC_RESET, NULL);
     } else if (TR_UV_WI_IS_NOTIFY(wi->type)) {
-        pc_trans_sent(client, wi->seq_num, PC_RC_RESET);
         pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset notify, seq_num: %u", wi->seq_num);
+        pc_trans_sent(client, wi->seq_num, PC_RC_RESET);
     }
     // drop internal write item
 
@@ -185,7 +185,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (ret) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "DNS Resolve Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s", tt->host);
+        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s, will reconn", tt->host);
         tt->reconn_fn(tt);
         return ;
     }
@@ -210,7 +210,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (!addr4 && !addr6) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "DNS Resolve Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s", tt->host);
+        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s, will reconn", tt->host);
         tt->reconn_fn(tt);
         return;
     }
@@ -225,7 +225,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (ret) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "UV Conn Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp_conn_async_cb - uv tcp connect error: %s, will reconn", uv_strerror(ret));
+        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async_cb - uv tcp connect error: %s, will reconn", uv_strerror(ret));
         tt->reconn_fn(tt);
         return ;
     }
@@ -233,6 +233,7 @@ void tcp__conn_async_cb(uv_async_t* t)
     tt->is_connecting = 1;
 
     if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
+        pc_lib_log(PC_LOG_DEBUG, "tcp__con_async_cb - start conn timeout timer");
         uv_timer_start(&tt->conn_timeout, tcp__conn_timeout_cb, tt->config->conn_timeout * 1000, 0);
     }
 }
@@ -293,11 +294,11 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     } 
 
     if (status == UV_ECANCELED) {
-        pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Timeout", NULL);
         pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect timeout");
+        pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Timeout", NULL);
     } else {
-        pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Error", NULL);
         pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect error, error: %s", uv_strerror(status));
+        pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Error", NULL);
     }
 
     tt->reconn_fn(tt); 
@@ -325,6 +326,7 @@ void tcp__write_async_cb(uv_async_t* a)
             q = QUEUE_HEAD(&tt->conn_pending_queue);
             
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+
             if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
                 pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - move wi from conn pending to write wait,"
                     "seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
@@ -498,11 +500,11 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
         if (wi->timeout != PC_WITHOUT_TIMEOUT) {
             if (ct > wi->ts + wi->timeout) {
                 if (TR_UV_WI_IS_NOTIFY(wi->type)) {
-                    pc_trans_sent(client, wi->seq_num, PC_RC_TIMEOUT);
                     pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
+                    pc_trans_sent(client, wi->seq_num, PC_RC_TIMEOUT);
                 } else if (TR_UV_WI_IS_RESP(wi->type)) {
-                    pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
                     pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
+                    pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
                 }
 
                 // if internal, just drop it.
@@ -603,9 +605,6 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     tcp__cleanup_json_t(&tt->server_protos);
     tcp__cleanup_json_t(&tt->client_protos);
     tcp__cleanup_json_t(&tt->proto_ver);
-
-    uv_loop_close(&tt->uv_loop);
-    uv_stop(&tt->uv_loop);
 }
 
 void tcp__disconnect_async_cb(uv_async_t* a)
@@ -714,8 +713,8 @@ void tcp__heartbeat_timeout_cb(uv_timer_t* t)
     assert(tt->is_waiting_hb);
     assert(t == &tt->hb_timeout_timer);
 
-    pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "HB Timeout", NULL);
     pc_lib_log(PC_LOG_WARN, "tcp__heartbeat_timeout_cb - will reconn, hb timeout");
+    pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "HB Timeout", NULL);
     tt->reconn_fn(tt);
 }
 
@@ -735,9 +734,9 @@ void tcp__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
     GET_TT(stream);
 
     if (nread < 0) {
-        pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "Read Error Or Close", NULL);
         pc_lib_log(PC_LOG_ERROR, "tcp__on_tcp_read_cb - read from tcp error: %s,"
                 "will reconn", uv_strerror(nread));
+        pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "Read Error Or Close", NULL);
         pc_lib_free(buf->base);
         tt->reconn_fn(tt);
         return;
@@ -767,8 +766,8 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
     msg = plugin->pr_msg_decoder(tt, &buf);
 
     if (!msg.msg) {
-        pc_trans_fire_event(tt->client, PC_EV_PROTO_ERROR, "Decode Error", NULL);
         pc_lib_log(PC_LOG_ERROR, "tcp__on_data_recieved - decode error, will reconn");
+        pc_trans_fire_event(tt->client, PC_EV_PROTO_ERROR, "Decode Error", NULL);
         tt->reconn_fn(tt);
         return ;
     }
@@ -814,8 +813,8 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 
 void tcp__on_kick_recieved(tr_uv_tcp_transport_t* tt)
 {
-    pc_trans_fire_event(tt->client, PC_EV_KICKED_BY_SERVER, NULL, NULL);
     pc_lib_log(PC_LOG_INFO, "tcp__on_kick_recieved - kicked by server");
+    pc_trans_fire_event(tt->client, PC_EV_KICKED_BY_SERVER, NULL, NULL);
     tt->reset_fn(tt);
 }
 

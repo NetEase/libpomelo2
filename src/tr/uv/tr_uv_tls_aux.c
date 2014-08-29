@@ -29,6 +29,7 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
 
     tr_uv_tls_transport_t* tls = (tr_uv_tls_transport_t* )tt;
 
+    pc_lib_log(PC_LOG_DEBUG, "tls__reset - reset ssl");
     if (!SSL_clear(tls->tls)) {
         pc_lib_log(PC_LOG_WARN, "tls__reset - ssl clear error: %s",
                 ERR_error_string(ERR_get_error(), NULL));
@@ -43,6 +44,9 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
     // write should retry remained, insert it to writing queue
     // then tcp__reset will recycle it.
     if (tls->should_retry) {
+        pc_lib_log(PC_LOG_DEBUG, "tls__reset - move should retry wi to writing queue, seq_num: %u, req_id: %u",
+                tls->should_retry->seq_num, tls->should_retry->req_id);
+
         QUEUE_INIT(&tls->should_retry->queue);
         QUEUE_INSERT_TAIL(&tt->writing_queue, &tls->should_retry->queue);
 
@@ -73,12 +77,12 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
 
     tcp__conn_done_cb(conn, status);
 
-    // success
     if (!status) {
-        // SSL_read will write tls handshake data to bio. 
+        // SSL_read will write ClientHello to bio. 
+        pc_lib_log(PC_LOG_INFO, "tls__conn_done_cb - send client hello");
         tls__read_from_bio(tls);
         
-        // write tls handshake data out
+        // write ClientHello out
         tls__write_to_tcp(tls); 
     }
 }
@@ -96,9 +100,10 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
     assert(tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE);
 
     if (tt->is_writing) {
-        // pending write item
+        pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - use tcp is writing queue");
         head = &tls->when_tcp_is_writing_queue;
     } else {
+        pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - use writing queue");
         head = &tt->writing_queue;
     }
 
@@ -117,6 +122,10 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
 
         if (ret == -1) {
             if (tls__get_error(tls->tls, ret)) {
+                pc_lib_log(PC_LOG_ERROR, "tls__write_to_bio - SSL_write error, will reconn");
+                pc_lib_free(tls->retry_wb);
+                tls->retry_wb = NULL;
+                tls->retry_wb_len = 0;
                 pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
                 tt->reconn_fn(tt);
                 return ;
@@ -152,6 +161,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
             if (ret == -1) {
                 tls->should_retry = wi;
                 if (tls__get_error(tls->tls, ret)) {
+                    pc_lib_log(PC_LOG_ERROR, "tls__write_to_bio - SSL_write error, will reconn");
                     pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
                     tt->reconn_fn(tt);
                     return ;
@@ -162,7 +172,9 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                     break;
                 }
             } else {
-                // write to bio success.
+                pc_lib_log(PC_LOG_DEBUG, "tls__reset - move wi to writing queue or tcp write queue, seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
+                QUEUE_INIT(&wi->queue);
+                QUEUE_INSERT_TAIL(head, &wi->queue);
                 flag = 1;
             }
         }
@@ -190,6 +202,7 @@ static void tls__read_from_bio(tr_uv_tls_transport_t* tls)
     } while (read > 0);
    
     if (tls__get_error(tls->tls, read)) {
+        pc_lib_log(PC_LOG_ERROR, "tls__read_from_bio - SSL_read error, will reconn");
         pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
         tt->reconn_fn(tt);
     }
@@ -226,6 +239,7 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
     char* ptr;
     size_t len;
     uv_buf_t buf;
+    tr_uv_wi_t* wi = NULL;
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t*)tls;
 
     if (tt->is_writing)
@@ -243,6 +257,10 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
         q = QUEUE_HEAD(&tls->when_tcp_is_writing_queue);
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
+
+        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+        pc_lib_log(PC_LOG_DEBUG, "tls__write_to_tcp - move wi from when tcp is writing queue to writing queue,"
+                " seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
 
         QUEUE_INSERT_TAIL(&tt->writing_queue, q);
     }
@@ -283,6 +301,8 @@ void tls__write_done_cb(uv_write_t* w, int status)
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
         if (!status && TR_UV_WI_IS_RESP(wi->type)) {
+            pc_lib_log(PC_LOG_DEBUG, "tls__write_to_tcp - move wi from  writing queue to resp pending queue,"
+                " seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
             QUEUE_INSERT_TAIL(&tt->resp_pending_queue, q);
             continue;
         };
@@ -334,11 +354,11 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
     wi = tls->should_retry;
     if (wi && wi->timeout != PC_WITHOUT_TIMEOUT && ct > wi->ts + wi->timeout) {
         if (TR_UV_WI_IS_NOTIFY(wi->type)) {
-            pc_trans_sent(tt->client, wi->seq_num, PC_RC_TIMEOUT);
             pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
+            pc_trans_sent(tt->client, wi->seq_num, PC_RC_TIMEOUT);
         } else if (TR_UV_WI_IS_RESP(wi->type)) {
-            pc_trans_resp(tt->client, wi->req_id, PC_RC_TIMEOUT, NULL);
             pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
+            pc_trans_resp(tt->client, wi->req_id, PC_RC_TIMEOUT, NULL);
         }
 
         // if internal, just drop it.
@@ -375,15 +395,8 @@ void tls__cleanup_async_cb(uv_async_t* a)
     if (tls->tls) {
         SSL_free(tls->tls);
         tls->tls = NULL;
-    }
-
-    if (tls->in) {
-        BIO_free(tls->in);
+        // BIO in and out will be freed by SSL_free
         tls->in = NULL;
-    }
-
-    if (tls->out) {
-        BIO_free(tls->out);
         tls->out = NULL;
     }
 }
@@ -398,5 +411,6 @@ void tls__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
     }
 
     BIO_write(tls->in, buf->base, nread);
+    pc_lib_free(buf->base);
     tls__cycle(tls);
 }
