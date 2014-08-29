@@ -1,0 +1,40 @@
+var pomelo = require('pomelo');
+var fs = require('fs');
+
+/**
+ * Init app for client.
+ */
+var app = pomelo.createApp();
+app.set('name', 'test');
+
+// app configuration
+if (app.serverId === 'connector-server-1') {
+  app.configure('production|development',  function(){
+    app.set('connectorConfig',
+      {
+        connector : pomelo.connectors.hybridconnector,
+        heartbeat : 3
+      });
+  });
+} else {
+  app.configure('production|development',  function(){
+    app.set('connectorConfig',
+      {
+        connector : pomelo.connectors.hybridconnector,
+        heartbeat : 3,
+        ssl: {
+          type: 'tls',
+          key: fs.readFileSync('./server.key'),
+          cert: fs.readFileSync('./server.crt'),
+          ca: [fs.readFileSync('./server.crt') ]
+        } 
+      });
+  });
+}
+
+// start app
+app.start();
+
+process.on('uncaughtException', function (err) {
+  console.error(' Caught exception: ' + err.stack);
+});

@@ -31,3 +31,5 @@ deps/uv/uv.Makefile
 Makefile
 tags
 Makefile
+*.log
+node_modules
