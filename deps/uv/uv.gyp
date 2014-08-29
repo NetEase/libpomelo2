@@ -7,6 +7,7 @@
     # processing.
     # XXX gyp is quite sensitive about paths with double / they don't normalize
     'uv_parent_path': '/',
+    'uv_library%': 'static_library',
   },
 
   'target_defaults': {
