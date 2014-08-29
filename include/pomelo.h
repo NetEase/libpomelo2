@@ -130,6 +130,7 @@ typedef struct {
 
 PC_EXPORT int pc_lib_version();
 PC_EXPORT const char* pc_lib_version_str();
+PC_EXPORT void pc_lib_set_default_log_level(int level);
 
 /**
  * pc_lib_init and pc_lib_cleanup both should be invoked only once.

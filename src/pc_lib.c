@@ -32,6 +32,8 @@ void (*pc_lib_free)(void* data) = NULL;
 
 const char* pc_lib_platform_type = NULL;
 
+static int pc__default_log_level = 0;
+
 /**
  * default malloc never return NULL
  * so we don't have to check its return value 
@@ -53,6 +55,11 @@ static void default_log(int level, const char* msg, ...)
 {
     time_t t = time(NULL);
     char buf[32];
+
+    if (level < pc__default_log_level) {
+        return;
+    }
+
     strftime(buf, 32, "[ %x %T ]", localtime(&t));
     printf(buf);
     switch(level) {
@@ -197,3 +204,7 @@ const char* pc_client_rc_str(int rc)
     return rc_str[-rc];
 }
 
+void pc_lib_set_default_log_level(int level)
+{
+    pc__default_log_level = level;
+}
