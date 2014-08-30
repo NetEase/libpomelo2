@@ -10,25 +10,81 @@
 static pc_client_t* client;
 
 #define REQ_ROUTE "connector.entryHandler.entry"
-#define REQ_MSG "{\"msg\": \"test\"}"
+#define REQ_MSG "{\"name\": \"test\"}"
 #define REQ_EX ((void*)0x22)
 #define REQ_TIMEOUT 10
 
-#define NOTI_ROUTE "connector.entryHandler.notify"
-#define NOTI_MSG "{\"msg\": \"test\"}"
+#define NOTI_ROUTE "test.testHandler.notify"
+#define NOTI_MSG "{\"content\": \"test content\"}"
 #define NOTI_EX ((void*)0x33)
 #define NOTI_TIMEOUT 30
 
-void event_cb(pc_client_t* client, int ev_type, void* ex_data, const char* arg1, const char* arg2) 
+#define EV_HANDLER_EX ((void*)0x44)
+#define SERVER_PUSH "onPush"
+
+#ifdef WIN32
+#include <windows.h>
+#define SLEEP(x) Sleep(x * 1000);
+#else
+#include <unistd.h>
+#define SLEEP(x) sleep(x)
+#endif
+
+static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len)
 {
+    // 0 - success, -1 - fail
+    char buf[1024];
+    size_t length;
+    size_t offset;
+    FILE* f;
+
+    if (op == PC_LOCAL_STORAGE_OP_WRITE) {
+      f = fopen("pomelo.dat", "w");
+      if (!f) {
+          return -1;
+      }
+      fwrite(data, 1, *len, f);
+      fclose(f);
+      return 0;
+
+    } else {
+        f = fopen("pomelo.dat", "r");
+        if (!f) {
+            *len = 0;
+            return -1;
+        }
+        *len = 0;
+        offset = 0;
+
+        while(length = fread(buf, 1, 1024, f)) {
+            *len += length;
+            if (data) {
+                memcpy(data + offset, buf, length);
+            }
+            offset += length;
+        }
+
+        fclose(f);
+
+        return 0;
+    }
 }
 
-void request_cb(const pc_request_t* req, int rc, const char* resp) 
+
+static void event_cb(pc_client_t* client, int ev_type, void* ex_data, const char* arg1, const char* arg2) 
+{
+
+    PC_TEST_ASSERT(ex_data == EV_HANDLER_EX);
+    printf("test: get event %s, arg1: %s, arg2: %s\n", pc_client_ev_str(ev_type),
+            arg1 ? arg1 : "", arg2 ? arg2 : "");
+}
+
+static void request_cb(const pc_request_t* req, int rc, const char* resp) 
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
     PC_TEST_ASSERT(resp);
 
-    printf("get resp: %s\n", resp);
+    printf("test get resp %s\n", resp);
     fflush(stdout);
 
     PC_TEST_ASSERT(pc_request_client(req) == client);
@@ -38,7 +94,7 @@ void request_cb(const pc_request_t* req, int rc, const char* resp)
     PC_TEST_ASSERT(pc_request_timeout(req) == REQ_TIMEOUT);
 }
 
-void notify_cb(const pc_notify_t* noti, int rc) 
+static void notify_cb(const pc_notify_t* noti, int rc) 
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
 
@@ -57,18 +113,29 @@ int main()
 
     PC_TEST_ASSERT(client);
 
-    pc_client_init(client, (void*)0x11, NULL);
+    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
+    config.local_storage_cb = local_storage_cb;
+    pc_client_init(client, (void*)0x11, &config);
     
     PC_TEST_ASSERT(pc_client_ex_data(client) == (void*)0x11);
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_INITED);
   
+    pc_client_add_ev_handler(client, PC_EV_USER_DEFINED_PUSH, EV_HANDLER_EX, SERVER_PUSH, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_CONNECTED , EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_CONNECT_ERROR, EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_CONNECT_FAILED , EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_DISCONNECT , EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_KICKED_BY_SERVER, EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_UNEXPECTED_DISCONNECT, EV_HANDLER_EX, NULL, event_cb); 
+    pc_client_add_ev_handler(client, PC_EV_PROTO_ERROR , EV_HANDLER_EX, NULL, event_cb); 
+
     pc_client_connect(client, "127.0.0.1", 3010, NULL);
 
-    sleep(1);
+    SLEEP(1);
     pc_request_with_timeout(client, REQ_ROUTE, REQ_MSG, REQ_EX, REQ_TIMEOUT, request_cb);
 
     pc_notify_with_timeout(client, NOTI_ROUTE, NOTI_MSG, NOTI_EX, NOTI_TIMEOUT, notify_cb);
-    sleep(50);
+    SLEEP(50);
 
     pc_client_disconnect(client);
 

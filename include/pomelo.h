@@ -66,6 +66,7 @@ typedef struct pc_notify_s pc_notify_t;
 #define PC_LOG_INFO 1
 #define PC_LOG_WARN 2
 #define PC_LOG_ERROR 3
+#define PC_LOG_DISABLE 4
 
 /**
  * some tunable arguments

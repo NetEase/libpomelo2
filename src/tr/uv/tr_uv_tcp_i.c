@@ -216,17 +216,18 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
     tt->proto_ver = NULL;
 
     if (tt->config->local_storage_cb) {
-        char* buf;
-        json_t* tmp;
-        json_t* lc;
-        json_error_t err;
         size_t len;
-        size_t len2;
         int ret;
 
         ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, NULL, &len);
         if (!ret) {
             assert(len > 0);
+            json_t* lc = NULL;
+            json_error_t err;
+            json_t* tmp;
+            char* buf;
+            size_t len2;
+
             buf = (char* )pc_lib_malloc(len);
             memset(buf, 0, len);
 
@@ -235,6 +236,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
             assert(len == len2);
 
             lc = json_loadb(buf, len, 0, &err);
+            pc_lib_free(buf);
 
             if (!lc) {
                 pc_lib_log(PC_LOG_WARN, "tr_uv_tcp_init - load local storage failed, not valid json: %s", err.text);
@@ -276,7 +278,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
                 tt->server_protos = tmp;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_DICT_VERSION)) {
+            if (tmp = json_object_get(lc, TR_UV_LCK_PROTO_VERSION)) {
                 tt->proto_ver = tmp;
             }
 
@@ -289,8 +291,8 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
                 tt->client_protos = NULL;
                 tt->server_protos = NULL;
             }
+            json_decref(lc);
         }
-        json_decref(lc);
     }
 
 next:
@@ -394,7 +396,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
         pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to conn pending queue, seq_num: %u, req_id: %u", seq_num, req_id);
     }
 
-    if (PC_NOTIFY_REQ_ID == req_id) {
+    if (PC_NOTIFY_PUSH_REQ_ID == req_id) {
         TR_UV_WI_SET_NOTIFY(wi->type);
     } else {
         TR_UV_WI_SET_RESP(wi->type);

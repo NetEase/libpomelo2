@@ -13,7 +13,9 @@ if (app.serverId === 'connector-server-1') {
     app.set('connectorConfig',
       {
         connector : pomelo.connectors.hybridconnector,
-        heartbeat : 3
+        heartbeat : 3,
+        useProtobuf: true,
+        useDict: true
       });
   });
 } else {
@@ -22,6 +24,8 @@ if (app.serverId === 'connector-server-1') {
       {
         connector : pomelo.connectors.hybridconnector,
         heartbeat : 3,
+        useProtobuf: true,
+        useDict: true,
         ssl: {
           type: 'tls',
           key: fs.readFileSync('./server.key'),

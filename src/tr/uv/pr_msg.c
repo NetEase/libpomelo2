@@ -30,6 +30,7 @@
 #define PC__MSG_CHECK_LEN(INDEX, LENGTH)                                      \
 do {                                                                          \
     if((INDEX) > (LENGTH)) {                                                  \
+        pc_lib_log(PC_LOG_ERROR, "pr_msg_decode - invalid length");           \
         goto error;                                                           \
     }                                                                         \
 }while(0);
@@ -71,7 +72,6 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     size_t len = buf->len;
     pc__msg_raw_t *msg = NULL;
     char *route_str = NULL;
-    char *body = NULL;
 
     msg = (pc__msg_raw_t *)pc_lib_malloc(sizeof(pc__msg_raw_t));
     memset(msg, 0, sizeof(pc__msg_raw_t));
@@ -87,7 +87,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     uint8_t type = flag >> 1;
 
     if(!PC_MSG_VALIDATE(type)) {
-        // fprintf(stderr, "Unknown Pomleo message type: %d.\n", type);
+        pc_lib_log(PC_LOG_ERROR, "pc_msg_decode - unknow message type");
         goto error;
     }
 
@@ -97,11 +97,13 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     uint8_t compressRoute = flag & 0x01;
     msg->compressRoute = compressRoute;
 
-    // message id
-    uint32_t id = 0;
+    // invalid req id for error msg
+    // notify req id for push message
+    uint32_t id = PC_INVALID_REQ_ID;
 
     if(PC_MSG_HAS_ID(type)) {
         int i = 0;
+        id = 0;
         uint8_t m;
         do{
             PC__MSG_CHECK_LEN(offset + 1, len);
@@ -109,11 +111,13 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
             id = id + ((m & 0x7f) << (7 * i));
             i++;
         }while(m & 0x80);
+    } else {
+        id = PC_NOTIFY_PUSH_REQ_ID;
     }
     msg->id = id;
 
     // route
-    if(PC_MSG_HAS_ROUTE(type)) {
+    if (PC_MSG_HAS_ROUTE(type)) {
         if(compressRoute) {
             PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_CODE_BYTES, len);
             msg->route.route_code |= data[offset++] << 8;
@@ -122,13 +126,11 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
             PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_LEN_BYTES, len);
             size_t route_len = data[offset++];
             PC__MSG_CHECK_LEN(offset + route_len, len);
-            if(route_len) {
-                route_str = (char *)pc_lib_malloc(route_len + 1);
 
-                memset(route_str, 0, route_len + 1);
-                memcpy(route_str, data + offset, route_len);
-                msg->route.route_str = route_str;
-            }
+            route_str = (char *)pc_lib_malloc(route_len + 1);
+            memset(route_str, 0, route_len + 1);
+            memcpy(route_str, data + offset, route_len);
+            msg->route.route_str = route_str;
 
             offset += route_len;
         }
@@ -144,7 +146,6 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 error:
     pc_lib_free(msg);
     pc_lib_free((char* )route_str);
-    pc_lib_free(body);
     return NULL;
 }
 
@@ -155,13 +156,14 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     const char* data = NULL;
 
     pc_msg_t msg;
+    memset(&msg, 0, sizeof(pc_msg_t));
 
     pc__msg_raw_t *raw_msg = pc_msg_decode_to_raw(buf);
-    if(!raw_msg) {
+
+    if (!raw_msg) {
         goto error;
     }
 
-    memset(&msg, 0, sizeof(pc_msg_t));
     msg.id = raw_msg->id;
 
     // route
@@ -171,7 +173,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
         if(raw_msg->compressRoute) {
             origin_route = pc__resolve_dictionary(code2route, raw_msg->route.route_code);
             if(!origin_route) {
-                fprintf(stderr, "Fail to uncompress route dictionary: %d.\n",
+                pc_lib_log(PC_LOG_ERROR, "pc_default_msg_decode - fail to uncompress route dictionary: %d",
                         raw_msg->route.route_code);
                 goto error;
             } else {
@@ -184,6 +186,8 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             origin_route = raw_msg->route.route_str;
             raw_msg->route.route_str = NULL;
         }
+
+        assert(origin_route);
 
         msg.route = origin_route;
     } else {
@@ -210,7 +214,6 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             goto error;
     }
 
-    // TODO: error handling.
     data = json_dumps(json_msg, JSON_COMPACT);
     msg.msg = data;
 
@@ -221,10 +224,10 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     return msg;
 
 error:
-    pc_lib_free((char* )raw_msg->route.route_str);
     pc_lib_free((char* )msg.route);
     pc_lib_free(raw_msg);
-    msg.id = (uint32_t)(-1);
+    msg.id = PC_INVALID_REQ_ID;
+    msg.route = NULL;
     return msg;
 }
 

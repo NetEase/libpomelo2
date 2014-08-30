@@ -1,1 +1,9 @@
-{}
+{  
+  "connector.entryHandler.entry": {
+    "required string name": 1
+  },
+
+  "test.testHandler.notify": {
+    "required string content": 1
+  }
+}

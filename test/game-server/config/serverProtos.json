@@ -1,1 +1,8 @@
-{}
+{
+  "onPush": {
+    "required string content": 1,
+    "required string topic": 2,
+    "required int32 id": 3
+  }
+}
+

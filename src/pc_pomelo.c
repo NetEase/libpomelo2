@@ -583,7 +583,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     req->base.timeout = timeout;
     req->base.ex_data = ex_data;
 
-    if (client->req_id_seq == PC_NOTIFY_REQ_ID || client->req_id_seq == PC_INVALID_REQ_ID)
+    if (client->req_id_seq == PC_NOTIFY_PUSH_REQ_ID || client->req_id_seq == PC_INVALID_REQ_ID)
         client->req_id_seq = 1;
     req->req_id = client->req_id_seq++;
     req->cb = cb;
@@ -723,7 +723,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
     pc_mutex_unlock(&client->req_mutex);
 
     ret = client->trans->send(client->trans, notify->base.route, notify->base.seq_num,
-            notify->base.msg, PC_NOTIFY_REQ_ID, notify->base.timeout);
+            notify->base.msg, PC_NOTIFY_PUSH_REQ_ID, notify->base.timeout);
 
     if (ret != PC_RC_OK) {
         pc_lib_log(PC_LOG_ERROR, "pc_notify_with_timeout - send to transport error,"

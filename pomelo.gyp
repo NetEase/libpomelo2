@@ -115,6 +115,11 @@
       './src/tr/dummy/tr_dummy.c',
     ],
     'conditions': [
+      [ 'OS != "win"', {
+        'cflags': [
+          '-ggdb',
+        ],
+      }],
       ['no_uv_support == "false"', {
         'sources': [
           './src/tr/uv/pr_msg.c',

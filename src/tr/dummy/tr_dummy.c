@@ -40,7 +40,7 @@ static int dummy_send(pc_transport_t* trans, const char* route, unsigned int seq
     dummy_transport_t* d_tr = (dummy_transport_t* )trans;
     assert(d_tr);
 
-    if (req_id == PC_NOTIFY_REQ_ID) {
+    if (req_id == PC_NOTIFY_PUSH_REQ_ID) {
         pc_trans_sent(d_tr->client, seq_num, PC_RC_OK);
     } else {
         pc_trans_resp(d_tr->client, req_id, PC_RC_OK, TR_DUMMY_RESP);

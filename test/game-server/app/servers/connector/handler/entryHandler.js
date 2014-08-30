@@ -7,12 +7,8 @@ var Handler = function(app) {
 };
 
 Handler.prototype.entry = function(msg, session, next) {
-  console.error(msg);
+  console.log('get msg:', msg);
+
   next(null, {code: 200, msg: 'game server is ok.'});
 };
-
-Handler.prototype.notify = function(msg, session, next) {
-  next(null, null);
-  console.log('get notify', msg);
-}
 

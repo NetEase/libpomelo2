@@ -172,7 +172,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                     break;
                 }
             } else {
-                pc_lib_log(PC_LOG_DEBUG, "tls__reset - move wi to writing queue or tcp write queue, seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
+                pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - move wi to writing queue or tcp write queue, seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
                 QUEUE_INIT(&wi->queue);
                 QUEUE_INSERT_TAIL(head, &wi->queue);
                 flag = 1;

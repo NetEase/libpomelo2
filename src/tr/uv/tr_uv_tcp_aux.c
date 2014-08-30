@@ -765,19 +765,25 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 
     msg = plugin->pr_msg_decoder(tt, &buf);
 
-    if (!msg.msg) {
+    if (msg.id == PC_INVALID_REQ_ID || !msg.msg) {
         pc_lib_log(PC_LOG_ERROR, "tcp__on_data_recieved - decode error, will reconn");
         pc_trans_fire_event(tt->client, PC_EV_PROTO_ERROR, "Decode Error", NULL);
         tt->reconn_fn(tt);
         return ;
     }
 
-    // TODO:
-    //assert(msg.id == PC_INVALID_REQ_ID && msg.route);
-    //assert(msg.id != PC_INVALID_REQ_ID);
+    if (msg.id == PC_NOTIFY_PUSH_REQ_ID && !msg.route) {
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_data_recieved - push message without route, error, will reconn");
+        pc_trans_fire_event(tt->client, PC_EV_PROTO_ERROR, "No Route Specified", NULL);
+        tt->reconn_fn(tt);
+        return ;
+    }
+
+    assert((msg.id == PC_NOTIFY_PUSH_REQ_ID && msg.route)
+            || (msg.id != PC_NOTIFY_PUSH_REQ_ID && !msg.route));
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_data_recieved - recived data, req_id: %d", msg.id);
-    if (msg.id != PC_INVALID_REQ_ID) {
+    if (msg.id != PC_NOTIFY_PUSH_REQ_ID) {
         // request
         pc_trans_resp(tt->client, msg.id, PC_RC_OK, msg.msg);
 
@@ -803,7 +809,6 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
             break;
         }
     } else {
-        // push
         pc_trans_fire_event(tt->client, PC_EV_USER_DEFINED_PUSH, msg.route, msg.msg);
     }
 
@@ -844,6 +849,10 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
         json_object_set(sys, "protoVersion", tt->proto_ver);
     }
 
+    if (tt->dict_ver) {
+        json_object_set(sys, "dictVersion", tt->dict_ver);
+    }
+
     pc_type = json_string(pc_lib_platform_type);
     json_object_set(sys, "type", pc_type);
     json_decref(pc_type);
@@ -862,7 +871,6 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
         json_object_set(body, "user", tt->handshake_opts);
     }
 
-    // TODO: error handling
     data = json_dumps(body, JSON_COMPACT);
 
     buf = pc_pkg_encode(PC_PKG_HANDSHAKE, data, strlen(data));
@@ -906,14 +914,14 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
 
 void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t len)
 {
-    // TODO: error handling
     json_error_t error;
     json_int_t code;
     json_t* res;
     json_t* tmp;
-    json_t* tmp2;
+    json_t* protos;
     json_int_t i;
     json_t* sys;
+    int need_sync = 0;
     
     assert(tt->state == TR_UV_TCP_HANDSHAKEING);
 
@@ -932,14 +940,17 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     }
 
     code = json_integer_value(json_object_get(res, "code"));
-    if(code != PC_HANDSHAKE_OK) {
+    if (code != PC_HANDSHAKE_OK) {
         pc_lib_log(PC_LOG_ERROR, "tcp_on_handshake_resp - handshake fail, code: %d", code);
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
+        json_decref(res);
         tt->reset_fn(tt);
         return ;
     }
 
+    // we just use sys here, ignore user field.
     sys = json_object_get(res, "sys");
+
     assert(sys);
 
     pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - handshake ok");
@@ -957,7 +968,6 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         tt->hb_timeout = tt->hb_interval * PC_HEARTBEAT_TIMEOUT_FACTOR;
     }
 
-    // TODO:
     tmp = json_object_get(sys, "useDict");
     if (!tmp || json_equal(tmp, json_false())) {
         if (tt->dict_ver && tt->route_to_code && tt->code_to_route) {
@@ -968,13 +978,14 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
             tt->dict_ver = NULL;
             tt->route_to_code = NULL;
             tt->code_to_route = NULL;
+            need_sync = 1;
         }
     } else {
         json_t* route2code = json_object_get(sys, "routeToCode");
         json_t* code2route = json_object_get(sys, "codeToRoute");
         json_t* dict_ver = json_object_get(sys, "dictVersion");
 
-        assert((dict_ver && route2code && code2route) || (!dict_ver && !route2code && !code2route && tt->dict_ver));
+        assert((dict_ver && route2code && code2route) || (!dict_ver && !route2code && !code2route));
 
         if (dict_ver) {
             if (tt->dict_ver && tt->route_to_code && tt->code_to_route) {
@@ -994,11 +1005,12 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
             tt->code_to_route = code2route;
             json_incref(code2route);
+            need_sync = 1;
         }
+        assert(tt->dict_ver && tt->route_to_code && tt->code_to_route);
     }
 
     tmp = json_object_get(sys, "useProto");
-
     if (!tmp || json_equal(tmp, json_false())) {
         if (tt->client_protos && tt->proto_ver && tt->server_protos) {
             json_decref(tt->client_protos);
@@ -1008,15 +1020,24 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
             tt->client_protos = NULL;
             tt->proto_ver = NULL;
             tt->server_protos = NULL;
+            need_sync = 1;
         }
     } else {
-         json_t* server_proto = json_object_get(sys, "serverProtos");
-         json_t* client_proto = json_object_get(sys, "clientProtos");
-         json_t* proto_ver = json_object_get(sys, "protoVersion");
+        json_t* server_protos = NULL;
+        json_t* client_protos = NULL;
+        json_t* proto_ver = NULL;
 
-         assert((proto_ver && server_proto && client_proto) || (!proto_ver && !server_proto && !client_proto && tt->proto_ver));
+        protos = json_object_get(sys, "protos"); 
 
-         if (proto_ver) {
+        if (protos) {
+            server_protos = json_object_get(protos, "server");
+            client_protos = json_object_get(protos, "client");
+            proto_ver = json_object_get(protos, "version");
+        }
+
+        assert((proto_ver && server_protos && client_protos) || (!proto_ver && !server_protos && !client_protos));
+
+        if (proto_ver) {
             if (tt->client_protos && tt->proto_ver && tt->server_protos) {
                 json_decref(tt->client_protos);
                 json_decref(tt->proto_ver);
@@ -1027,21 +1048,22 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
                 tt->server_protos = NULL;
             }   
 
-            tt->client_protos = client_proto;
-            json_incref(client_proto);
+            tt->client_protos = client_protos;
+            json_incref(client_protos);
 
-            tt->server_protos = server_proto;
-            json_incref(server_proto);
+            tt->server_protos = server_protos;
+            json_incref(server_protos);
 
             tt->proto_ver = proto_ver;
             json_incref(proto_ver);
-         }
+            need_sync = 1;
+        }
+        assert(tt->proto_ver && tt->server_protos && tt->client_protos);
     }
 
     json_decref(res);
 
-    // TODO: error handling
-    if (tt->config->local_storage_cb) {
+    if (tt->config->local_storage_cb && need_sync) {
         json_t* lc = json_object();
         char* data;
         size_t len;
@@ -1068,10 +1090,17 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
             json_object_set(lc, TR_UV_LCK_PROTO_SERVER, tt->server_protos);
         }
         data = json_dumps(lc, JSON_COMPACT);
-        len = strlen(data);
+        json_decref(lc);
 
-        if (!tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_WRITE, data, &len)) {
+        if (!data) {
+            pc_lib_log(PC_LOG_WARN, "tcp__on_handshake_resp - serialize handshake data failed");
+        } else {
+            len = strlen(data);
+
+            if (tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_WRITE, data, &len) != 0) {
                 pc_lib_log(PC_LOG_WARN, "tcp__on_handshake_resp - write data to local storage error");
+            }
+            pc_lib_free(data);
         }
     }
 
@@ -1082,6 +1111,8 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     }
     tt->state = TR_UV_TCP_DONE;
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake completely");
+    pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - client connected");
+    pc_trans_fire_event(tt->client, PC_EV_CONNECTED, NULL, NULL);
     uv_async_send(&tt->write_async);
 }
 

@@ -18,7 +18,7 @@ typedef struct pc_transport_plugin_s pc_transport_plugin_t;
 /**
  * special request id 
  */
-#define PC_NOTIFY_REQ_ID 0
+#define PC_NOTIFY_PUSH_REQ_ID 0
 #define PC_INVALID_REQ_ID -1
 
 struct pc_transport_s {
@@ -26,7 +26,7 @@ struct pc_transport_s {
     int (*connect)(pc_transport_t* trans, const char* host, int port, const char* handshake_opt);
 
     /**
-     * req_id == PC_NOTIFY_REQ_ID indicates that it is a notify message,
+     * req_id == PC_NOTIFY_PUSH_REQ_ID indicates that it is a notify message,
      * otherwise it is a request message
      */
     int (*send)(pc_transport_t* trans, const char* route, unsigned int seq_num,
