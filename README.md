@@ -38,4 +38,8 @@ static library or shared library for libpomelo2
 
 if you enable openssl and do not use system pre-install openssl, this option is used when compiling openssl from deps/openssl
 
+- -Dbuild_pypomelo=[true | false], `false` by default.
+- -Dpython_header=<include path>, `/usr/include/python2.7` by default.
+
+These two options is used to configure compilation for pypomelo.
 

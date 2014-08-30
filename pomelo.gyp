@@ -8,7 +8,9 @@
     'use_sys_uv%': "false",
     'use_sys_jansson%': "false",
     'no_tls_support%': "false",
-    'no_uv_support%': "false"
+    'no_uv_support%': "false",
+    'build_pypomelo%': "false",
+    'python_header%': "/usr/include/python2.7",
   },
 
   'target_defaults': {
@@ -151,7 +153,8 @@
       ], # no uv support
     ],
   },
-  {
+
+    {
      'target_name': 'tr_dummy',
      'type': 'executable',
      'dependencies': [
@@ -201,5 +204,28 @@
     ],
   },
 
-  ]
+  ],
+  'conditions': [
+    [
+      'build_pypomelo == "true"', {
+       'targets':[ {
+    'target_name': 'pypomelo',
+    'type': 'shared_library',
+    'dependencies': [
+      'libpomelo2',
+    ],
+    'include_dirs': [
+      './include/',
+      '<(python_header)',
+    ],
+    'cflags': [
+      '-ggdb',
+    ],
+    'sources': [
+      './py/pypomelo.c',
+    ],
+  },],
+
+   }]
+  ],
 }

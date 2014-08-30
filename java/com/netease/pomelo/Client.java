@@ -1,46 +1,80 @@
 package com.netease.pomelo;
 
-public final class Client {
+public class Client {
     public static final int PC_RC_OK = 0;
+    public static final int PC_RC_ERROR = -1;
+    public static final int PC_RC_TIMEOUT = -2;
+    public static final int PC_RC_INVALID_JSON = -3;
+    public static final int PC_RC_INVALID_ARG = -4;
+    public static final int PC_RC_NO_TRANS = -5;
+    public static final int PC_RC_INVALID_THREAD = -6;
+    public static final int PC_RC_TRANS_ERROR = -7;
+    public static final int PC_RC_INVALID_ROUTE = -8;
+    public static final int PC_RC_INVALID_STATE = -9;
+    public static final int PC_RC_NOT_FOUND = -10;
+    public static final int PC_RC_RESET = -11;
+    public static final int PC_RC_MIN = -12;
 
-    public class Config {
-        public int conn_timeout;
-    }
+    public static final int PC_ST_NOT_INITED = 0;
+    public static final int PC_ST_INITED = 1;
+    public static final int PC_ST_CONNECTING = 2;
+    public static final int PC_ST_CONNECTED = 3;
+    public static final int PC_ST_DISCONNECTING = 4;
+    public static final int PC_ST_UNKNOWN = 5;
+
+    public static final int PC_LOG_DEBUG = 0;
+    public static final int PC_LOG_INFO = 1;
+    public static final int PC_LOG_WARN = 2;
+    public static final int PC_LOG_ERROR = 3;
+    public static final int PC_LOG_DISABLE = 4;
+
+    public static final int PC_EV_USER_DEFINED_PUSH = 0;
+    public static final int PC_EV_CONNECTED = 1;
+    public static final int PC_EV_CONNECT_ERROR = 2;
+    public static final int PC_EV_CONNECT_FAILED = 3;
+    public static final int PC_EV_DISCONNECT = 4;
+    public static final int PC_EV_KICKED_BY_SERVER = 5;
+    public static final int PC_EV_UNEXPECTED_DISCONNECT = 6;
+    public static final int PC_EV_PROTO_ERROR = 7;
+
+    public static final int PC_WITHOUT_TIMEOUT = -1;
+
+    public static native void libInit(int logLevel, boolean enableTLS, String caFile, String caPath);
+    public static native void libCleanup();
+
+    public static native String evToStr(int ev);
+    public static native String rcToStr(int rc);
+    public static native String stateToStr(int st);
 
     public interface RequestCallback {
-        void handle(String resp, int status);
+        void handle(int rc, String resp);
     }
 
     public interface NotifyCallback {
-        void handle(int status);
+        void handle(int rc);
     }
 
     public interface EventHandler {
-        void handle(int ev_type, String arg1, String arg2);
+        void handle(int ev, String arg1, String arg2);
     }
 
     static {
-        System.loadLibrary("pomelo");
+        System.loadLibrary("jpomelo");
     }
 
-    public native int init(Config c);
+    public native int init(boolean enable_poll);
     public native int connect(String host, int port);
     public native int state();
+    public native int request(String route, String msg, int timeout, RequestCallback cb);
+    public native int notify(String route, String msg, int timeout, NotifyCallback cb);
     public native int disconnect();
-    public native int cleanup();
+    public native int poll();
+    public native int quality();
+    public native int destroy();
 
     public native int addEventHandler(int ev_type, String push_route, EventHandler hander);
     public native int rmEventHandler(int ev_type, String push_route, EventHandler handler);
 
-    public native int request(String route, String msg, int timeout, RequestCallback cb);
-    public native int notify(String route, String msg, int timeout, NotifyCallback cb);
-
-    public static void main(String[] args) {
-        Client cl = new Client();
-    }
-
     private byte[] jniUse;
 }
-
-
 

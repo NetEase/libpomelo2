@@ -152,7 +152,7 @@ PC_EXPORT int pc_client_poll(pc_client_t* client);
 PC_EXPORT void* pc_client_ex_data(const pc_client_t* client);
 PC_EXPORT const pc_client_config_t* pc_client_config(const pc_client_t* client);
 PC_EXPORT int pc_client_state(pc_client_t* client);
-PC_EXPORT int pc_client_conn_qulity(pc_client_t* client);
+PC_EXPORT int pc_client_conn_quality(pc_client_t* client);
 PC_EXPORT void* pc_client_trans_data(pc_client_t* client);
 
 /**

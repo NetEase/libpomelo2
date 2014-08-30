@@ -482,7 +482,7 @@ int pc_client_state(pc_client_t* client)
     return state;
 }
 
-int pc_client_conn_qulity(pc_client_t* client) 
+int pc_client_conn_quality(pc_client_t* client) 
 {
     if (!client) {
         pc_lib_log(PC_LOG_ERROR, "client is null, invalid arg");
