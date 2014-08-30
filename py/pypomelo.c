@@ -382,7 +382,7 @@ static PyObject* poll(PyObject* self, PyObject* args)
     }
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_client_state(client));
+    return Py_BuildValue("i", pc_client_poll(client));
 }
 
 static PyObject* quality(PyObject* self, PyObject* args)

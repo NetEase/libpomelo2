@@ -140,7 +140,12 @@ void pc_lib_cleanup()
 const char* pc_lib_strdup(const char* str)
 {
     char* buf;
-    size_t len = strlen(str);
+    size_t len;
+
+    if (!str) 
+        return NULL;
+
+    len = strlen(str);
 
     buf = (char* )pc_lib_malloc(len + 1);
     strcpy(buf, str);

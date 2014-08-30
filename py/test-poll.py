@@ -18,10 +18,10 @@ def event_callback(ev, arg1, arg2):
 
 c = Client()
 
-# enable tls, disable poll
-c.init(True, False)
+# disable tls, enable poll
+c.init(False, True)
 
-c.connect('127.0.0.1', 3011)
+c.connect('127.0.0.1', 3010)
 
 c.request('connector.entryHandler.entry', '{"name": "test"}', 10, resp_callback);
 
@@ -29,7 +29,9 @@ c.notify('test.testHandler.notify', '{"content": "test content"}', 10, notify_ca
 
 c.add_ev_handler(Client.PC_EV_USER_DEFINED_PUSH, "onPush", event_callback)
 
-time.sleep(20)
+time.sleep(10)
+
+c.poll()
 
 ret = c.destroy()
 

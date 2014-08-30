@@ -108,9 +108,9 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
         client->notifies[i].base.type = PC_REQ_TYPE_NOTIFY | PC_PRE_ALLOC_ST_IDLE | PC_PRE_ALLOC;
     }
     
+    pc_mutex_init(&client->event_mutex);
     if (client->config.enable_polling) {
 
-        pc_mutex_init(&client->event_mutex);
         QUEUE_INIT(&client->pending_ev_queue);
 
         memset(&client->pending_events[0], 0, sizeof(pc_event_t) * PC_PRE_ALLOC_EVENT_SLOT_COUNT);
@@ -355,8 +355,8 @@ int pc_client_poll(pc_client_t* client)
     }
 
     pc_mutex_lock(&client->event_mutex);
-    while(!QUEUE_EMPTY(&client->pending_events)) {
-        q = QUEUE_HEAD(&client->pending_events);
+    while(!QUEUE_EMPTY(&client->pending_ev_queue)) {
+        q = QUEUE_HEAD(&client->pending_ev_queue);
         ev = (pc_event_t*) QUEUE_DATA(q, pc_event_t, queue);
 
         assert((PC_IS_PRE_ALLOC(ev->type) && PC_PRE_ALLOC_IS_BUSY(ev->type)) || PC_IS_DYN_ALLOC(ev->type));
