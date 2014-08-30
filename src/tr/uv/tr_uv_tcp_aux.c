@@ -4,6 +4,8 @@
  */
 
 #include <string.h>
+#include <math.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "tr_uv_tcp_aux.h"
@@ -149,6 +151,8 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
 
     if (timeout > config->reconn_delay_max) 
         timeout = config->reconn_delay_max;
+
+    timeout = (rand() % timeout) * 2; 
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - reconnect, delay: %d", timeout);
     
