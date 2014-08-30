@@ -747,13 +747,17 @@ void tcp__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
     }
 
     pc_pkg_parser_feed(&tt->pkg_parser, buf->base, nread);
-    pc_lib_free(buf->base);
 }
 
 void tcp__alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
-    buf->base = (char* )pc_lib_malloc(suggested_size);
-    buf->len = suggested_size;
+    size_t len;
+    GET_TT(handle);
+
+    len = suggested_size < PC_TCP_READ_BUFFER_SIZE ? suggested_size : PC_TCP_READ_BUFFER_SIZE;
+
+    buf->base = tt->tcp_read_buf;
+    buf->len = len;
 }
 
 void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t len)

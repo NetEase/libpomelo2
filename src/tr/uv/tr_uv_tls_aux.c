@@ -411,6 +411,5 @@ void tls__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
     }
 
     BIO_write(tls->in, buf->base, nread);
-    pc_lib_free(buf->base);
     tls__cycle(tls);
 }

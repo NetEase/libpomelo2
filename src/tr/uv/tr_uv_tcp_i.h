@@ -127,6 +127,8 @@ typedef struct tr_uv_tcp_transport_s {
 
     pc_pkg_parser_t pkg_parser;
 
+    char tcp_read_buf[PC_TCP_READ_BUFFER_SIZE];
+
     /**
      * holds ownership of these json 
      */

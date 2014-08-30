@@ -76,6 +76,7 @@ typedef struct pc_notify_s pc_notify_t;
 #define PC_PRE_ALLOC_NOTIFY_SLOT_COUNT 4
 #define PC_TIMEOUT_CHECK_INTERVAL 2
 #define PC_HEARTBEAT_TIMEOUT_FACTOR 2
+#define PC_TCP_READ_BUFFER_SIZE (1 << 16)
 
 /**
  * builtin transport name
