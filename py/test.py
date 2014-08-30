@@ -28,7 +28,7 @@ c.notify('test.testHandler.notify', '{"content": "test content"}', 10, notify_ca
 
 c.add_ev_handler(Client.PC_EV_USER_DEFINED_PUSH, "onPush", event_callback)
 
-time.sleep(500)
+time.sleep(50)
 
 ret = c.destroy()
 

@@ -229,18 +229,18 @@ static PyObject* create(PyObject* self, PyObject* args)
         Py_INCREF(Py_None);
         return Py_None;
     }
-    return Py_BuildValue("i", (ptrdiff_t)(client));
+    return Py_BuildValue("k", (unsigned long)(client));
 }
 
 static PyObject* connect(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     char* host = NULL;
     int port = 0;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "isi:connect", &addr, &host, &port)) { 
+    if (!PyArg_ParseTuple(args, "ksi:connect", &addr, &host, &port)) { 
        return NULL;
     }
 
@@ -251,10 +251,10 @@ static PyObject* connect(PyObject* self, PyObject* args)
 
 static PyObject* state(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
 
-    if (!PyArg_ParseTuple(args, "i:state", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:state", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -264,13 +264,13 @@ static PyObject* state(PyObject* self, PyObject* args)
 
 static PyObject* add_ev_handler(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     int ev_type;
     char* route = NULL;
     PyObject* ev_cb = NULL;
 
-    if (!PyArg_ParseTuple(args, "iizO:add_ev_handler", &addr, 
+    if (!PyArg_ParseTuple(args, "kizO:add_ev_handler", &addr, 
                 &ev_type, &route, &ev_cb)) { 
         return NULL;
     }
@@ -291,13 +291,13 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
 
 static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     int ev_type;
     char* route = NULL;
     PyObject* ev_cb = NULL;
 
-    if (!PyArg_ParseTuple(args, "iizO:add_ev_handler", &addr, 
+    if (!PyArg_ParseTuple(args, "kizO:add_ev_handler", &addr, 
                 &ev_type, &route, &ev_cb)) { 
         return NULL;
     }
@@ -318,14 +318,14 @@ static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
 
 static PyObject* request(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     char* route = NULL;
     char* msg = NULL;
     int timeout = 0;
     PyObject* req_cb = NULL;
 
-    if (!PyArg_ParseTuple(args, "issiO:request", &addr, 
+    if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
                 &route, &msg, &timeout, &req_cb)) { 
         return NULL;
     }
@@ -346,14 +346,14 @@ static PyObject* request(PyObject* self, PyObject* args)
 
 static PyObject* notify(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     char* route = NULL;
     char* msg = NULL;
     int timeout = 0;
     PyObject* notify_cb = NULL;
 
-    if (!PyArg_ParseTuple(args, "issiO:request", &addr, 
+    if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
                 &route, &msg, &timeout, &notify_cb)) { 
         return NULL;
     }
@@ -374,10 +374,10 @@ static PyObject* notify(PyObject* self, PyObject* args)
 
 static PyObject* poll(PyObject* self, PyObject* args)
 {   
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
 
-    if (!PyArg_ParseTuple(args, "i:poll", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:poll", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -387,10 +387,10 @@ static PyObject* poll(PyObject* self, PyObject* args)
 
 static PyObject* quality(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
 
-    if (!PyArg_ParseTuple(args, "i:quality", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:quality", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -400,10 +400,10 @@ static PyObject* quality(PyObject* self, PyObject* args)
 
 static PyObject* disconnect(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
 
-    if (!PyArg_ParseTuple(args, "i:disconnect", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:disconnect", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -413,11 +413,11 @@ static PyObject* disconnect(PyObject* self, PyObject* args)
 
 static PyObject* destroy(PyObject* self, PyObject* args)
 {
-    ptrdiff_t addr;
+    unsigned long addr;
     pc_client_t* client;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "i:destroy", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:destroy", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
