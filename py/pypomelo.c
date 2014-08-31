@@ -1,6 +1,12 @@
+/**
+ * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 #include <assert.h>
 #include <Python.h>
 #include <pomelo.h>
+#include <string.h>
 
 static void default_request_cb(const pc_request_t* req, int rc, const char* resp)
 {
@@ -93,44 +99,66 @@ static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, co
     }
 }
 
-static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len)
+static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data)
 {
-    // 0 - success, -1 - fail
-    char buf[1024];
-    size_t length;
-    size_t offset;
-    FILE* f;
+    PyObject* lc_cb = (PyObject*)ex_data;
+    PyObject* args;
+    PyObject* result;
+    int ret;
+    char* res = NULL;
+
+    PyGILState_STATE state;
+    state = PyGILState_Ensure();
 
     if (op == PC_LOCAL_STORAGE_OP_WRITE) {
-      f = fopen("pomelo.dat", "w");
-      if (!f) {
-          return -1;
-      }
-      fwrite(data, 1, *len, f);
-      fclose(f);
-      return 0;
+        args = Py_BuildValue("(is#)", op, data, *len);
 
+        assert(args);
+
+        result = PyEval_CallObject(lc_cb, args);
+        assert(result);
+        assert(PyInt_Check(result));
+
+        ret = PyInt_AsLong(result);
+
+        Py_XDECREF(result);
+        Py_XDECREF(args);
+
+        PyGILState_Release(state);
+
+        return ret;
     } else {
-        f = fopen("pomelo.dat", "r");
-        if (!f) {
-            *len = 0;
+        args = Py_BuildValue("(i)", op);
+        assert(args);
+        result = PyEval_CallObject(lc_cb, args);
+        assert(result);
+        assert(PyString_Check(result) || result == Py_None);
+
+        if (result != Py_None) {
+            res = PyString_AsString(result);
+        }
+
+        Py_XDECREF(args);
+        Py_XDECREF(result);
+
+        PyGILState_Release(state);
+
+        if (res) {
+            *len = strlen(res);
+            if (*len == 0) {
+                return -1;
+            }
+
+            if (data) {
+                strcpy(data, res);
+            }
+            return 0;
+        } else {
             return -1;
         }
-        *len = 0;
-        offset = 0;
-
-        while(length = fread(buf, 1, 1024, f)) {
-            *len += length;
-            if (data) {
-                memcpy(data + offset, buf, length);
-            }
-            offset += length;
-        }
-
-        fclose(f);
-
-        return 0;
     }
+    // never go to here.
+    return -1;
 }
 
 static PyObject* lib_init(PyObject* self, PyObject* args)
@@ -203,10 +231,16 @@ static PyObject* create(PyObject* self, PyObject* args)
     int tls = 0;
     int polling = 0;
     pc_client_t* client = NULL;
+    PyObject* lc_callback = NULL;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "|ii:init", &tls, &polling)) { 
+    if (!PyArg_ParseTuple(args, "|iiO:init", &tls, &polling, &lc_callback)) { 
        return NULL;
+    }
+
+    if (!PyCallable_Check(lc_callback)) {
+        PyErr_SetString(PyExc_TypeError, "parameter lc_callback must be callable");
+        return NULL;
     }
 
     pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
@@ -216,7 +250,10 @@ static PyObject* create(PyObject* self, PyObject* args)
     if (polling) {
         config.enable_polling = 1;
     }
+
+    Py_XINCREF(lc_callback);
     config.local_storage_cb = local_storage_cb;
+    config.ex_data = lc_callback;
 
     client = (pc_client_t* )malloc(pc_client_size());
     if (!client) {
@@ -415,6 +452,7 @@ static PyObject* destroy(PyObject* self, PyObject* args)
 {
     unsigned long addr;
     pc_client_t* client;
+    PyObject* lc_cb;
     int ret;
 
     if (!PyArg_ParseTuple(args, "k:destroy", &addr)) { 
@@ -423,8 +461,13 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     client = (pc_client_t* )addr;
     assert(client);
 
+    lc_cb = (PyObject*)pc_client_config(client)->ex_data;
+    Py_XDECREF(lc_cb);
+
     ret = pc_client_cleanup(client);
-    free(client);
+    if (ret == PC_RC_OK) {
+        free(client);
+    }
 
     return Py_BuildValue("i", ret);
 }

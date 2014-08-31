@@ -1105,7 +1105,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         } else {
             len = strlen(data);
 
-            if (tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_WRITE, data, &len) != 0) {
+            if (tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_WRITE, data, &len, tt->config->ex_data) != 0) {
                 pc_lib_log(PC_LOG_WARN, "tcp__on_handshake_resp - write data to local storage error");
             }
             pc_lib_free(data);

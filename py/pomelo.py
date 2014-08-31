@@ -1,6 +1,14 @@
+#
+#  Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+#  MIT Licensed.
+#
+
 import pypomelo
 
 class Client:
+    PC_LOCAL_STORAGE_OP_READ = 0
+    PC_LOCAL_STORAGE_OP_WRITE = 1
+
     PC_RC_OK = 0
     PC_RC_ERROR = -1
     PC_RC_TIMEOUT = -2
@@ -13,7 +21,6 @@ class Client:
     PC_RC_INVALID_STATE = -9
     PC_RC_NOT_FOUND = -10
     PC_RC_RESET = -11
-    PC_RC_MIN = -12
 
     PC_ST_NOT_INITED = 0
     PC_ST_INITED = 1
@@ -65,8 +72,8 @@ class Client:
 
     # use_tls - enable tls, Boolean
     # enable_poll - Boolean  
-    def init(self, use_tls, enable_poll):
-        self._internal_data = pypomelo.create(use_tls, enable_poll);
+    def init(self, use_tls, enable_poll, lc_callback):
+        self._internal_data = pypomelo.create(use_tls, enable_poll, lc_callback);
         return self._internal_data is None
     
     def connect(self, host, port):

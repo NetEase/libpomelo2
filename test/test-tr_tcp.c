@@ -30,7 +30,7 @@ static pc_client_t* client;
 #define SLEEP(x) sleep(x)
 #endif
 
-static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len)
+static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data)
 {
     // 0 - success, -1 - fail
     char buf[1024];

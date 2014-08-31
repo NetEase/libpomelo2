@@ -1,6 +1,12 @@
+/**
+ * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 package com.netease.pomelo;
 
 public class Client {
+
     public static final int PC_RC_OK = 0;
     public static final int PC_RC_ERROR = -1;
     public static final int PC_RC_TIMEOUT = -2;
@@ -13,7 +19,6 @@ public class Client {
     public static final int PC_RC_INVALID_STATE = -9;
     public static final int PC_RC_NOT_FOUND = -10;
     public static final int PC_RC_RESET = -11;
-    public static final int PC_RC_MIN = -12;
 
     public static final int PC_ST_NOT_INITED = 0;
     public static final int PC_ST_INITED = 1;
@@ -39,7 +44,7 @@ public class Client {
 
     public static final int PC_WITHOUT_TIMEOUT = -1;
 
-    public static native void libInit(int logLevel, boolean enableTLS, String caFile, String caPath);
+    public static native void libInit(int logLevel, String caFile, String caPath);
     public static native void libCleanup();
 
     public static native String evToStr(int ev);
@@ -47,22 +52,27 @@ public class Client {
     public static native String stateToStr(int st);
 
     public interface RequestCallback {
-        void handle(int rc, String resp);
+        public void handle(int rc, String resp);
+    }
+
+    public interface LocalStorage {
+        public String read();
+        public int write(String lc);
     }
 
     public interface NotifyCallback {
-        void handle(int rc);
+        public void handle(int rc);
     }
 
     public interface EventHandler {
-        void handle(int ev, String arg1, String arg2);
+        public void handle(int ev, String arg1, String arg2);
     }
 
     static {
         System.loadLibrary("jpomelo");
     }
 
-    public native int init(boolean enable_poll);
+    public native int init(boolean enableTLS, boolean enablePoll, LocalStorage lc);
     public native int connect(String host, int port);
     public native int state();
     public native int request(String route, String msg, int timeout, RequestCallback cb);
@@ -72,7 +82,7 @@ public class Client {
     public native int quality();
     public native int destroy();
 
-    public native int addEventHandler(int ev_type, String push_route, EventHandler hander);
+    public native int addEventHandler(int ev_type, String push_route, EventHandler handler);
     public native int rmEventHandler(int ev_type, String push_route, EventHandler handler);
 
     private byte[] jniUse;

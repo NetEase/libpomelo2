@@ -96,10 +96,10 @@ typedef struct pc_notify_s pc_notify_t;
 #define PC_WITHOUT_TIMEOUT -1
 
 typedef enum { 
-    PC_LOCAL_STORAGE_OP_READ,
-    PC_LOCAL_STORAGE_OP_WRITE,
+    PC_LOCAL_STORAGE_OP_READ = 0,
+    PC_LOCAL_STORAGE_OP_WRITE = 1,
 } pc_local_storage_op_t;
-typedef int (*pc_local_storage_cb_t)(pc_local_storage_op_t op, char* data, size_t* len);
+typedef int (*pc_local_storage_cb_t)(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data);
 
 typedef struct {
     int conn_timeout;
@@ -113,6 +113,7 @@ typedef struct {
     int enable_polling;
 
     pc_local_storage_cb_t local_storage_cb;
+    void* ex_data;
 
     int transport_name;
 } pc_client_config_t;
@@ -127,6 +128,7 @@ typedef struct {
     1, /* reconn_exp_backoff */                       \
     0, /* enable_polling */                           \
     NULL, /* local_storage_cb */                      \
+    NULL, /* ex_data */                               \
     PC_TR_NAME_UV_TCP /* transport_name */            \
 }
 

@@ -43,3 +43,6 @@ if you enable openssl and do not use system pre-install openssl, this option is 
 
 These two options is used to configure compilation for pypomelo.
 
+- -Dbuild_jpomelo=[true|false], `false` by default.
+
+configure jpomelo compilation for java

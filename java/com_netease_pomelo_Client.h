@@ -31,8 +31,6 @@ extern "C" {
 #define com_netease_pomelo_Client_PC_RC_NOT_FOUND -10L
 #undef com_netease_pomelo_Client_PC_RC_RESET
 #define com_netease_pomelo_Client_PC_RC_RESET -11L
-#undef com_netease_pomelo_Client_PC_RC_MIN
-#define com_netease_pomelo_Client_PC_RC_MIN -12L
 #undef com_netease_pomelo_Client_PC_ST_NOT_INITED
 #define com_netease_pomelo_Client_PC_ST_NOT_INITED 0L
 #undef com_netease_pomelo_Client_PC_ST_INITED
@@ -76,10 +74,10 @@ extern "C" {
 /*
  * Class:     com_netease_pomelo_Client
  * Method:    libInit
- * Signature: (IZLjava/lang/String;Ljava/lang/String;)V
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_netease_pomelo_Client_libInit
-  (JNIEnv *, jclass, jint, jboolean, jstring, jstring);
+  (JNIEnv *, jclass, jint, jstring, jstring);
 
 /*
  * Class:     com_netease_pomelo_Client
@@ -116,10 +114,10 @@ JNIEXPORT jstring JNICALL Java_com_netease_pomelo_Client_stateToStr
 /*
  * Class:     com_netease_pomelo_Client
  * Method:    init
- * Signature: (Z)I
+ * Signature: (ZZLcom/netease/pomelo/Client/LocalStorage;)I
  */
 JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_init
-  (JNIEnv *, jobject, jboolean);
+  (JNIEnv *, jobject, jboolean, jboolean, jobject);
 
 /*
  * Class:     com_netease_pomelo_Client
