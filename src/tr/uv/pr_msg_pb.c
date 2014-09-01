@@ -22,7 +22,7 @@ pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_
     json_buf = pc_body_json_encode(msg);
 
     if (json_buf.len == -1) { 
-        // error log fprintf(stderr, "Fail to encode json for protobuf evaluate.\n");
+        pc_lib_log(PC_LOG_ERROR, "pc_body_pb_encode - dump json msg to buf error");
         buf.len = -1;
         return buf;
     }
@@ -42,8 +42,8 @@ pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_
         pc_lib_free(buf.base);
         buf.base = NULL;
         buf.len = -1;
+        pc_lib_log(PC_LOG_ERROR, "pc_body_pb_encode - failed to encode msg based on protobuf");
 
-        // fprintf(stderr, "Fail to do protobuf encode.\n");
         return buf;
     }
 
@@ -56,15 +56,10 @@ json_t *pc_body_pb_decode(const char *data, size_t offset, size_t len,
                       const json_t *gprotos, const json_t *pb_def) 
 {
     json_t *result = json_object();
-    if (!result) {
-        // fprintf(stderr, "Fail to create json_t for protobuf decode.\n");
-        return NULL;
-    }
-
     if (!pc_pb_decode((uint8_t *)(data + offset), len,
                       (json_t *)gprotos, (json_t *)pb_def, result)) {
         json_decref(result);
-        // fprintf(stderr, "Fail to do protobuf decode.\n");
+        pc_lib_log(PC_LOG_ERROR, "pc_body_pb_decode - failed to decode msg based on protobuf");
         return NULL;
     }
 

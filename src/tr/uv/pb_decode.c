@@ -100,7 +100,6 @@ int pc_pb_decode(uint8_t *buf, size_t len, const json_t *gprotos, const json_t *
         json_t *result) {
     pb_istream_t stream = pb_istream_from_buffer(buf, len);
     if (!pb_decode(&stream, gprotos, protos, result)) {
-        fprintf(stderr, "decode error\n");
         return 0;
     }
     return 1;
@@ -288,14 +287,10 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
     type = json_object_get(proto, "type");
     type_text = json_string_value(type);
     if (!result) {
-        fprintf(stderr, "error result is null pb_decode_array\n");
         return 0;
     }
     array = json_object_get(result, key);
 
-#ifdef PB_DEBUG
-    fprintf(stderr, "%s\n", json_dumps(proto, JSON_ENCODE_ANY));
-#endif
     if (!array) {
         array = json_array();
         need_decref = 1;

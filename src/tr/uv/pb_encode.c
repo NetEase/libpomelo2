@@ -96,7 +96,6 @@ static int pb_encode_submessage(pb_ostream_t *stream, const json_t *gprotos, con
 int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const json_t *gprotos, const json_t *protos, json_t *msg) {
     pb_ostream_t stream = pb_ostream_from_buffer(buf, len);
     if (!pb_encode(&stream, gprotos, protos, msg)) {
-        fprintf(stderr, "pb_encode error\n");
         return 0;
     }
     *written = stream.bytes_written;

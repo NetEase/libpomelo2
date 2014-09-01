@@ -400,14 +400,14 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
     if(pb_def) {
         body_buf = pc_body_pb_encode(json_msg, client_protos, pb_def);
         if(body_buf.len == -1) {
-            fprintf(stderr, "Fail to encode message with protobuf: %s\n", msg->route);
+            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with protobuf: %s\n", msg->route);
             goto error;
         }
     } else {
         // json encode
         body_buf = pc_body_json_encode(json_msg);
         if(body_buf.len == -1) {
-            fprintf(stderr, "Fail to encode message with json: %s\n", msg->route);
+            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with json: %s\n", msg->route);
             goto error;
         }
     }
@@ -421,14 +421,14 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
     if(route_code > 0) {
         msg_buf = pc_msg_encode_code(msg->id, type, route_code, body_buf);
         if(msg_buf.len == -1) {
-            fprintf(stderr, "Fail to encode message with route code: %d\n",
+            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - failed to encode message with route code: %d\n",
                     route_code);
             goto error;
         }
     } else {
         msg_buf = pc_msg_encode_route(msg->id, type, msg->route, body_buf);
         if(msg_buf.len == -1) {
-            fprintf(stderr, "Fail to encode message with route string: %s\n",
+            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - failed to encode message with route string: %s\n",
                     msg->route);
             goto error;
         }

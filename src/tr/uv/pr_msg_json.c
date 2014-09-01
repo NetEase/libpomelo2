@@ -7,6 +7,7 @@
 #include <jansson.h>
 
 #include "pr_msg.h"
+#include <pc_lib.h>
 
 pc_buf_t pc_body_json_encode(const json_t *msg)
 {
@@ -16,7 +17,7 @@ pc_buf_t pc_body_json_encode(const json_t *msg)
     buf.base = NULL;
     res = json_dumps(msg, JSON_COMPACT);
     if (!res) {
-        // error log 
+        pc_lib_log(PC_LOG_ERROR, "pc_body_json_encode - encode error");
         buf.len = -1;
     } else {
         buf.base = res;
@@ -31,7 +32,7 @@ json_t *pc_body_json_decode(const char *data, size_t offset, size_t len)
     json_t *res = json_loadb(data + offset, len - offset, 0, &error);
 
     if (!res) {
-        // error log
+        pc_lib_log(PC_LOG_ERROR, "pc_body_json_decode - decode error");
         return NULL;
     }
 
