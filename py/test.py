@@ -45,6 +45,8 @@ c.init(True, False, lc_callback)
 
 c.connect('127.0.0.1', 3011)
 
+time.sleep(1);
+
 c.request('connector.entryHandler.entry', '{"name": "test"}', 10, resp_callback);
 
 c.notify('test.testHandler.notify', '{"content": "test content"}', 10, notify_callback)

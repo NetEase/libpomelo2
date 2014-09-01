@@ -28,6 +28,13 @@ public class Test {
         }
     });
 
+    try {
+        Thread.sleep(1000);
+    } catch (Exception e) {
+
+    }
+ 
+
     c.request("connector.entryHandler.entry", "{\"name\": \"test\"}", 10, new Client.RequestCallback() {
         public void handle(int rc, String resp) {
             System.out.println("get resp:" + resp);
