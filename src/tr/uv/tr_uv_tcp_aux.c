@@ -69,6 +69,11 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     tt->hb_rtt = -1;
 
     uv_read_stop((uv_stream_t* )&tt->socket);
+
+    if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
+        uv_close((uv_handle_t*)&tt->socket, NULL);
+    }
+
     uv_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
@@ -587,7 +592,6 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     tcp__cleanup_json_t(&tt->handshake_opts);
 
 #define C(x) uv_close((uv_handle_t*)&tt->x, NULL)
-    C(socket);
     C(conn_timeout);
     C(reconn_delay_timer);
     C(conn_async);
