@@ -123,6 +123,8 @@
             '-ggdb',
           ],
         }],
+      ['pomelo_library=="shared_library"', {
+        'defines': ['BUILDING_PC_SHARED=1'], }],
       ['no_uv_support == "false"', {
         'sources': [
           './src/tr/uv/pr_msg.c',
