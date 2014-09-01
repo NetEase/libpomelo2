@@ -741,7 +741,6 @@ void tcp__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf
         pc_lib_log(PC_LOG_ERROR, "tcp__on_tcp_read_cb - read from tcp error: %s,"
                 "will reconn", uv_strerror(nread));
         pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "Read Error Or Close", NULL);
-        pc_lib_free(buf->base);
         tt->reconn_fn(tt);
         return;
     }
