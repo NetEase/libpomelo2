@@ -5,6 +5,8 @@
 
 #include <string.h>
 #include <jansson.h>
+
+#include <pomelo.h>
 #include <pc_lib.h>
 
 #include "pr_msg.h"

@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "jansson.h"
+#include <jansson.h>
 
 /*
  * protobuf encode

@@ -5,9 +5,9 @@
 
 #include <assert.h>
 
+#include "pr_msg.h"
 #include "tr_uv_tcp.h"
 #include "tr_uv_tcp_i.h"
-#include "pr_msg.h"
 
 static tr_uv_tcp_transport_plugin_t instance = 
 {

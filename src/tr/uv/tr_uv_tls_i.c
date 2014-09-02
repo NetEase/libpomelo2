@@ -5,11 +5,12 @@
 
 #include <assert.h>
 
+#include <pc_lib.h>
+
+#include "tr_uv_tcp_aux.h"
 #include "tr_uv_tls.h"
 #include "tr_uv_tls_i.h"
 #include "tr_uv_tls_aux.h"
-#include "tr_uv_tcp_aux.h"
-#include "pc_lib.h"
 
 pc_transport_t* tr_uv_tls_create(pc_transport_plugin_t* plugin)
 {   

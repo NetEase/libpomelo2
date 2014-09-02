@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <pomelo_trans.h>
 #include <uv.h>
 
 /**

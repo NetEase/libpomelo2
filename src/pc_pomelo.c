@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "pomelo.h"
-#include "pomelo_trans.h"
+#include <pomelo.h>
+#include <pomelo_trans.h>
+
 #include "pc_lib.h"
 #include "pc_pomelo_i.h"
 #include "pc_trans_repo.h"

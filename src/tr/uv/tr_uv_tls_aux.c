@@ -5,10 +5,11 @@
 
 #include <assert.h>
 
+#include <pc_lib.h>
+#include <pc_pomelo_i.h>
+
 #include "tr_uv_tcp_aux.h"
 #include "tr_uv_tls_aux.h"
-#include "pc_pomelo_i.h"
-#include "pc_lib.h"
 
 #define GET_TLS(x) tr_uv_tls_transport_t* tls; \
     tr_uv_tcp_transport_t * tt;          \

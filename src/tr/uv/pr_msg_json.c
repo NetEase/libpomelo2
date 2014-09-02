@@ -6,8 +6,10 @@
 #include <string.h>
 #include <jansson.h>
 
-#include "pr_msg.h"
+#include <pomelo.h>
 #include <pc_lib.h>
+
+#include "pr_msg.h"
 
 pc_buf_t pc_body_json_encode(const json_t *msg)
 {

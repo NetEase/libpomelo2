@@ -7,9 +7,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "pomelo.h"
-#include "pc_lib.h"
-#include "pc_pomelo_i.h"
+#include <pomelo.h>
+#include <pc_lib.h>
+#include <pc_pomelo_i.h>
+
 #include "tr_uv_tcp.h"
 #include "tr_uv_tcp_i.h"
 #include "tr_uv_tcp_aux.h"

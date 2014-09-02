@@ -8,8 +8,6 @@
 
 #include <stddef.h>
 
-#include "pc_mutex.h"
-
 extern void (*pc_lib_log)(int level, const char* msg, ...);
 extern void* (*pc_lib_malloc)(size_t len);
 extern void (*pc_lib_free)(void* data);

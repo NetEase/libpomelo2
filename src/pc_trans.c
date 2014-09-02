@@ -6,7 +6,8 @@
 #include <assert.h>
 #include <string.h>
 
-#include "pomelo_trans.h"
+#include <pomelo_trans.h>
+
 #include "pc_lib.h"
 #include "pc_pomelo_i.h"
 

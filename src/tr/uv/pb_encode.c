@@ -11,9 +11,11 @@
 //#define PB_INTERNALS
 //#define PB_DEBUG
 //#define __BIG_ENDIAN__
+
+#include <string.h>
+
 #include "pb.h"
 #include "pb_util.h"
-#include <string.h>
 
 /* The warn_unused_result attribute appeared first in gcc-3.4.0 */
 #if !defined(__GNUC__) || ( __GNUC__ < 3) || (__GNUC__ == 3 && __GNUC_MINOR__ < 4)

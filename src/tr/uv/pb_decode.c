@@ -19,10 +19,12 @@
 //#define __BIG_ENDIAN__
 // #define PB_DEBUG
 #define PB_INTERNALS
-#include "pb.h"
-#include "pb_util.h"
+
 #include <string.h>
 #include <stdlib.h>
+
+#include "pb.h"
+#include "pb_util.h"
 
 typedef struct _pb_istream_t pb_istream_t;
 

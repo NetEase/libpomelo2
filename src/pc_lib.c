@@ -10,9 +10,10 @@
 #include <assert.h>
 #include <time.h>
 
+#include <pomelo.h>
+#include <pomelo_trans.h>
+
 #include "pc_lib.h"
-#include "pomelo.h"
-#include "pomelo_trans.h"
 
 #if !defined(PC_NO_DUMMY_TRANS)
 #  include "tr/dummy/tr_dummy.h"

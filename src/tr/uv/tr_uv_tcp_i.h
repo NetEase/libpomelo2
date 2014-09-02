@@ -11,8 +11,8 @@
 
 #include <pomelo.h>
 #include <pomelo_trans.h>
+#include <queue.h>
 
-#include "../../queue.h"
 #include "pr_pkg.h"
 #include "pr_msg.h"
 #include "tr_uv_tcp.h"
