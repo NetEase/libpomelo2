@@ -99,7 +99,8 @@ typedef enum {
     PC_LOCAL_STORAGE_OP_READ = 0,
     PC_LOCAL_STORAGE_OP_WRITE = 1,
 } pc_local_storage_op_t;
-typedef int (*pc_local_storage_cb_t)(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data);
+typedef int (*pc_local_storage_cb_t)(pc_local_storage_op_t op,
+        char* data, size_t* len, void* ex_data);
 
 typedef struct {
     int conn_timeout;
@@ -139,7 +140,8 @@ PC_EXPORT void pc_lib_set_default_log_level(int level);
 /**
  * pc_lib_init and pc_lib_cleanup both should be invoked only once.
  */
-PC_EXPORT void pc_lib_init(void (*pc_log)(int level, const char* msg, ...), void* (*pc_alloc)(size_t len), void (*pc_free)(void* d), const char* platform);
+PC_EXPORT void pc_lib_init(void (*pc_log)(int level, const char* msg, ...),
+        void* (*pc_alloc)(size_t len), void (*pc_free)(void* d), const char* platform);
 PC_EXPORT void pc_lib_cleanup();
 
 PC_EXPORT size_t pc_client_size();
@@ -186,8 +188,10 @@ typedef void (*pc_event_cb_t)(pc_client_t *client, int ev_type, void* ex_data,
 #define PC_EV_PROTO_ERROR 7
 #define PC_EV_COUNT 8
 
-PC_EXPORT int pc_client_add_ev_handler(pc_client_t* client, int ev_type, void* ex_data, const char* push_route, pc_event_cb_t cb);
-PC_EXPORT int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, const char* push_route, pc_event_cb_t cb);
+PC_EXPORT int pc_client_add_ev_handler(pc_client_t* client, int ev_type,
+        void* ex_data, const char* push_route, pc_event_cb_t cb);
+PC_EXPORT int pc_client_rm_ev_handler(pc_client_t* client, int ev_type,
+        void* ex_data, const char* push_route, pc_event_cb_t cb);
 
 /**
  * Request
@@ -212,8 +216,8 @@ PC_EXPORT void* pc_request_ex_data(const pc_request_t* req);
 /**
  * Initiate a request.
  */
-PC_EXPORT int pc_request_with_timeout(pc_client_t* client, const char* route, const char* msg,
-        void* ex_data, int timeout, pc_request_cb_t cb);
+PC_EXPORT int pc_request_with_timeout(pc_client_t* client, const char* route,
+        const char* msg, void* ex_data, int timeout, pc_request_cb_t cb);
 
 /**
  * Notify
@@ -238,8 +242,8 @@ PC_EXPORT void* pc_notify_ex_data(const pc_notify_t* notify);
 /**
  * Initiate a notify.
  */
-PC_EXPORT int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* msg,
-        void* ex_data, int timeout, pc_notify_cb_t cb);
+PC_EXPORT int pc_notify_with_timeout(pc_client_t* client, const char* route,
+        const char* msg, void* ex_data, int timeout, pc_notify_cb_t cb);
 
 /**
  * Utilities
