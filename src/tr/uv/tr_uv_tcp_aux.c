@@ -80,6 +80,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
         q = QUEUE_HEAD(&tt->conn_pending_queue);
         QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
 
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
         tcp__reset_wi(tt->client, wi);
@@ -88,6 +89,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     while(!QUEUE_EMPTY(&tt->write_wait_queue)) {
         q = QUEUE_HEAD(&tt->write_wait_queue);
         QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
 
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
         tcp__reset_wi(tt->client, wi);
@@ -96,6 +98,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
         q = QUEUE_HEAD(&tt->writing_queue);
         QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
 
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
         tcp__reset_wi(tt->client, wi);
@@ -104,6 +107,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     while(!QUEUE_EMPTY(&tt->resp_pending_queue)) {
         q = QUEUE_HEAD(&tt->resp_pending_queue);
         QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
 
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
         tcp__reset_wi(tt->client, wi);
