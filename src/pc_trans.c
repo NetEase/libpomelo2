@@ -178,9 +178,9 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
 {
     QUEUE* q;
     pc_notify_t* notify;
+    pc_notify_t* target;
     pc_event_t* ev;
     int i;
-    int flag;
 
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
@@ -217,8 +217,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
 
     // callback immediately
     pc_mutex_lock(&client->notify_mutex);
-
-    flag = 0;
+    target = NULL;
     QUEUE_FOREACH(q, &client->notify_queue) {
         notify = (pc_notify_t* )QUEUE_DATA(q, pc_common_req_t, queue);
         if (notify->base.seq_num = seq_num) {
@@ -226,29 +225,36 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
             pc_lib_log(PC_LOG_INFO, "pc_trans_sent - fire sent event, seq_num: %u, rc: %s",
                     seq_num, pc_client_rc_str(rc));
             
-            flag = 1;
-            notify->cb(notify, rc);
+            target = notify;
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
-            pc_lib_free((char*)notify->base.msg);
-            pc_lib_free((char*)notify->base.route);
-
-            notify->base.msg = NULL;
-            notify->base.route = NULL;
-
-            if (PC_IS_PRE_ALLOC(notify->base.type)) {
-                PC_PRE_ALLOC_SET_IDLE(notify->base.type);
-            } else {
-                pc_lib_free(notify);
-            }
-
             break;
         }
     }
     pc_mutex_unlock(&client->notify_mutex);
 
-    if (!flag)
-        pc_lib_log(PC_LOG_ERROR, "pc_trans_sent - no pending notify found when transport has sent it, seq num: %u", seq_num);
+    if (target) {
+        target->cb(target, rc);
+        pc_lib_free((char*)target->base.msg);
+        pc_lib_free((char*)target->base.route);
+
+        target->base.msg = NULL;
+        target->base.route = NULL;
+
+        if (PC_IS_PRE_ALLOC(target->base.type)) {
+
+            pc_mutex_lock(&client->notify_mutex);
+            PC_PRE_ALLOC_SET_IDLE(target->base.type);
+            pc_mutex_unlock(&client->notify_mutex);
+
+        } else {
+            pc_lib_free(target);
+        }
+
+    } else {
+        pc_lib_log(PC_LOG_ERROR, "pc_trans_sent - no pending notify found"
+                " when transport has sent it, seq num: %u", seq_num);
+    }
 }
 
 void pc_trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char* resp)
@@ -272,8 +278,8 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
     QUEUE* q;
     pc_request_t* req;
     pc_event_t* ev;
+    pc_request_t* target;
     int i;
-    int flag;
 
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
@@ -310,8 +316,8 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
     }
 
     // invoke callback immediately
+    target = NULL;
     pc_mutex_lock(&client->req_mutex);
-    flag = 0;
     QUEUE_FOREACH(q, &client->req_queue) {
         req= (pc_request_t* )QUEUE_DATA(q, pc_common_req_t, queue);
         if (req->req_id = req_id) {
@@ -319,30 +325,35 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
             pc_lib_log(PC_LOG_INFO, "pc_trans_resp - fire resp event, req_id: %u, rc: %s",
                     req_id, pc_client_rc_str(rc));
 
-            flag = 1;
-            req->cb(req, rc, resp);
+            target = req;
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
-
-            pc_lib_free((char*)req->base.msg);
-            pc_lib_free((char*)req->base.route);
-
-            req->base.msg = NULL;
-            req->base.route = NULL;
-
-            if (PC_IS_PRE_ALLOC(req->base.type)) {
-                PC_PRE_ALLOC_SET_IDLE(req->base.type);
-            } else {
-                pc_lib_free(req);
-            }
-
             break;
         }
     }
     pc_mutex_unlock(&client->req_mutex);
 
-    if (!flag) {
-        pc_lib_log(PC_LOG_ERROR, "pc_trans_resp - no pending request found when get a response, req id: %u", req_id);
+    if (target) {
+        target->cb(target, rc, resp);
+
+        pc_lib_free((char*)target->base.msg);
+        pc_lib_free((char*)target->base.route);
+
+        target->base.msg = NULL;
+        target->base.route = NULL;
+
+        if (PC_IS_PRE_ALLOC(target->base.type)) {
+
+            pc_mutex_lock(&client->req_mutex);
+            PC_PRE_ALLOC_SET_IDLE(target->base.type);
+            pc_mutex_unlock(&client->req_mutex);
+
+        } else {
+            pc_lib_free(target);
+        }
+    } else {
+        pc_lib_log(PC_LOG_ERROR, "pc_trans_resp - no pending request found when"
+            " get a response, req id: %u", req_id);
     }
 }
 
