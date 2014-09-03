@@ -75,7 +75,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
         uv_close((uv_handle_t*)&tt->socket, NULL);
     }
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
         q = QUEUE_HEAD(&tt->conn_pending_queue);
@@ -109,7 +109,7 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
         tcp__reset_wi(tt->client, wi);
     }
 
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     tt->state = TR_UV_TCP_NOT_CONN;
 }
@@ -330,7 +330,7 @@ void tcp__write_async_cb(uv_async_t* a)
         return;
     }
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
@@ -355,7 +355,7 @@ void tcp__write_async_cb(uv_async_t* a)
     }
 
     if (buf_cnt == 0) {
-        uv_mutex_unlock(&tt->wq_mutex);
+        pc_mutex_unlock(&tt->wq_mutex);
         return ;
     }
 
@@ -381,7 +381,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
     assert(i == buf_cnt);
 
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     tt->write_req.data = tt;
 
@@ -392,7 +392,7 @@ void tcp__write_async_cb(uv_async_t* a)
     if (ret) {
         pc_lib_log(PC_LOG_ERROR, "tcp__write_async_cb - uv write error: %s", uv_strerror(ret));
 
-        uv_mutex_lock(&tt->wq_mutex);
+        pc_mutex_lock(&tt->wq_mutex);
         while(!QUEUE_EMPTY(&tt->writing_queue)) {
             q = QUEUE_HEAD(&tt->writing_queue); 
             QUEUE_REMOVE(q);
@@ -419,7 +419,7 @@ void tcp__write_async_cb(uv_async_t* a)
                 pc_lib_free(wi);
             }
         }
-        uv_mutex_unlock(&tt->wq_mutex);
+        pc_mutex_unlock(&tt->wq_mutex);
         return ;
     }
 
@@ -450,7 +450,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
     status = status == 0 ? PC_RC_OK : PC_RC_ERROR;
 
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
         q = QUEUE_HEAD(&tt->writing_queue); 
@@ -487,7 +487,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
             pc_lib_free(wi);
         }
     }
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     uv_async_send(&tt->write_async);
 }
@@ -556,10 +556,10 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
 
     cont = 0;
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont); 
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     cont = tcp__check_queue_timeout(&tt->writing_queue, tt->client, cont);
     cont = tcp__check_queue_timeout(&tt->resp_pending_queue, tt->client, cont);
@@ -605,7 +605,7 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     C(hb_timeout_timer);
 #undef C
 
-    uv_mutex_destroy(&tt->wq_mutex);
+    pc_mutex_destroy(&tt->wq_mutex);
 
     tcp__cleanup_json_t(&tt->route_to_code);
     tcp__cleanup_json_t(&tt->code_to_route);
@@ -640,7 +640,7 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
 
     assert(buf.len && buf.base);
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
@@ -658,7 +658,7 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     QUEUE_INIT(&wi->queue);
     QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
     wi->seq_num = -1; // internal data
@@ -891,7 +891,7 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     json_decref(body);
 
     wi = NULL;
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
@@ -911,7 +911,7 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
 
     // insert to head
     QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
     wi->seq_num = -1; //internal data
@@ -1140,7 +1140,7 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
 
     assert(buf.base && buf.len);
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
@@ -1158,7 +1158,7 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     QUEUE_INIT(&wi->queue);
     QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
     wi->seq_num = -1; //internal data

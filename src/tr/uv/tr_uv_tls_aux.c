@@ -293,7 +293,7 @@ void tls__write_done_cb(uv_write_t* w, int status)
 
     status = status ? PC_RC_ERROR : PC_RC_OK;
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
         q = QUEUE_HEAD(&tt->writing_queue); 
         QUEUE_REMOVE(q);
@@ -327,7 +327,7 @@ void tls__write_done_cb(uv_write_t* w, int status)
             pc_lib_free(wi);
         }
     }
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
     tls__write_to_tcp(tls);
 }
 
@@ -376,9 +376,9 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
         tls->should_retry = NULL;
     }
 
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     cont = tcp__check_queue_timeout(&tls->when_tcp_is_writing_queue, tt->client, cont);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     if (cont && !uv_is_active((uv_handle_t* )t)) {
         uv_timer_start(t, tt->write_check_timeout_cb, PC_TIMEOUT_CHECK_INTERVAL* 1000, 0);

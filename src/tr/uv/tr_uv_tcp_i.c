@@ -162,7 +162,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
     tt->handshake_opts = NULL; 
 
     // onle write wait queue need a mutex.
-    uv_mutex_init(&tt->wq_mutex);
+    pc_mutex_init(&tt->wq_mutex);
     ret = uv_async_init(&tt->uv_loop, &tt->write_async, tt->write_async_cb);
     assert(!ret);
     tt->write_async.data = tt;
@@ -369,7 +369,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     }
 
     wi = NULL;
-    uv_mutex_lock(&tt->wq_mutex);
+    pc_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
             wi = &tt->pre_wis[i];
@@ -410,7 +410,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     wi->ts = time(NULL);
 
     pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - seq num: %u, req_id: %u", seq_num, req_id);
-    uv_mutex_unlock(&tt->wq_mutex);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     if (tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE) {
         uv_async_send(&tt->write_async);

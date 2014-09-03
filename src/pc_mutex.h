@@ -6,6 +6,11 @@
 #ifndef PC_MUTEX_H
 #define PC_MUTEX_H
 
+#include <assert.h>
+
+/*
+ * pc_mutex_t is recursive
+ */
 #ifdef _WIN32
 
 #include <windows.h>
@@ -42,30 +47,34 @@ typedef pthread_mutex_t pc_mutex_t;
 
 static inline void pc_mutex_init(pc_mutex_t* mutex)
 {
-    if (pthread_mutex_init(mutex, NULL)) {
-        abort();
-    }
+    pthread_mutexattr_t attr;
+    int ret;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+
+    ret = pthread_mutex_init(mutex, &attr);
+    assert(!ret);
 }
 
 static inline void pc_mutex_lock(pc_mutex_t* mutex)
 {
-    if (pthread_mutex_lock(mutex)) {
-        abort();
-    }
+    int ret;
+    ret = pthread_mutex_lock(mutex);
+    assert(!ret);
 }
 
 static inline void pc_mutex_unlock(pc_mutex_t* mutex)
 {
-    if (pthread_mutex_unlock(mutex)) {
-        abort();
-    }
+    int ret;
+    ret = pthread_mutex_unlock(mutex);
+    assert(!ret);
 }
 
 static inline void pc_mutex_destroy(pc_mutex_t* mutex)
 {
-    if (pthread_mutex_destroy(mutex)) {
-        abort();
-    }
+    int ret;
+    ret = pthread_mutex_destroy(mutex);
+    assert(!ret);
 }
 
 #endif

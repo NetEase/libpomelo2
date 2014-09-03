@@ -11,6 +11,7 @@
 
 #include <pomelo.h>
 #include <pomelo_trans.h>
+#include <pc_mutex.h>
 #include <queue.h>
 
 #include "pr_pkg.h"
@@ -101,7 +102,7 @@ typedef struct tr_uv_tcp_transport_s {
     int port;
     json_t *handshake_opts;
 
-    uv_mutex_t wq_mutex;
+    pc_mutex_t wq_mutex;
     uv_async_t write_async;
     QUEUE conn_pending_queue;
     QUEUE write_wait_queue;
