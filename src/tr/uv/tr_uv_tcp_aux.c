@@ -3,6 +3,10 @@
  * MIT Licensed.
  */
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -130,13 +134,14 @@ void tcp__reconn_delay_timer_cb(uv_timer_t* t)
 void tcp__reconn(tr_uv_tcp_transport_t* tt)
 {
     int timeout;
+    const pc_client_config_t* config;
     assert(tt && tt->reset_fn);
 
     tt->reset_fn(tt);
 
-    tt->state == TR_UV_TCP_CONNECTING;
+    tt->state = TR_UV_TCP_CONNECTING;
 
-    const pc_client_config_t* config = tt->config;
+    config = tt->config;
 
     if (!config->enable_reconn) {
          pc_lib_log(PC_LOG_WARN, "tcp__reconn - trans want to reconn, but reconn is disabled");
@@ -325,6 +330,7 @@ void tcp__write_async_cb(uv_async_t* a)
     int ret;
     QUEUE* q;
     tr_uv_wi_t* wi;
+    uv_buf_t* bufs;
     GET_TT(a);
 
     assert(tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE);
@@ -363,7 +369,7 @@ void tcp__write_async_cb(uv_async_t* a)
         return ;
     }
 
-    uv_buf_t* bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt); 
+    bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt); 
 
     i = 0;
     while (!QUEUE_EMPTY(&tt->write_wait_queue)) {

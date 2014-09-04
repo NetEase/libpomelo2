@@ -58,7 +58,7 @@ typedef struct {
     pc_buf_t body;
 } pc__msg_raw_t;
 
-static inline const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
+static __inline const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
 {
     char code_str[16];
     memset(code_str, 0, 16);
@@ -72,6 +72,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     size_t len = buf->len;
     pc__msg_raw_t *msg = NULL;
     char *route_str = NULL;
+    size_t body_len;
 
     msg = (pc__msg_raw_t *)pc_lib_malloc(sizeof(pc__msg_raw_t));
     memset(msg, 0, sizeof(pc__msg_raw_t));
@@ -137,7 +138,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     }
 
     // borrow memory from original pc_buf_t 
-    size_t body_len = len - offset;
+    body_len = len - offset;
     msg->body.base = (char* )data + offset;
     msg->body.len = body_len;
 

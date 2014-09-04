@@ -3,6 +3,10 @@
  * MIT Licensed.
  */
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -19,12 +23,11 @@
 
 pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
 {   
-    (void*)plugin; // unused
-
     size_t len = sizeof(tr_uv_tcp_transport_t);
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(sizeof(tr_uv_tcp_transport_t));
     memset(tt, 0, len);
 
+    (void*)plugin; // unused
     tt->base.connect = tr_uv_tcp_connect;
     tt->base.send = tr_uv_tcp_send;
     tt->base.disconnect = tr_uv_tcp_disconnect; 
@@ -222,13 +225,14 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 
         ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, NULL, &len, tt->config->ex_data);
         if (!ret) {
-            assert(len > 0);
+            
             json_t* lc = NULL;
             json_error_t err;
             json_t* tmp;
             char* buf;
             size_t len2;
 
+            assert(len > 0);
             buf = (char* )pc_lib_malloc(len);
             memset(buf, 0, len);
 

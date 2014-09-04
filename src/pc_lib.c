@@ -57,6 +57,7 @@ static void default_log(int level, const char* msg, ...)
 {
     time_t t = time(NULL);
     char buf[32];
+    va_list va;
 
     if (level < pc__default_log_level) {
         return;
@@ -79,7 +80,6 @@ static void default_log(int level, const char* msg, ...)
         break;
     }
 
-    va_list va;
     va_start(va, msg);
     vprintf(msg, va);
     va_end(va);
