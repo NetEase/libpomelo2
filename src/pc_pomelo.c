@@ -566,7 +566,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     }
 
     if (!req) {
-        req = pc_lib_malloc(sizeof(pc_request_t));
+        req = (pc_request_t* )pc_lib_malloc(sizeof(pc_request_t));
         memset(req, 0, sizeof(pc_request_t));
         
         pc_lib_log(PC_LOG_DEBUG, "pc_request_with_timeout - use dynamic alloc request");
@@ -700,7 +700,7 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
     }
 
     if (!notify) {
-        notify = pc_lib_malloc(sizeof(pc_notify_t));
+        notify = (pc_notify_t* )pc_lib_malloc(sizeof(pc_notify_t));
         memset(notify, 0, sizeof(pc_notify_t));
 
         pc_lib_log(PC_LOG_DEBUG, "pc_notify_with_timeout - use dynamic alloc notify");

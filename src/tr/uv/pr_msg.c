@@ -155,6 +155,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     const char *route_str = NULL;
     json_t* json_msg = NULL;
     const char* data = NULL;
+    pc_buf_t body;
 
     pc_msg_t msg;
     memset(&msg, 0, sizeof(pc_msg_t));
@@ -196,7 +197,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     }
 
     // body.base is within msg
-    pc_buf_t body = raw_msg->body;
+    body = raw_msg->body;
     if(body.len > 0) {
         // response message has no route 
         if (!msg.route) {

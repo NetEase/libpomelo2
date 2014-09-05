@@ -11,6 +11,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
 
 #include <pc_lib.h>
 #include <pc_pomelo_i.h>
@@ -19,7 +20,7 @@
 #include "tr_uv_tcp_i.h"
 #include "pr_pkg.h"
 
-#define GET_TT(x) tr_uv_tcp_transport_t* tt = x->data; assert(tt) 
+#define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt) 
 
 #define TR_UV_INTERNAL_PKG_TIMEOUT 30
 
@@ -285,7 +286,11 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         // and use it as the timeout value of handshake.
         //
         // it maybe lead to be non-compatiable to uv in future.
+#ifdef _WIN32
+        hb_timeout = tt->conn_timeout.due - tt->uv_loop.time;
+#else
         hb_timeout = tt->conn_timeout.timeout - tt->uv_loop.time;
+#endif
         uv_timer_stop(&tt->conn_timeout);
     }
 
@@ -693,7 +698,11 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     assert(uv_is_active((uv_handle_t*)&tt->hb_timeout_timer));
 
     // we hacking uv timer to get the heartbeat rtt, rtt in millisec
+#ifdef _WIN32
+    start = tt->hb_timeout_timer.due - tt->hb_timeout * 1000;
+#else
     start = tt->hb_timeout_timer.timeout - tt->hb_timeout * 1000;
+#endif
     rtt = tt->uv_loop.time - start;
 
     uv_timer_stop(&tt->hb_timeout_timer);
@@ -780,7 +789,7 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
     uv_buf_t buf;
     QUEUE* q;
     tr_uv_wi_t* wi = NULL;
-    tr_uv_tcp_transport_plugin_t* plugin = (tr_uv_tcp_transport_plugin_t* )tt->base.plugin(tt);
+    tr_uv_tcp_transport_plugin_t* plugin = (tr_uv_tcp_transport_plugin_t* )tt->base.plugin((pc_transport_t*)tt);
 
     buf.base = (char* )data;
     buf.len = len;

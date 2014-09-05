@@ -64,7 +64,7 @@ static int dummy_cleanup(pc_transport_t* trans)
     pc_transport_plugin_t* plugin;
     assert(trans);
 
-    plugin = trans->plugin();
+    plugin = trans->plugin(trans);
     assert(plugin);
 
     plugin->transport_release(plugin, trans);

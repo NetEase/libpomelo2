@@ -44,5 +44,8 @@ int pb__get_constant_type(const char *type);
 #define PB_GET_ERROR(stream) ((stream)->errmsg ? (stream)->errmsg : "(none)")
 #endif
 
+int pb_get_type(const char *type);
+int pb_get_constant_type(const char *type);
+
 #endif
 

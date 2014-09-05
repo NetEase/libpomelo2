@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #  if defined(BUILDING_PC_SHARED)
 #    define PC_EXPORT __declspec(dllexport)
 #  else

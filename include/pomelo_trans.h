@@ -37,7 +37,7 @@ struct pc_transport_s {
 
     void* (*internal_data)(pc_transport_t* trans); /* optional */
     int (*quality)(pc_transport_t* trans); /* optional */
-    pc_transport_plugin_t* (*plugin)();
+    pc_transport_plugin_t* (*plugin)(pc_transport_t* trans);
 };
 
 struct pc_transport_plugin_s {
