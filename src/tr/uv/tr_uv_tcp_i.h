@@ -65,7 +65,7 @@ typedef enum {
     TR_UV_TCP_DONE
 } tr_uv_tcp_state_t;
 
-typedef struct tr_uv_tcp_transport_s {
+struct tr_uv_tcp_transport_s {
     pc_transport_t base;
 
     void (*reset_fn)(tr_uv_tcp_transport_t* tt);
@@ -141,7 +141,7 @@ typedef struct tr_uv_tcp_transport_s {
     json_t *client_protos;
     json_t *proto_ver;
 
-} tr_uv_tcp_transport_t;
+};
 
 typedef struct {
     pc_transport_plugin_t base;
