@@ -47,9 +47,9 @@ void notify_cb(const pc_notify_t* noti, int rc)
 
 int main()
 {
+    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
     pc_lib_init(NULL, NULL, NULL, NULL);
 
-    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
     config.transport_name = PC_TR_NAME_DUMMY;
     
     client = (pc_client_t*)malloc(pc_client_size());
