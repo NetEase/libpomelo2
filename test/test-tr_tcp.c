@@ -22,7 +22,7 @@ static pc_client_t* client;
 #define EV_HANDLER_EX ((void*)0x44)
 #define SERVER_PUSH "onPush"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define SLEEP(x) Sleep(x * 1000);
 #else
@@ -107,13 +107,13 @@ static void notify_cb(const pc_notify_t* noti, int rc)
 
 int main()
 {
+    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
     pc_lib_init(NULL, NULL, NULL, NULL);
     
     client = (pc_client_t*)malloc(pc_client_size());
 
     PC_TEST_ASSERT(client);
 
-    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
     config.local_storage_cb = local_storage_cb;
     pc_client_init(client, (void*)0x11, &config);
     

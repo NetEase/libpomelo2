@@ -244,6 +244,7 @@ void json_object_seed(size_t seed) {
     }
 }
 #elif defined(_WIN32)
+#include <windows.h>
 static long seed_initialized = 0;
 void json_object_seed(size_t seed) {
     uint32_t new_seed = (uint32_t)seed;
