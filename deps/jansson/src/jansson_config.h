@@ -21,15 +21,13 @@
 /* If your compiler supports the inline keyword in C, JSON_INLINE is
    defined to `inline', otherwise empty. In C++, the inline is always
    supported. */
-#ifdef __cplusplus
-#define JSON_INLINE inline
+
+#ifdef _WIN32
+#define JSON_INLINE __inline
 #else
-   #ifdef WIN32
-	#define JSON_INLINE __inline
-   #else
-   	#define JSON_INLINE inline
-   #endif
+#define JSON_INLINE inline
 #endif
+
 
 /* If your compiler supports the `long long` type and the strtoll()
    library function, JSON_INTEGER_IS_LONG_LONG is defined to 1,
