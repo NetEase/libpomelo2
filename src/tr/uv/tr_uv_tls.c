@@ -5,6 +5,8 @@
 
 #include <assert.h>
 
+#include <pc_lib.h>
+
 #include "pr_msg.h"
 #include "tr_uv_tls.h"
 #include "tr_uv_tls_i.h"
