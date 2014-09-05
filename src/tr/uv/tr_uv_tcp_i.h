@@ -18,8 +18,6 @@
 #include "pr_msg.h"
 #include "tr_uv_tcp.h"
 
-typedef struct tr_uv_tcp_transport_s tr_uv_tcp_transport_t;
-
 #define TR_UV_WI_TYPE_NONE 0x10
 #define TR_UV_WI_TYPE_NOTIFY 0x20
 #define TR_UV_WI_TYPE_RESP 0x40
