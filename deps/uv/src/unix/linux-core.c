@@ -44,6 +44,8 @@
 # endif
 #endif
 
+#undef HAVE_IFADDRS_H
+
 #ifdef HAVE_IFADDRS_H
 # if defined(__ANDROID__)
 #  include "android-ifaddrs.h"
@@ -819,6 +821,8 @@ void uv_free_interface_addresses(uv_interface_address_t* addresses,
   free(addresses);
 }
 
+
+#undef PR_SET_NAME
 
 void uv__set_process_title(const char* title) {
 #if defined(PR_SET_NAME)
