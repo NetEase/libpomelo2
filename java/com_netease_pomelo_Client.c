@@ -34,7 +34,7 @@ static void default_request_cb(const pc_request_t* req, int rc, const char* resp
     enable_polling = pc_client_config(client)->enable_polling;
 
     if (!enable_polling) {
-        ret = (*g_vm)->AttachCurrentThread(g_vm, (void**)&env, NULL);
+        ret = (*g_vm)->AttachCurrentThread(g_vm, &env, NULL);
         assert(!ret);
     } else {
         ret = (*g_vm)->GetEnv(g_vm, (void**)&env, JNI_VERSION_1_4);
@@ -76,7 +76,7 @@ static void default_notify_cb(const pc_notify_t* notify, int rc)
     enable_polling = pc_client_config(client)->enable_polling;
 
     if (!enable_polling) {
-        ret = (*g_vm)->AttachCurrentThread(g_vm, (void**)&env, NULL);
+        ret = (*g_vm)->AttachCurrentThread(g_vm, &env, NULL);
         assert(!ret);
     } else {
         ret = (*g_vm)->GetEnv(g_vm, (void**)&env, JNI_VERSION_1_4);
@@ -115,7 +115,7 @@ static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, co
     enable_polling = pc_client_config(client)->enable_polling;
 
     if (!enable_polling) {
-        ret = (*g_vm)->AttachCurrentThread(g_vm, (void**)&env, NULL);
+        ret = (*g_vm)->AttachCurrentThread(g_vm, &env, NULL);
         assert(!ret);
     } else {
         ret = (*g_vm)->GetEnv(g_vm, (void**)&env, JNI_VERSION_1_4);
@@ -157,7 +157,7 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
 
     if ((*g_vm)->GetEnv(g_vm, (void**)&env, JNI_VERSION_1_4) == JNI_EDETACHED) {
         assert(!env);
-        ret = (*g_vm)->AttachCurrentThread(g_vm, (void**)&env, NULL);
+        ret = (*g_vm)->AttachCurrentThread(g_vm, &env, NULL);
         assert(!ret);
         assert(env);
         shoud_detach = 1;

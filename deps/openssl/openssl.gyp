@@ -939,9 +939,6 @@
             'HAVE_DLFCN_H'
           ],
         }],
-        ['target_arch=="arm"', {
-          'sources': ['openssl/crypto/armcap.c'],
-        }],
       ],
       'include_dirs': [
         '.',
