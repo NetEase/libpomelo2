@@ -44,6 +44,8 @@ c = Client()
 # disable tls, enable poll
 c.init(False, True, lc_callback)
 
+handler_id = c.add_ev_handler(event_callback)
+
 c.connect('127.0.0.1', 3010)
 
 time.sleep(1);
@@ -51,8 +53,6 @@ time.sleep(1);
 c.request('connector.entryHandler.entry', '{"name": "test"}', 10, resp_callback);
 
 c.notify('test.testHandler.notify', '{"content": "test content"}', 10, notify_callback)
-
-handler_id = c.add_ev_handler(event_callback)
 
 time.sleep(10)
 
