@@ -69,7 +69,8 @@ typedef struct {
 typedef struct {
     QUEUE queue;
     void* ex_data;
-    const char* push_route;
+    void (*destructor)(void* ex_data);
+    int handler_id;
     pc_event_cb_t cb;
 } pc_ev_handler_t;
 
@@ -123,7 +124,7 @@ struct pc_client_s {
     pc_transport_t* trans;
 
     pc_mutex_t handler_mutex;
-    QUEUE ev_handlers[PC_EV_COUNT];
+    QUEUE ev_handlers;
 
     pc_mutex_t notify_mutex;
     unsigned int seq_num;

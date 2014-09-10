@@ -14,6 +14,29 @@
 
 static JavaVM* g_vm = NULL;
 
+static void default_handler_destructor(void* ex_data)
+{
+    jobject ev_cb = (jobject) ex_data;
+    JNIEnv* env = NULL;
+    int ret;
+    int shoud_detach = 0;
+
+    if ((*g_vm)->GetEnv(g_vm, (void**)&env, JNI_VERSION_1_4) == JNI_EDETACHED) {
+        assert(!env);
+        ret = (*g_vm)->AttachCurrentThread(g_vm, &env, NULL);
+
+        assert(!ret);
+        assert(env);
+        shoud_detach = 1;
+    }
+
+    (*env)->DeleteGlobalRef(env, ev_cb);
+
+    if (shoud_detach) {
+        (*g_vm)->DetachCurrentThread(g_vm);
+    }
+}
+
 static void default_request_cb(const pc_request_t* req, int rc, const char* resp)
 {
     assert(g_vm);
@@ -511,31 +534,26 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_destroy
     return ret;
 }
 
+
 /*
  * Class:     com_netease_pomelo_Client
  * Method:    addEventHandler
  * Signature: (ILjava/lang/String;Lcom/netease/pomelo/Client/EventHandler;)I
  */
 JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_addEventHandler
-  (JNIEnv *env, jobject obj, jint ev, jstring route, jobject handler)
+  (JNIEnv *env, jobject obj, jobject handler)
 {
     jobject handler_g;
     const char* route_str = NULL;
     int ret;
     GET_CLIENT;
 
-    if (route) {
-        route_str = (*env)->GetStringUTFChars(env, route, NULL);
-    }
     handler_g = (*env)->NewGlobalRef(env, handler);
     
-    ret = pc_client_add_ev_handler(client, ev, handler_g, route_str, default_event_cb);
-    
-    if (route) {
-        (*env)->ReleaseStringUTFChars(env, route, route_str);
-    }
+    ret = pc_client_add_ev_handler(client, default_event_cb,
+            handler_g, default_handler_destructor);
 
-    if (ret != PC_RC_OK) {
+    if (ret == PC_EV_INVALID_HANDLER_ID) {
         (*env)->DeleteGlobalRef(env, handler_g);
     }
 
@@ -548,12 +566,11 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_addEventHandler
  * Signature: (ILjava/lang/String;Lcom/netease/pomelo/Client/EventHandler;)I
  */
 JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_rmEventHandler
-  (JNIEnv *env, jobject obj, jint ev, jstring route, jobject handler)
+  (JNIEnv *env, jobject obj, jint id)
 {
-    /**
-     * not supported here.
-     */
-    return PC_RC_OK;
+    GET_CLIENT;
+
+    return pc_client_rm_ev_handler(client, id);
 }
 
 #undef GET_CLIENT

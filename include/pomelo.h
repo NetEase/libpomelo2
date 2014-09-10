@@ -188,10 +188,11 @@ typedef void (*pc_event_cb_t)(pc_client_t *client, int ev_type, void* ex_data,
 #define PC_EV_PROTO_ERROR 7
 #define PC_EV_COUNT 8
 
-PC_EXPORT int pc_client_add_ev_handler(pc_client_t* client, int ev_type,
-        void* ex_data, const char* push_route, pc_event_cb_t cb);
-PC_EXPORT int pc_client_rm_ev_handler(pc_client_t* client, int ev_type,
-        void* ex_data, const char* push_route, pc_event_cb_t cb);
+#define PC_EV_INVALID_HANDLER_ID -1
+
+PC_EXPORT int pc_client_add_ev_handler(pc_client_t* client, pc_event_cb_t cb,
+        void* ex_data, void (*destructor)(void* ex_data));
+PC_EXPORT int pc_client_rm_ev_handler(pc_client_t* client, int id);
 
 /**
  * Request

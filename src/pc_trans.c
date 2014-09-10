@@ -144,19 +144,12 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
 
     // invoke handler
     pc_mutex_lock(&client->handler_mutex);
-
-    QUEUE_FOREACH(q, &client->ev_handlers[ev_type]) {
+    QUEUE_FOREACH(q, &client->ev_handlers) {
         handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
-        assert(handler->cb);
-       
-        if (ev_type != PC_EV_USER_DEFINED_PUSH) { 
-            handler->cb(client, ev_type, handler->ex_data, arg1, arg2);
-        } else {
-            if (!strcmp(handler->push_route, arg1))
-               handler->cb(client, ev_type, handler->ex_data, arg1, arg2);
-        }
-   }
-   pc_mutex_unlock(&client->handler_mutex);
+        assert(handler && handler->cb);
+        handler->cb(client, ev_type, handler->ex_data, arg1, arg2);
+    }
+    pc_mutex_unlock(&client->handler_mutex);
 }
 
 void pc_trans_sent(pc_client_t* client, unsigned int seq_num, int rc)

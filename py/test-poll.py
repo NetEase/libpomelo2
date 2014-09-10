@@ -52,13 +52,13 @@ c.request('connector.entryHandler.entry', '{"name": "test"}', 10, resp_callback)
 
 c.notify('test.testHandler.notify', '{"content": "test content"}', 10, notify_callback)
 
-c.add_ev_handler(Client.PC_EV_USER_DEFINED_PUSH, "onPush", event_callback)
+handler_id = c.add_ev_handler(event_callback)
 
 time.sleep(10)
 
 c.poll()
 
-c.rm_ev_handler(Client.PC_EV_USER_DEFINED_PUSH, "onPush", event_callback)
+c.rm_ev_handler(handler_id)
 
 time.sleep(10)
 

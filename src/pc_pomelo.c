@@ -81,9 +81,7 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
     client->ex_data = ex_data;
 
     pc_mutex_init(&client->handler_mutex);
-    for (i = 0; i < PC_EV_COUNT; ++i) {
-        QUEUE_INIT(&client->ev_handlers[i]);
-    }
+    QUEUE_INIT(&client->ev_handlers);
 
     pc_mutex_init(&client->req_mutex);
     pc_mutex_init(&client->notify_mutex);
@@ -275,16 +273,18 @@ int pc_client_cleanup(pc_client_t* client)
     assert(QUEUE_EMPTY(&client->req_queue));
     assert(QUEUE_EMPTY(&client->notify_queue));
     
-    for (i = 0; i < PC_EV_COUNT; ++i) {
-        while(!QUEUE_EMPTY(&client->ev_handlers[i])) {
-            q = QUEUE_HEAD(&client->ev_handlers[i]);
-            QUEUE_REMOVE(q);
-            QUEUE_INIT(q);
+    while(!QUEUE_EMPTY(&client->ev_handlers)) {
+        q = QUEUE_HEAD(&client->ev_handlers);
+        QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
 
-            handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
-            pc_lib_free((char* )handler->push_route);
-            pc_lib_free(handler);
+        handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
+
+        if (handler->destructor) {
+            handler->destructor(handler->ex_data);
         }
+
+        pc_lib_free(handler);
     }
 
     pc_mutex_destroy(&client->req_mutex);
@@ -369,20 +369,15 @@ int pc_client_poll(pc_client_t* client)
     return PC_RC_OK;
 }
 
-int pc_client_add_ev_handler(pc_client_t* client, int ev_type, void* ex_data, const char* push_route, pc_event_cb_t cb)
+int pc_client_add_ev_handler(pc_client_t* client, pc_event_cb_t cb,
+        void* ex_data, void (*destructor)(void* ex_data))
 {
     pc_ev_handler_t* handler;
-    size_t len;
-    QUEUE* head;
+    static handler_id = 0;
 
-    if (!client || ev_type < 0 || ev_type >= PC_EV_COUNT || !cb) {
+    if (!client || !cb) {
         pc_lib_log(PC_LOG_ERROR, "pc_client_add_ev_handler - invalid args");
-        return PC_RC_INVALID_ARG;
-    }
-
-    if (ev_type == PC_EV_USER_DEFINED_PUSH && !push_route) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_add_ev_handler - route push event should be with a route");
-        return PC_RC_INVALID_ARG;
+        return PC_EV_INVALID_HANDLER_ID;
     }
 
     handler = (pc_ev_handler_t*)pc_lib_malloc(sizeof(pc_ev_handler_t));
@@ -390,56 +385,44 @@ int pc_client_add_ev_handler(pc_client_t* client, int ev_type, void* ex_data, co
 
     QUEUE_INIT(&handler->queue);
     handler->ex_data = ex_data;
-
-    if (ev_type == PC_EV_USER_DEFINED_PUSH) {
-        handler->push_route = pc_lib_strdup(push_route);
-    } 
-
     handler->cb = cb;
+    handler->handler_id = handler_id++;
+    handler->destructor = destructor;
 
     pc_mutex_lock(&client->handler_mutex);
 
-    head = &client->ev_handlers[ev_type];
-    QUEUE_INSERT_TAIL(head, &handler->queue);
-    pc_lib_log(PC_LOG_INFO, "pc_client_add_ev_handler - add ev_type: %s", pc_client_ev_str(ev_type));
+    QUEUE_INSERT_TAIL(&client->ev_handlers, &handler->queue);
+    pc_lib_log(PC_LOG_INFO, "pc_client_add_ev_handler -"
+            " add event handler, handler id: %d", handler->handler_id);
 
     pc_mutex_unlock(&client->handler_mutex);
 
-    return PC_RC_OK;
+    return handler->handler_id;
 }
 
-int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, const char* push_route, pc_event_cb_t cb)
+int pc_client_rm_ev_handler(pc_client_t* client, int id)
 {
     QUEUE* q;
     pc_ev_handler_t* handler;
     int flag = 0;
 
-    if (!client || ev_type < 0 || ev_type >= PC_EV_COUNT || !cb) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_rm_ev_handler - invalid args");
-        return PC_RC_INVALID_ARG;
-    }
-
-    if (ev_type == PC_EV_USER_DEFINED_PUSH && !push_route) {
-        pc_lib_log(PC_LOG_ERROR, "pc_client_rm_ev_handler - route push event should be with a route");
-        return PC_RC_INVALID_ARG;
-    }
-
     pc_mutex_lock(&client->handler_mutex);
 
-    QUEUE_FOREACH(q, &client->ev_handlers[ev_type]) {
+    QUEUE_FOREACH(q, &client->ev_handlers) {
         handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
 
-        if (handler->cb != cb || handler->ex_data != ex_data)
+        if (handler->handler_id != id)
             continue;
 
-        if (ev_type == PC_EV_USER_DEFINED_PUSH && strcmp(handler->push_route, push_route))
-            continue;
-
-        pc_lib_log(PC_LOG_INFO, "pc_client_rm_ev_handler - rm ev_type: %s", pc_client_ev_str(ev_type));
+        pc_lib_log(PC_LOG_INFO, "pc_client_rm_ev_handler - rm handler, handler_id: %d", id);
         flag = 1;
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
-        pc_lib_free((char* )handler->push_route);
+
+        if (handler->destructor) {
+            handler->destructor(handler->ex_data);
+        }
+
         pc_lib_free(handler);
         break;
     }
@@ -447,7 +430,7 @@ int pc_client_rm_ev_handler(pc_client_t* client, int ev_type, void* ex_data, con
     pc_mutex_unlock(&client->handler_mutex);
 
     if (!flag) {
-        pc_lib_log(PC_LOG_WARN, "pc_client_rm_ev_handler - no matched event handler found, ev_type: %s", pc_client_ev_str(ev_type));
+        pc_lib_log(PC_LOG_WARN, "pc_client_rm_ev_handler - no matched event handler found, handler id: %d", id);
     }
 
     return PC_RC_OK;

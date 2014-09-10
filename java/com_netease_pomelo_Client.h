@@ -69,6 +69,8 @@ extern "C" {
 #define com_netease_pomelo_Client_PC_EV_UNEXPECTED_DISCONNECT 6L
 #undef com_netease_pomelo_Client_PC_EV_PROTO_ERROR
 #define com_netease_pomelo_Client_PC_EV_PROTO_ERROR 7L
+#undef com_netease_pomelo_Client_PC_EV_INVALID_HANDLER_ID
+#define com_netease_pomelo_Client_PC_EV_INVALID_HANDLER_ID -1L
 #undef com_netease_pomelo_Client_PC_WITHOUT_TIMEOUT
 #define com_netease_pomelo_Client_PC_WITHOUT_TIMEOUT -1L
 /*
@@ -186,18 +188,18 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_destroy
 /*
  * Class:     com_netease_pomelo_Client
  * Method:    addEventHandler
- * Signature: (ILjava/lang/String;Lcom/netease/pomelo/Client/EventHandler;)I
+ * Signature: (Lcom/netease/pomelo/Client/EventHandler;)I
  */
 JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_addEventHandler
-  (JNIEnv *, jobject, jint, jstring, jobject);
+  (JNIEnv *, jobject, jobject);
 
 /*
  * Class:     com_netease_pomelo_Client
  * Method:    rmEventHandler
- * Signature: (ILjava/lang/String;Lcom/netease/pomelo/Client/EventHandler;)I
+ * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_rmEventHandler
-  (JNIEnv *, jobject, jint, jstring, jobject);
+  (JNIEnv *, jobject, jint);
 
 #ifdef __cplusplus
 }

@@ -8,6 +8,18 @@
 #include <pomelo.h>
 #include <string.h>
 
+static void default_destructor(void* ex_data)
+{
+    PyObject* ev_cb = (PyObject*) ex_data;
+
+    PyGILState_STATE state;
+    state = PyGILState_Ensure();
+
+    Py_XDECREF(ev_cb);
+
+    PyGILState_Release(state);
+}
+
 static void default_request_cb(const pc_request_t* req, int rc, const char* resp)
 {
     PyGILState_STATE state;
@@ -303,12 +315,10 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
 {
     unsigned long addr;
     pc_client_t* client;
-    int ev_type;
-    char* route = NULL;
     PyObject* ev_cb = NULL;
+    int ret;
 
-    if (!PyArg_ParseTuple(args, "kizO:add_ev_handler", &addr, 
-                &ev_type, &route, &ev_cb)) { 
+    if (!PyArg_ParseTuple(args, "kO:add_ev_handler", &addr, &ev_cb)) { 
         return NULL;
     }
 
@@ -319,38 +329,30 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
 
     assert(ev_cb);
 
-    Py_XINCREF(ev_cb); 
     client = (pc_client_t* )addr;
+    Py_XINCREF(ev_cb); 
+    ret = pc_client_add_ev_handler(client, default_event_cb, ev_cb, default_destructor);
 
-    return Py_BuildValue("i", pc_client_add_ev_handler(client, ev_type,
-                ev_cb, route, default_event_cb));
+    if (ret == PC_EV_INVALID_HANDLER_ID) {
+        Py_XDECREF(ev_cb); 
+    }
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
 {
     unsigned long addr;
     pc_client_t* client;
-    int ev_type;
-    char* route = NULL;
-    PyObject* ev_cb = NULL;
+    int handler_id;
 
-    if (!PyArg_ParseTuple(args, "kizO:add_ev_handler", &addr, 
-                &ev_type, &route, &ev_cb)) { 
+    if (!PyArg_ParseTuple(args, "ki:rm_ev_handler", &addr, &handler_id)) { 
         return NULL;
     }
 
-    if (!PyCallable_Check(ev_cb)) {
-        PyErr_SetString(PyExc_TypeError, "parameter ev_cb must be callable");
-        return NULL;
-    }
-
-    assert(ev_cb);
-
-    Py_XDECREF(ev_cb); 
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_client_rm_ev_handler(client, ev_type,
-                ev_cb, route, default_event_cb));
+    return Py_BuildValue("i", pc_client_rm_ev_handler(client, handler_id));
 }
 
 static PyObject* request(PyObject* self, PyObject* args)

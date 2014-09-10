@@ -44,6 +44,8 @@ class Client:
     PC_EV_UNEXPECTED_DISCONNECT = 6
     PC_EV_PROTO_ERROR = 7
 
+    PC_EV_INVALID_HANDLER_ID = -1
+
     PC_WITHOUT_TIMEOUT = -1
 
     # ca_file and ca_path both can be a string or None
@@ -85,14 +87,14 @@ class Client:
     # handler - function (ev_type, arg1, arg2)
     #               ev_type - int 
     #               arg1, arg2 - string or None
-    def add_ev_handler(self, ev_type, route, handler):
-        return pypomelo.add_ev_handler(self._internal_data, ev_type, route, handler)
+    def add_ev_handler(self, handler):
+        return pypomelo.add_ev_handler(self._internal_data, handler)
 
     # handler - function (ev_type, arg1, arg2)
     #               ev_type - int 
     #               arg1, arg2 - string or None
-    def rm_ev_handler(self, ev_type, route, handler):
-        return pypomelo.rm_ev_handler(self._internal_data, ev_type, route, handler)
+    def rm_ev_handler(self, handler_id):
+        return pypomelo.rm_ev_handler(self._internal_data, handler_id)
 
     # request_cb - function (rc, resp)
     #                  rc - int

@@ -42,6 +42,8 @@ public class Client {
     public static final int PC_EV_UNEXPECTED_DISCONNECT = 6;
     public static final int PC_EV_PROTO_ERROR = 7;
 
+    public static final int PC_EV_INVALID_HANDLER_ID = -1;
+
     public static final int PC_WITHOUT_TIMEOUT = -1;
 
     public static native void libInit(int logLevel, String caFile, String caPath);
@@ -82,8 +84,8 @@ public class Client {
     public native int quality();
     public native int destroy();
 
-    public native int addEventHandler(int ev_type, String push_route, EventHandler handler);
-    public native int rmEventHandler(int ev_type, String push_route, EventHandler handler);
+    public native int addEventHandler(EventHandler handler);
+    public native int rmEventHandler(int id);
 
     private byte[] jniUse;
 }

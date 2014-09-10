@@ -22,9 +22,10 @@ public class Test {
 
     c.connect("127.0.0.1", 3011);
 
-    c.addEventHandler(Client.PC_EV_USER_DEFINED_PUSH, "onPush", new Client.EventHandler() {
+    int handler_id = c.addEventHandler(new Client.EventHandler() {
         public void handle(int ev_type, String arg1, String arg2) {
             System.out.println("get push message: " + arg2);
+            System.out.println("ev_type: " + Client.evToStr(ev_type));
         }
     });
 
@@ -52,6 +53,9 @@ public class Test {
     } catch (Exception e) {
 
     }
+
+    c.rmEventHandler(handler_id);
+
     c.destroy();
     Client.libCleanup();
   }

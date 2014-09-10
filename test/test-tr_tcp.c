@@ -108,6 +108,7 @@ static void notify_cb(const pc_notify_t* noti, int rc)
 int main()
 {
     pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
+    int handler_id;
     pc_lib_init(NULL, NULL, NULL, NULL);
     
     client = (pc_client_t*)malloc(pc_client_size());
@@ -120,14 +121,7 @@ int main()
     PC_TEST_ASSERT(pc_client_ex_data(client) == (void*)0x11);
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_INITED);
   
-    pc_client_add_ev_handler(client, PC_EV_USER_DEFINED_PUSH, EV_HANDLER_EX, SERVER_PUSH, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_CONNECTED , EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_CONNECT_ERROR, EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_CONNECT_FAILED , EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_DISCONNECT , EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_KICKED_BY_SERVER, EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_UNEXPECTED_DISCONNECT, EV_HANDLER_EX, NULL, event_cb); 
-    pc_client_add_ev_handler(client, PC_EV_PROTO_ERROR , EV_HANDLER_EX, NULL, event_cb); 
+    handler_id = pc_client_add_ev_handler(client, event_cb, EV_HANDLER_EX, NULL); 
 
     pc_client_connect(client, "127.0.0.1", 3010, NULL);
 
@@ -138,6 +132,8 @@ int main()
     SLEEP(50);
 
     pc_client_disconnect(client);
+
+    pc_client_rm_ev_handler(client, handler_id);
 
     pc_client_cleanup(client);
 
