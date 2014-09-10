@@ -8,6 +8,12 @@
 
 #include <stddef.h>
 
+#if defined(_WIN32) && !defined(__cplusplus)
+#define PC_INLINE __inline
+#else 
+#define PC_INLINE inline
+#endif
+
 extern void (*pc_lib_log)(int level, const char* msg, ...);
 extern void* (*pc_lib_malloc)(size_t len);
 extern void (*pc_lib_free)(void* data);

@@ -103,8 +103,9 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 
     if(PC_MSG_HAS_ID(type)) {
         int i = 0;
-        id = 0;
         uint8_t m;
+        id = 0;
+     
         do{
             PC__MSG_CHECK_LEN(offset + 1, len);
             m = data[offset++];
@@ -160,13 +161,14 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     const char* data = NULL;
     pc_buf_t body;
     pc_msg_t msg;
+    pc__msg_raw_t* raw_msg = NULL;
 
     memset(&msg, 0, sizeof(pc_msg_t));
     msg.id = PC_INVALID_REQ_ID;
 
     assert(buf && buf->base);
 
-    pc__msg_raw_t *raw_msg = pc_msg_decode_to_raw(buf);
+    raw_msg = pc_msg_decode_to_raw(buf);
 
     if (!raw_msg) {
         return msg;
@@ -243,16 +245,17 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     return msg;
 }
 
+
 static pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
         const char *route, const pc_buf_t msg);
 static pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
         int route_code, const pc_buf_t msg);
 
 static uint8_t pc__msg_id_length(uint32_t id);
-static inline size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
+static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
         char *base, size_t offset);
-static inline size_t pc__msg_encode_id(uint32_t id, char *base, size_t offset);
-static inline size_t pc__msg_encode_route(const char *route, uint16_t route_len,
+static PC_INLINE size_t pc__msg_encode_id(uint32_t id, char *base, size_t offset);
+static PC_INLINE size_t pc__msg_encode_route(const char *route, uint16_t route_len,
         char *base, size_t offset);
 
 pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
@@ -327,16 +330,14 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
     return buf;
 }
 
-
-
-static inline size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
+static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
         char *base, size_t offset)
 {
     base[offset++] = (type << 1) | (compressRoute ? 1 : 0);
     return offset;
 }
 
-static inline size_t pc__msg_encode_id(uint32_t id, char *base, size_t offset)
+static PC_INLINE size_t pc__msg_encode_id(uint32_t id, char *base, size_t offset)
 {
     do{
         uint32_t tmp = id & 0x7f;
@@ -352,7 +353,7 @@ static inline size_t pc__msg_encode_id(uint32_t id, char *base, size_t offset)
     return offset;
 }
 
-static inline size_t pc__msg_encode_route(const char *route, uint16_t route_len,
+static PC_INLINE size_t pc__msg_encode_route(const char *route, uint16_t route_len,
         char *base, size_t offset)
 {
     base[offset++] = route_len & 0xff;

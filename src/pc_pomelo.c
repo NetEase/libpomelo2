@@ -373,7 +373,7 @@ int pc_client_add_ev_handler(pc_client_t* client, pc_event_cb_t cb,
         void* ex_data, void (*destructor)(void* ex_data))
 {
     pc_ev_handler_t* handler;
-    static handler_id = 0;
+    static int handler_id = 0;
 
     if (!client || !cb) {
         pc_lib_log(PC_LOG_ERROR, "pc_client_add_ev_handler - invalid args");
