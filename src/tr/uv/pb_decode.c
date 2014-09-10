@@ -98,9 +98,10 @@ static int pb_decode_string(pb_istream_t *stream, void *dest, uint32_t size);
 /* Decode submessage in __messages protos */
 static int pb_decode_submessage(pb_istream_t *stream, const json_t *gprotos, const json_t *protos, void *dest);
 
-int pc_pb_decode(uint8_t *buf, size_t len, const json_t *gprotos, const json_t *protos,
+int pc_pb_decode(const uint8_t *buf, size_t len, const json_t *gprotos, const json_t *protos,
         json_t *result) {
-    pb_istream_t stream = pb_istream_from_buffer(buf, len);
+    // TODO:
+    pb_istream_t stream = pb_istream_from_buffer((uint8_t*)buf, len);
     if (!pb_decode(&stream, gprotos, protos, result)) {
         return 0;
     }

@@ -20,12 +20,12 @@
  * protobuf encode
  */
 int pc_pb_encode(uint8_t *buf, size_t len, size_t *written,
-        const json_t *gprotos, const json_t *protos, json_t *msg);
+        const json_t *gprotos, const json_t *protos, const json_t *msg);
 
 /*
  * protobuf decode
  */
-int pc_pb_decode(uint8_t *buf, size_t len, const json_t *gprotos,
+int pc_pb_decode(const uint8_t *buf, size_t len, const json_t *gprotos,
         const json_t *protos, json_t *result);
 
 #endif

@@ -95,9 +95,10 @@ static int pb_encode_fixed64(pb_ostream_t *stream, const void *value);
 static int pb_encode_submessage(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, json_t *value);
 /* pb_ostream_t implementation */
 
-int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const json_t *gprotos, const json_t *protos, json_t *msg) {
+int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const json_t *gprotos, const json_t *protos, const json_t *msg) {
+    // TODO: const 
     pb_ostream_t stream = pb_ostream_from_buffer(buf, len);
-    if (!pb_encode(&stream, gprotos, protos, msg)) {
+    if (!pb_encode(&stream, gprotos, protos, (json_t*)msg)) {
         return 0;
     }
     *written = stream.bytes_written;

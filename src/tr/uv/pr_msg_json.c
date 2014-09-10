@@ -3,6 +3,7 @@
  * MIT Licensed.
  */
 
+#include <assert.h>
 #include <string.h>
 #include <jansson.h>
 
@@ -17,10 +18,13 @@ pc_buf_t pc_body_json_encode(const json_t *msg)
     char* res;
 
     buf.base = NULL;
+    buf.len = -1;
+
+    assert(msg);
+
     res = json_dumps(msg, JSON_COMPACT);
     if (!res) {
-        pc_lib_log(PC_LOG_ERROR, "pc_body_json_encode - encode error");
-        buf.len = -1;
+        pc_lib_log(PC_LOG_ERROR, "pc_body_json_encode - json encode error");
     } else {
         buf.base = res;
         buf.len = strlen(res);
@@ -34,8 +38,7 @@ json_t *pc_body_json_decode(const char *data, size_t offset, size_t len)
     json_t *res = json_loadb(data + offset, len - offset, 0, &error);
 
     if (!res) {
-        pc_lib_log(PC_LOG_ERROR, "pc_body_json_decode - decode error");
-        return NULL;
+        pc_lib_log(PC_LOG_ERROR, "pc_body_json_decode - json decode error: %s", error.text);
     }
 
     return res;

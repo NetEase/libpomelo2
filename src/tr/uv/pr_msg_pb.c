@@ -3,6 +3,7 @@
  * MIT Licensed.
  */
 
+#include <assert.h>
 #include <string.h>
 #include <jansson.h>
 
@@ -12,14 +13,22 @@
 #include "pr_msg.h"
 #include "pb.h"
 
+#define PC_PB_EVAL_FACTOR 2
+
 pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_t *pb_def)
 {
-    pc_buf_t buf, json_buf;
+    pc_buf_t buf;
+    pc_buf_t json_buf;
     size_t eval_size;
     size_t written;
 
-    memset(&buf, 0, sizeof(pc_buf_t));
-    memset(&json_buf, 0, sizeof(pc_buf_t));
+    assert(msg && gprotos && pb_def);
+
+    buf.base = NULL;
+    buf.len = -1;
+
+    json_buf.base = NULL;
+    json_buf.len = -1;
 
     json_buf = pc_body_json_encode(msg);
 
@@ -30,7 +39,7 @@ pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_
     }
 
     // use double space of json_buf, it should be enough
-    eval_size = json_buf.len * 2;
+    eval_size = json_buf.len * PC_PB_EVAL_FACTOR;
 
     pc_lib_free(json_buf.base);
     json_buf.base = NULL;
@@ -40,7 +49,7 @@ pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_
 
     written = 0;
     if (!pc_pb_encode((uint8_t *)buf.base, eval_size, &written,
-                      (json_t *)gprotos, (json_t *)pb_def, (json_t *)msg)) {
+                      gprotos, pb_def, msg)) {
         pc_lib_free(buf.base);
         buf.base = NULL;
         buf.len = -1;
@@ -58,8 +67,8 @@ json_t *pc_body_pb_decode(const char *data, size_t offset, size_t len,
                       const json_t *gprotos, const json_t *pb_def) 
 {
     json_t *result = json_object();
-    if (!pc_pb_decode((uint8_t *)(data + offset), len,
-                      (json_t *)gprotos, (json_t *)pb_def, result)) {
+    if (!pc_pb_decode((const uint8_t *)(data + offset), len,
+                      gprotos, pb_def, result)) {
         json_decref(result);
         pc_lib_log(PC_LOG_ERROR, "pc_body_pb_decode - failed to decode msg based on protobuf");
         return NULL;
