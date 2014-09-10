@@ -89,6 +89,7 @@ static void crypto_threadid_cb(CRYPTO_THREADID* tid)
 void tr_uv_tls_plugin_on_register(pc_transport_plugin_t* plugin)
 {
     int e;
+    tr_uv_tls_transport_plugin_t* pl;
     tr_uv_tcp_plugin_on_register(plugin);
 
     SSL_load_error_strings();
@@ -99,7 +100,7 @@ void tr_uv_tls_plugin_on_register(pc_transport_plugin_t* plugin)
     CRYPTO_set_locking_callback(crypto_lock_cb);
     CRYPTO_THREADID_set_callback(crypto_threadid_cb);
 
-    tr_uv_tls_transport_plugin_t* pl = (tr_uv_tls_transport_plugin_t* )plugin;
+    pl = (tr_uv_tls_transport_plugin_t* )plugin;
     pl->ctx = SSL_CTX_new(SSLv3_method());
     if (!pl->ctx) {
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tls_plugin_on_register - tls error: %s",
