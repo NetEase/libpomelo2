@@ -228,11 +228,11 @@ static int tls__get_error(SSL* ssl, int status)
         case SSL_ERROR_WANT_WRITE:
             return 0;
         case SSL_ERROR_ZERO_RETURN:
-            pc_lib_log(PC_LOG_WARN, "tls_get_error - tls detect shutdown, reconn");
+            pc_lib_log(PC_LOG_WARN, "tls__get_error - tls detect shutdown, reconn");
             return 1;
         default:
             assert(err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL);
-            pc_lib_log(PC_LOG_ERROR, "tls_get_error - tls error: %s", ERR_error_string(ERR_get_error(), NULL));
+            pc_lib_log(PC_LOG_ERROR, "tls__get_error - tls error: %s", ERR_error_string(ERR_get_error(), NULL));
             break;
     }
     return 1;
@@ -359,10 +359,10 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
     wi = tls->should_retry;
     if (wi && wi->timeout != PC_WITHOUT_TIMEOUT && ct > wi->ts + wi->timeout) {
         if (TR_UV_WI_IS_NOTIFY(wi->type)) {
-            pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
+            pc_lib_log(PC_LOG_WARN, "tls__write_timeout_check_cb - notify timeout, seq num: %u", wi->seq_num);
             pc_trans_sent(tt->client, wi->seq_num, PC_RC_TIMEOUT);
         } else if (TR_UV_WI_IS_RESP(wi->type)) {
-            pc_lib_log(PC_LOG_WARN, "checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
+            pc_lib_log(PC_LOG_WARN, "tls__write_timeout_check_cb - request timeout, req id: %u", wi->req_id);
             pc_trans_resp(tt->client, wi->req_id, PC_RC_TIMEOUT, NULL);
         }
 

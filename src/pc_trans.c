@@ -35,19 +35,19 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
     int i;
 
     if (ev_type >= PC_EV_COUNT || ev_type < 0) {
-        pc_lib_log(PC_LOG_ERROR, "pc_transport_fire_event - error event type");
+        pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - error event type");
         return;
     }
 
     if (ev_type == PC_EV_USER_DEFINED_PUSH && (!arg1 || !arg2)) {
-        pc_lib_log(PC_LOG_ERROR, "pc_transport_fire_event - push msg but without a route or msg");
+        pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - push msg but without a route or msg");
         return;
     }
  
     if (ev_type == PC_EV_CONNECT_ERROR || ev_type == PC_EV_UNEXPECTED_DISCONNECT
             || ev_type == PC_EV_PROTO_ERROR || ev_type == PC_EV_CONNECT_FAILED) {
         if (!arg1) {
-            pc_lib_log(PC_LOG_ERROR, "pc_transport_fire_event - event should be with a reason description");
+            pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - event should be with a reason description");
             return ;
         }
     }
@@ -55,7 +55,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
     if (pending) {
         assert(client->config.enable_polling);
 
-        pc_lib_log(PC_LOG_INFO, "pc_trans_fire_event - add pending event: %s", pc_client_ev_str(ev_type));
+        pc_lib_log(PC_LOG_INFO, "pc__trans_fire_event - add pending event: %s", pc_client_ev_str(ev_type));
         pc_mutex_lock(&client->event_mutex);
 
         ev = NULL;
@@ -98,7 +98,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
         return ;
     }
 
-    pc_lib_log(PC_LOG_INFO, "pc_trans_fire_event - fire event: %s, arg1: %s, arg2: %s", 
+    pc_lib_log(PC_LOG_INFO, "pc__trans_fire_event - fire event: %s, arg1: %s, arg2: %s", 
             pc_client_ev_str(ev_type), arg1 ? arg1 : "", arg2 ? arg2 : "");
     pc_mutex_lock(&client->state_mutex);
     switch(ev_type) {
@@ -138,7 +138,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
 
         default:
             // never run to here
-            pc_lib_log(PC_LOG_ERROR, "unknown network event");
+            pc_lib_log(PC_LOG_ERROR, "pc__trans_fire_event - unknown network event: %d", ev_type);
     }
     pc_mutex_unlock(&client->state_mutex);
 
@@ -178,7 +178,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
 
-        pc_lib_log(PC_LOG_INFO, "pc_trans_sent - add pending sent event, seq_num: %u, rc: %s",
+        pc_lib_log(PC_LOG_INFO, "pc__trans_sent - add pending sent event, seq_num: %u, rc: %s",
                 seq_num, pc_client_rc_str(rc));
 
         ev = NULL;
@@ -215,7 +215,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
         notify = (pc_notify_t* )QUEUE_DATA(q, pc_common_req_t, queue);
         if (notify->base.seq_num = seq_num) {
 
-            pc_lib_log(PC_LOG_INFO, "pc_trans_sent - fire sent event, seq_num: %u, rc: %s",
+            pc_lib_log(PC_LOG_INFO, "pc__trans_sent - fire sent event, seq_num: %u, rc: %s",
                     seq_num, pc_client_rc_str(rc));
             
             target = notify;
@@ -245,7 +245,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
         }
 
     } else {
-        pc_lib_log(PC_LOG_ERROR, "pc_trans_sent - no pending notify found"
+        pc_lib_log(PC_LOG_ERROR, "pc__trans_sent - no pending notify found"
                 " when transport has sent it, seq num: %u", seq_num);
     }
 }
@@ -277,7 +277,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
     if (pending) {
         pc_mutex_lock(&client->event_mutex);
 
-        pc_lib_log(PC_LOG_INFO, "pc_trans_resp - add pending resp event, req_id: %u, rc: %s",
+        pc_lib_log(PC_LOG_INFO, "pc__trans_resp - add pending resp event, req_id: %u, rc: %s",
                 req_id, pc_client_rc_str(rc));
         ev = NULL;
         for (i = 0; i < PC_PRE_ALLOC_EVENT_SLOT_COUNT; ++i) {
@@ -315,7 +315,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
         req= (pc_request_t* )QUEUE_DATA(q, pc_common_req_t, queue);
         if (req->req_id = req_id) {
 
-            pc_lib_log(PC_LOG_INFO, "pc_trans_resp - fire resp event, req_id: %u, rc: %s",
+            pc_lib_log(PC_LOG_INFO, "pc__trans_resp - fire resp event, req_id: %u, rc: %s",
                     req_id, pc_client_rc_str(rc));
 
             target = req;
@@ -345,7 +345,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
             pc_lib_free(target);
         }
     } else {
-        pc_lib_log(PC_LOG_ERROR, "pc_trans_resp - no pending request found when"
+        pc_lib_log(PC_LOG_ERROR, "pc__trans_resp - no pending request found when"
             " get a response, req id: %u", req_id);
     }
 }

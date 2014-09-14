@@ -59,7 +59,7 @@ static __inline const char *pc__resolve_dictionary(const json_t* code2route, uin
 #define PC__MSG_CHECK_LEN(INDEX, LENGTH)                                      \
 do {                                                                          \
     if((INDEX) > (LENGTH)) {                                                  \
-        pc_lib_log(PC_LOG_ERROR, "pr_msg_decode - invalid length");           \
+        pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");    \
         goto error;                                                           \
     }                                                                         \
 } while(0)
@@ -91,7 +91,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     compressRoute = flag & 0x01;
 
     if (!PC_MSG_VALIDATE(type)) {
-        pc_lib_log(PC_LOG_ERROR, "pc_msg_decode - unknow message type");
+        pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - unknow message type");
         return NULL; 
     }
 

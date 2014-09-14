@@ -205,7 +205,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (ret) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "DNS Resolve Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s, will reconn", tt->host);
+        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async_cb - dns resolve error: %s, will reconn", tt->host);
         tt->reconn_fn(tt);
         return ;
     }
@@ -230,7 +230,7 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     if (!addr4 && !addr6) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "DNS Resolve Error", NULL);
-        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async - dns resolve error: %s, will reconn", tt->host);
+        pc_lib_log(PC_LOG_ERROR, "tcp__conn_async_cb - dns resolve error: %s, will reconn", tt->host);
         tt->reconn_fn(tt);
         return;
     }
@@ -302,12 +302,12 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
 
         if (ret) {
-            pc_lib_log(PC_LOG_ERROR, "tcp__conn_done - start read from tcp error, reconn");
+            pc_lib_log(PC_LOG_ERROR, "tcp__conn_done_cb - start read from tcp error, reconn");
             tt->reconn_fn(tt);
             return ;
         }
 
-        pc_lib_log(PC_LOG_INFO, "tcp__conn_done - tcp connected, send handshake");
+        pc_lib_log(PC_LOG_INFO, "tcp__conn_done_cb - tcp connected, send handshake");
 
         tcp__send_handshake(tt);
 
@@ -525,10 +525,10 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
         if (wi->timeout != PC_WITHOUT_TIMEOUT) {
             if (ct > wi->ts + wi->timeout) {
                 if (TR_UV_WI_IS_NOTIFY(wi->type)) {
-                    pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - notify timeout, seq num: %u", wi->seq_num);
+                    pc_lib_log(PC_LOG_WARN, "tcp__check_queue_timeout - notify timeout, seq num: %u", wi->seq_num);
                     pc_trans_sent(client, wi->seq_num, PC_RC_TIMEOUT);
                 } else if (TR_UV_WI_IS_RESP(wi->type)) {
-                    pc_lib_log(PC_LOG_WARN, "tcp__checkout_timeout_queue - request timeout, req id: %u", wi->req_id);
+                    pc_lib_log(PC_LOG_WARN, "tcp__check_queue_timeout - request timeout, req id: %u", wi->req_id);
                     pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
                 }
 
@@ -958,7 +958,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
     res = json_loadb(data, len, 0, &error);
 
-    pc_lib_log(PC_LOG_INFO, "tcp send get handshake resp");
+    pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - tcp get handshake resp");
 
     if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
         uv_timer_stop(&tt->handshake_timer);
@@ -972,7 +972,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
     code = json_integer_value(json_object_get(res, "code"));
     if (code != PC_HANDSHAKE_OK) {
-        pc_lib_log(PC_LOG_ERROR, "tcp_on_handshake_resp - handshake fail, code: %d", code);
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake fail, code: %d", code);
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
         json_decref(res);
         tt->reset_fn(tt);
@@ -984,7 +984,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
 
     assert(sys);
 
-    pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - handshake ok");
+    pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake ok");
     // setup heartbeat
     i = json_integer_value(json_object_get(sys, "heartbeat"));
 
@@ -992,10 +992,10 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         // no need heartbeat
         tt->hb_interval= -1;
         tt->hb_timeout = -1;
-        pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - no heartbeat specified");
+        pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - no heartbeat specified");
     } else {
         tt->hb_interval = i;
-        pc_lib_log(PC_LOG_INFO, "tcp_on_handshake_resp - set heartbeat interval: %d", i);
+        pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - set heartbeat interval: %d", i);
         tt->hb_timeout = tt->hb_interval * PC_HEARTBEAT_TIMEOUT_FACTOR;
     }
 

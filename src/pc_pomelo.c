@@ -469,7 +469,7 @@ int pc_client_state(pc_client_t* client)
 int pc_client_conn_quality(pc_client_t* client) 
 {
     if (!client) {
-        pc_lib_log(PC_LOG_ERROR, "client is null, invalid arg");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_conn_quality - client is null, invalid arg");
         return PC_RC_INVALID_ARG;
     }
 
@@ -478,7 +478,7 @@ int pc_client_conn_quality(pc_client_t* client)
     if (client->trans->quality) {
         return client->trans->quality(client->trans);
     } else {
-        pc_lib_log(PC_LOG_ERROR, "transport doesn't support qulity query");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_conn_quality - transport doesn't support qulity query");
     }
 
     return PC_RC_ERROR;
@@ -487,7 +487,7 @@ int pc_client_conn_quality(pc_client_t* client)
 void* pc_client_trans_data(pc_client_t* client) 
 {
     if (!client) {
-        pc_lib_log(PC_LOG_ERROR, "client is null, invalid arg");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_trans_data - client is null, invalid arg");
         return NULL;
     }
 
@@ -496,7 +496,7 @@ void* pc_client_trans_data(pc_client_t* client)
     if (client->trans->internal_data) {
         return client->trans->internal_data(client->trans);
     } else {
-        pc_lib_log(PC_LOG_ERROR, "transport doesn't support internal data");
+        pc_lib_log(PC_LOG_ERROR, "pc_client_trans_data - transport doesn't support internal data");
     }
 
     return NULL;

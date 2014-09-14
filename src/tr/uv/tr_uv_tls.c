@@ -39,7 +39,7 @@ void tr_uv_tls_set_ca_file(const char* ca_file, const char* ca_path)
     if (instance.ctx) {
         ret = SSL_CTX_load_verify_locations(instance.ctx, ca_file, ca_path);
         if (!ret) {
-            pc_lib_log(PC_LOG_WARN, "load verify locations error, cafile: %s, capath: %s", ca_file, ca_path);
+            pc_lib_log(PC_LOG_WARN, "tr_uv_tls_set_ca_file - load verify locations error, cafile: %s, capath: %s", ca_file, ca_path);
             instance.enable_verify = 0;
         } else {
             instance.enable_verify = 1;
