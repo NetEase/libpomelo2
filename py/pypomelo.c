@@ -40,7 +40,10 @@ static void default_request_cb(const pc_request_t* req, int rc, const char* resp
     assert(args);
 
     result = PyEval_CallObject(req_cb, args);
-    assert(result);
+    if (result == NULL) {
+        PyErr_Print();
+        abort();
+    }
 
     Py_XDECREF(args);
     Py_XDECREF(req_cb);
@@ -71,7 +74,11 @@ static void default_notify_cb(const pc_notify_t* notify, int rc)
     assert(args);
 
     result = PyEval_CallObject(notify_cb, args);
-    assert(result);
+
+    if (result == NULL) {
+        PyErr_Print();
+        abort();
+    }
 
     Py_XDECREF(args);
     Py_XDECREF(notify_cb);
@@ -101,7 +108,11 @@ static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, co
     assert(args);
 
     result = PyEval_CallObject(ev_cb, args);
-    assert(result);
+
+    if (result == NULL) {
+        PyErr_Print();
+        abort();
+    }
 
     Py_XDECREF(args);
     Py_XDECREF(result);
@@ -114,9 +125,9 @@ static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, co
 static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data)
 {
     PyObject* lc_cb = (PyObject*)ex_data;
-    PyObject* args;
-    PyObject* result;
-    int ret;
+    PyObject* args = NULL;
+    PyObject* result = NULL;
+    int ret = -1;
     char* res = NULL;
 
     PyGILState_STATE state;
@@ -128,10 +139,13 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         assert(args);
 
         result = PyEval_CallObject(lc_cb, args);
-        assert(result);
-        assert(PyInt_Check(result));
-
-        ret = PyInt_AsLong(result);
+        if (result == NULL) {
+            PyErr_Print();
+            abort();
+        } else {
+            assert(PyInt_Check(result));
+            ret = PyInt_AsLong(result);
+        }
 
         Py_XDECREF(result);
         Py_XDECREF(args);
@@ -143,11 +157,15 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         args = Py_BuildValue("(i)", op);
         assert(args);
         result = PyEval_CallObject(lc_cb, args);
-        assert(result);
-        assert(PyString_Check(result) || result == Py_None);
 
-        if (result != Py_None) {
-            res = PyString_AsString(result);
+        if (result == NULL) {
+            PyErr_Print();
+            abort();
+        } else {
+            assert(PyString_Check(result) || result == Py_None);
+            if (result != Py_None) {
+                res = PyString_AsString(result);
+            }
         }
 
         Py_XDECREF(args);
