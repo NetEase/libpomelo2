@@ -108,11 +108,11 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
             break;
 
         case PC_EV_CONNECT_ERROR:
-            assert(client->state == PC_ST_CONNECTING);
+            assert(client->state == PC_ST_CONNECTING || client->state == PC_ST_DISCONNECTING);
             break;
 
         case PC_EV_CONNECT_FAILED:
-            assert(client->state == PC_ST_CONNECTING);
+            assert(client->state == PC_ST_CONNECTING || client->state == PC_ST_DISCONNECTING);
             client->state = PC_ST_INITED;
             break;
 
