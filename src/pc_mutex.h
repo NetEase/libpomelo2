@@ -50,7 +50,12 @@ static inline void pc_mutex_init(pc_mutex_t* mutex)
     pthread_mutexattr_t attr;
     int ret;
     pthread_mutexattr_init(&attr);
+
+#ifdef __linux__
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+#else
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+#endif
 
     ret = pthread_mutex_init(mutex, &attr);
     assert(!ret);
