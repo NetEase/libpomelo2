@@ -566,6 +566,7 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
 
     cont = 0;
 
+    pc_lib_log(PC_LOG_DEBUG, "tcp__write_check_timeout_cb - start to check timeout");
     pc_mutex_lock(&tt->wq_mutex);
     cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont); 
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
@@ -577,6 +578,7 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
     if (cont && !uv_is_active((uv_handle_t* )w)) {
         uv_timer_start(w, tt->write_check_timeout_cb, PC_TIMEOUT_CHECK_INTERVAL* 1000, 0);
     }
+    pc_lib_log(PC_LOG_DEBUG, "tcp__write_check_timeout_cb - finish to check timeout");
 }
 
 static void tcp__cleanup_json_t(json_t** j)
