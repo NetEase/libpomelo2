@@ -63,14 +63,6 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     uv_timer_stop(&tt->reconn_delay_timer);
     uv_timer_stop(&tt->conn_timeout);
 
-    if (tt->is_writing) {
-        uv_close((uv_handle_t* )&tt->write_req, NULL);
-    }
-
-    if (tt->is_connecting) {
-        uv_close((uv_handle_t* )&tt->conn_req, NULL);
-    }
-
     tt->is_waiting_hb = 0;
     tt->hb_rtt = -1;
 
@@ -266,7 +258,10 @@ void tcp__conn_timeout_cb(uv_timer_t* t)
     assert(tt->is_connecting);
     uv_timer_stop(t);
     pc_lib_log(PC_LOG_INFO, "tcp__conn_timeout_cb - conn timeout, cancel it");
-    uv_close((uv_handle_t* )&tt->conn_req, NULL);
+
+    if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
+        uv_close((uv_handle_t* )&tt->socket, NULL);
+    }
 }
 
 void tcp__conn_done_cb(uv_connect_t* conn, int status)
