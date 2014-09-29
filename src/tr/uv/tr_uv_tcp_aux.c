@@ -168,7 +168,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
     if (timeout > config->reconn_delay_max) 
         timeout = config->reconn_delay_max;
 
-    timeout = (rand() % timeout) * 2; 
+    timeout = (rand() % timeout) + timeout / 2; 
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - reconnect, delay: %d", timeout);
     
@@ -271,7 +271,7 @@ void tcp__conn_timeout_cb(uv_timer_t* t)
 
 void tcp__conn_done_cb(uv_connect_t* conn, int status)
 {
-    int hb_timeout;
+    int hs_timeout;
     int ret;
 
     GET_TT(conn);
@@ -287,9 +287,9 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         //
         // it maybe lead to be non-compatiable to uv in future.
 #ifdef _WIN32
-        hb_timeout = tt->conn_timeout.due - tt->uv_loop.time;
+        hs_timeout = tt->conn_timeout.due - tt->uv_loop.time;
 #else
-        hb_timeout = tt->conn_timeout.timeout - tt->uv_loop.time;
+        hs_timeout = tt->conn_timeout.timeout - tt->uv_loop.time;
 #endif
         uv_timer_stop(&tt->conn_timeout);
     }
@@ -312,7 +312,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         tcp__send_handshake(tt);
 
         if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
-            uv_timer_start( &tt->handshake_timer, tcp__handshake_timer_cb, hb_timeout, 0);
+            uv_timer_start( &tt->handshake_timer, tcp__handshake_timer_cb, hs_timeout, 0);
         }
         return ;
     } 
