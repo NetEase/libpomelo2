@@ -328,6 +328,7 @@ void tcp__write_async_cb(uv_async_t* a)
     int buf_cnt;
     int i;
     int ret;
+    int conn_pending = 0;
     QUEUE* q;
     tr_uv_wi_t* wi;
     uv_buf_t* bufs;
@@ -356,6 +357,8 @@ void tcp__write_async_cb(uv_async_t* a)
             QUEUE_INIT(q);
             QUEUE_INSERT_TAIL(&tt->write_wait_queue, q);
         }
+    } else {
+        conn_pending = !QUEUE_EMPTY(&tt->conn_pending_queue);
     }
 
     buf_cnt = 0;
@@ -366,6 +369,14 @@ void tcp__write_async_cb(uv_async_t* a)
 
     if (buf_cnt == 0) {
         pc_mutex_unlock(&tt->wq_mutex);
+        if (conn_pending) {
+            // if there are pending req, we should start to check timeout
+            if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
+                pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
+                uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+                        PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
+            }
+        }
         return ;
     }
 
@@ -437,9 +448,11 @@ void tcp__write_async_cb(uv_async_t* a)
 
     // enable check timeout timer
     if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
+        pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
         uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
     }
+    
 }
 
 void tcp__write_done_cb(uv_write_t* w, int status)
