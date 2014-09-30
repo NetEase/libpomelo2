@@ -22,8 +22,6 @@
 
 #define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt) 
 
-#define TR_UV_INTERNAL_PKG_TIMEOUT 30
-
 static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 {
     if (TR_UV_WI_IS_RESP(wi->type)) {
@@ -328,7 +326,7 @@ void tcp__write_async_cb(uv_async_t* a)
     int buf_cnt;
     int i;
     int ret;
-    int conn_pending = 0;
+    int need_check = 0;
     QUEUE* q;
     tr_uv_wi_t* wi;
     uv_buf_t* bufs;
@@ -358,18 +356,24 @@ void tcp__write_async_cb(uv_async_t* a)
             QUEUE_INSERT_TAIL(&tt->write_wait_queue, q);
         }
     } else {
-        conn_pending = !QUEUE_EMPTY(&tt->conn_pending_queue);
+        need_check = !QUEUE_EMPTY(&tt->conn_pending_queue);
     }
 
     buf_cnt = 0;
 
     QUEUE_FOREACH(q, &tt->write_wait_queue) {
-       buf_cnt++; 
+        wi = (tr_uv_wi_t*)QUEUE_DATA(q, tr_uv_wi_t, queue);
+
+        if (!TR_UV_WI_IS_INTERNAL(wi->type) && wi->timeout != PC_WITHOUT_TIMEOUT) {
+            need_check = 1;
+        }
+
+        buf_cnt++; 
     }
 
     if (buf_cnt == 0) {
         pc_mutex_unlock(&tt->wq_mutex);
-        if (conn_pending) {
+        if (need_check) {
             // if there are pending req, we should start to check timeout
             if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
                 pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
@@ -447,7 +451,7 @@ void tcp__write_async_cb(uv_async_t* a)
     tt->is_writing = 1;
 
     // enable check timeout timer
-    if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
+    if (need_check && !uv_is_active((uv_handle_t* )&tt->check_timeout)) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
         uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
@@ -617,6 +621,10 @@ void tcp__cleanup_async_cb(uv_async_t* a)
 
     tcp__cleanup_json_t(&tt->handshake_opts);
 
+    if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
+        uv_close((uv_handle_t*)&tt->socket, NULL);
+    }
+
 #define C(x) uv_close((uv_handle_t*)&tt->x, NULL)
     C(conn_timeout);
     C(reconn_delay_timer);
@@ -688,7 +696,7 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     wi->buf = buf;
     wi->seq_num = -1; // internal data
     wi->req_id = -1; // internal data 
-    wi->timeout = TR_UV_INTERNAL_PKG_TIMEOUT; // internal timeout
+    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }
@@ -945,7 +953,7 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     wi->buf = buf;
     wi->seq_num = -1; //internal data
     wi->req_id = -1; // internal data 
-    wi->timeout = 30; // internal timeout
+    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
     wi->ts = time(NULL); // TODO: time() 
 
     uv_async_send(&tt->write_async);
@@ -1192,7 +1200,7 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     wi->buf = buf;
     wi->seq_num = -1; //internal data
     wi->req_id = -1; // internal data 
-    wi->timeout = TR_UV_INTERNAL_PKG_TIMEOUT; // internal timeout
+    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }
