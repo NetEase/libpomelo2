@@ -135,8 +135,8 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 
     tt->uv_loop.data = tt;
 
-    ret = uv_tcp_init(&tt->uv_loop, &tt->socket);
-    assert(!ret);
+    // we do not init tt->socket here, because
+    // tt->socket will be inited when to connect
     tt->socket.data = tt;
 
     tt->thread_id = -1;
