@@ -216,11 +216,10 @@ void tcp__conn_async_cb(uv_async_t* t)
         }
     }
 
-    freeaddrinfo(ainfo);
-
     if (!addr4 && !addr6) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "DNS Resolve Error", NULL);
         pc_lib_log(PC_LOG_ERROR, "tcp__conn_async_cb - dns resolve error: %s, will reconn", tt->host);
+        freeaddrinfo(ainfo);
         tt->reconn_fn(tt);
         return;
     }
@@ -232,6 +231,8 @@ void tcp__conn_async_cb(uv_async_t* t)
 
     tt->conn_req.data = tt;
     ret = uv_tcp_connect(&tt->conn_req, &tt->socket, addr, tt->conn_done_cb);
+
+    freeaddrinfo(ainfo);
 
     if (ret) {
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "UV Conn Error", NULL);
