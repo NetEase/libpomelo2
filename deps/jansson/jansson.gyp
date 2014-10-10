@@ -32,6 +32,7 @@
       ],
       'defines': [
           'HAVE_STDINT_H',
+          'VALGRIND',
       ],
       'conditions': [
         ['OS == "win"', {
