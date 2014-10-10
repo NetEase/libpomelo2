@@ -36,6 +36,7 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
         return PC_RC_INVALID_ARG;
     }
 
+    // error report that using uninitialised value by valgrind here can be suppressed
     if (client->magic_num == pc__init_magic_num) {
         pc_lib_log(PC_LOG_INFO, "pc_client_init - client has already inited");
         return PC_RC_OK;
