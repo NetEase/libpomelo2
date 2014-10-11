@@ -320,13 +320,20 @@ static PyObject* state(PyObject* self, PyObject* args)
 {
     unsigned long addr;
     pc_client_t* client;
+    int state;
 
     if (!PyArg_ParseTuple(args, "k:state", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
     
-    return Py_BuildValue("i", pc_client_state(client));
+    Py_BEGIN_ALLOW_THREADS
+
+    state = pc_client_state(client);
+    
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", state);
 }
 
 static PyObject* add_ev_handler(PyObject* self, PyObject* args)
@@ -349,7 +356,12 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
 
     client = (pc_client_t* )addr;
     Py_XINCREF(ev_cb); 
+
+    Py_BEGIN_ALLOW_THREADS
+
     ret = pc_client_add_ev_handler(client, default_event_cb, ev_cb, default_destructor);
+
+    Py_END_ALLOW_THREADS
 
     if (ret == PC_EV_INVALID_HANDLER_ID) {
         Py_XDECREF(ev_cb); 
@@ -363,6 +375,7 @@ static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
     unsigned long addr;
     pc_client_t* client;
     int handler_id;
+    int ret;
 
     if (!PyArg_ParseTuple(args, "ki:rm_ev_handler", &addr, &handler_id)) { 
         return NULL;
@@ -370,7 +383,13 @@ static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
 
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_client_rm_ev_handler(client, handler_id));
+    Py_BEGIN_ALLOW_THREADS
+
+    ret = pc_client_rm_ev_handler(client, handler_id);
+
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* request(PyObject* self, PyObject* args)
@@ -381,6 +400,7 @@ static PyObject* request(PyObject* self, PyObject* args)
     char* msg = NULL;
     int timeout = 0;
     PyObject* req_cb = NULL;
+    int ret;
 
     if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
                 &route, &msg, &timeout, &req_cb)) { 
@@ -397,8 +417,14 @@ static PyObject* request(PyObject* self, PyObject* args)
     Py_XINCREF(req_cb); 
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_request_with_timeout(client, route, msg,
-                req_cb, timeout, default_request_cb));
+    Py_BEGIN_ALLOW_THREADS
+
+    ret = pc_request_with_timeout(client, route, msg,
+                req_cb, timeout, default_request_cb);
+
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* notify(PyObject* self, PyObject* args)
@@ -409,6 +435,7 @@ static PyObject* notify(PyObject* self, PyObject* args)
     char* msg = NULL;
     int timeout = 0;
     PyObject* notify_cb = NULL;
+    int ret;
 
     if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
                 &route, &msg, &timeout, &notify_cb)) { 
@@ -425,8 +452,14 @@ static PyObject* notify(PyObject* self, PyObject* args)
     Py_XINCREF(notify_cb); 
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_notify_with_timeout(client, route, msg,
-                notify_cb, timeout, default_notify_cb));
+    Py_BEGIN_ALLOW_THREADS
+
+    ret = pc_notify_with_timeout(client, route, msg,
+                notify_cb, timeout, default_notify_cb);
+
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* poll(PyObject* self, PyObject* args)
