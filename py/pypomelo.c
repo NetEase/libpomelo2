@@ -8,6 +8,12 @@
 #include <pomelo.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define PY_POMELO_EXPORT __declspec(dllexport)
+#else
+#define PY_POMELO_EXPORT
+#endif
+
 static void default_destructor(void* ex_data)
 {
     PyObject* ev_cb = (PyObject*) ex_data;
@@ -263,6 +269,7 @@ static PyObject* create(PyObject* self, PyObject* args)
     pc_client_t* client = NULL;
     PyObject* lc_callback = NULL;
     int ret;
+    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
 
     if (!PyArg_ParseTuple(args, "|iiO:init", &tls, &polling, &lc_callback)) { 
        return NULL;
@@ -272,8 +279,7 @@ static PyObject* create(PyObject* self, PyObject* args)
         PyErr_SetString(PyExc_TypeError, "parameter lc_callback must be callable");
         return NULL;
     }
-
-    pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
+    
     if (tls) {
         config.transport_name = PC_TR_NAME_UV_TLS;
     }
@@ -549,7 +555,7 @@ static PyMethodDef pypomelo_meths[] = {
 extern "C" {
 #endif
 
-void initpypomelo() 
+PY_POMELO_EXPORT void initpypomelo() 
 {
     if (!PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
