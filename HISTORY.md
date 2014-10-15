@@ -1,3 +1,9 @@
+2014-10-15 / 0.1.3
+=====================
+- bugfix: typo for = <-> ==
+- bugfix: fix warnings for multi-platform compilation
+- clean code
+
 2014-10-10 / 0.1.2
 =====================
 - set timeout to PC_WITHOUT_TIMEOUT for internal pkg
