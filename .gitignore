@@ -43,3 +43,4 @@ core
 *.class
 
 
+.DS_Store
