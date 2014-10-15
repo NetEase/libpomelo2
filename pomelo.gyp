@@ -137,6 +137,11 @@
           'defines':[
             '_GNU_SOURCE',
           ],
+        }, {
+          'defines': [
+            '_CRT_SECURE_NO_WARNINGS',
+            '_CRT_NONSTDC_NO_DEPRECATE',
+          ]
         }],
       ['pomelo_library=="shared_library"', {
         'defines': ['BUILDING_PC_SHARED=1'], }],
