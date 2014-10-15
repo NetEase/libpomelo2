@@ -227,20 +227,20 @@ static int checkreturn pb_encode_proto(pb_ostream_t *stream, const json_t *gprot
     _messages = json_object_get(protos, "__messages");
     switch (pb_get_type(type)) {
         case PB_uInt32:
-            int_val = json_number_value(value);
+            int_val = (json_int_t)json_number_value(value);
             if (!pb_encode_varint(stream, int_val)) {
                 return 0;
             }
             break;
         case PB_int32:
         case PB_sInt32:
-            int_val = json_number_value(value);
+            int_val = (json_int_t)json_number_value(value);
             if (!pb_encode_svarint(stream, int_val)) {
                 return 0;
             }
             break;
         case PB_float:
-            float_val = json_number_value(value);
+            float_val = (float)json_number_value(value);
             if (!pb_encode_fixed32(stream, &float_val)) {
                 return 0;
             }
@@ -371,7 +371,7 @@ static int checkreturn pb_encode_tag_for_field(pb_ostream_t *stream, const json_
 
     wiretype = pb_get_constant_type(json_string_value(type));
 
-    return pb_encode_tag(stream, wiretype, json_number_value(tag));
+    return pb_encode_tag(stream, wiretype, (uint32_t)json_number_value(tag));
 }
 
 /* Encode a string or bytes type field. For strings, pass strlen(s) as size. */

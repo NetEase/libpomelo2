@@ -428,7 +428,7 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
     
     code = json_object_get(route2code, msg->route);
     if (code) {
-        route_code = json_integer_value(code);
+        route_code = (int)json_integer_value(code);
     }
 
     if (route_code > 0) {

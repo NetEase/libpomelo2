@@ -46,7 +46,6 @@ static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 
 void tcp__reset(tr_uv_tcp_transport_t* tt)
 {
-    int i;
     tr_uv_wi_t* wi;
     QUEUE* q;
 
@@ -281,9 +280,9 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         //
         // it maybe lead to be non-compatiable to uv in future.
 #ifdef _WIN32
-        hs_timeout = tt->conn_timeout.due - tt->uv_loop.time;
+        hs_timeout = (int)(tt->conn_timeout.due - tt->uv_loop.time);
 #else
-        hs_timeout = tt->conn_timeout.timeout - tt->uv_loop.time;
+        hs_timeout = (int)(tt->conn_timeout.timeout - tt->uv_loop.time);
 #endif
         uv_timer_stop(&tt->conn_timeout);
     }
@@ -717,12 +716,14 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     assert(uv_is_active((uv_handle_t*)&tt->hb_timeout_timer));
 
     // we hacking uv timer to get the heartbeat rtt, rtt in millisec
+    // int is enough to hold the value
 #ifdef _WIN32
-    start = tt->hb_timeout_timer.due - tt->hb_timeout * 1000;
+    start = (int)(tt->hb_timeout_timer.due - tt->hb_timeout * 1000);
 #else
-    start = tt->hb_timeout_timer.timeout - tt->hb_timeout * 1000;
+    start = (int)(tt->hb_timeout_timer.timeout - tt->hb_timeout * 1000);
 #endif
-    rtt = tt->uv_loop.time - start;
+    
+    rtt = (int)(tt->uv_loop.time - start);
 
     uv_timer_stop(&tt->hb_timeout_timer);
 
@@ -1013,7 +1014,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         tt->hb_timeout = -1;
         pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - no heartbeat specified");
     } else {
-        tt->hb_interval = i;
+        tt->hb_interval = (int)i;
         pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - set heartbeat interval: %d", i);
         tt->hb_timeout = tt->hb_interval * PC_HEARTBEAT_TIMEOUT_FACTOR;
     }

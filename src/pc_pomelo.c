@@ -227,13 +227,9 @@ int pc_client_disconnect(pc_client_t* client)
 
 int pc_client_cleanup(pc_client_t* client)
 {
-    int i;
     QUEUE* q;
     int ret;
     pc_ev_handler_t* handler;
-    pc_request_t* req;
-    pc_notify_t* notify;
-    pc_ev_handler_t* ev;
     pc_transport_plugin_t* plugin;
 
     if (!client) {
@@ -341,8 +337,7 @@ static void pc__handle_event(pc_client_t* client, pc_event_t* ev)
 }
 
 int pc_client_poll(pc_client_t* client)
-{ 
-    int i;
+{
     pc_event_t* ev;
     QUEUE* q;
 

@@ -348,7 +348,7 @@ int tr_uv_tcp_connect(pc_transport_t* trans, const char* host, int port, const c
 
 int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_num, const char* msg, unsigned int req_id, int timeout)
 {
-    int i, flag;
+    int i;
     tr_uv_wi_t* wi;
     pc_msg_t m;
     uv_buf_t buf;

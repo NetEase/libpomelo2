@@ -285,7 +285,6 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
 void tls__write_done_cb(uv_write_t* w, int status)
 {
     tr_uv_wi_t* wi = NULL;
-    int i;
     QUEUE* q;
     GET_TLS(w);
 

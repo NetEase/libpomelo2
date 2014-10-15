@@ -286,7 +286,7 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
     json_t *type, *array, *value;
     const char *type_text;
     uint32_t size;
-    int i;
+    uint32_t i;
     int need_decref = 0;
     type = json_object_get(proto, "type");
     type_text = json_string_value(type);

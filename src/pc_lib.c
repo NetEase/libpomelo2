@@ -113,7 +113,7 @@ void pc_lib_init(void (*pc_log)(int level, const char* msg, ...), void* (*pc_all
     pc_transport_plugin_register(tp);
     pc_lib_log(PC_LOG_INFO, "pc_lib_init - register tls plugin");
 #endif
-    srand(time(0));
+    srand((unsigned int)time(0));
 
 #endif
 }

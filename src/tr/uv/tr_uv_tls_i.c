@@ -88,7 +88,6 @@ static void crypto_threadid_cb(CRYPTO_THREADID* tid)
 
 void tr_uv_tls_plugin_on_register(pc_transport_plugin_t* plugin)
 {
-    int e;
     tr_uv_tls_transport_plugin_t* pl;
     tr_uv_tcp_plugin_on_register(plugin);
 
