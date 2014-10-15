@@ -264,8 +264,9 @@ static int checkreturn pb_encode_proto(pb_ostream_t *stream, const json_t *gprot
                 if (!sub_msg) {
                     // check root msg in gprotos
                     const char *head = "message ";
-                    char *head_text = (char *)malloc(strlen(head) + strlen(type) + 1);
-                    memset(head_text, 0, sizeof(head_text));
+                    size_t len = strlen(head) + strlen(type) + 1;
+                    char *head_text = (char *)malloc(len);
+                    memset(head_text, 0, len);
                     strcpy(head_text, head);
                     strcat(head_text, type);
                     sub_msg = json_object_get(gprotos, head_text);

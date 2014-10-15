@@ -213,7 +213,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
     target = NULL;
     QUEUE_FOREACH(q, &client->notify_queue) {
         notify = (pc_notify_t* )QUEUE_DATA(q, pc_common_req_t, queue);
-        if (notify->base.seq_num = seq_num) {
+        if (notify->base.seq_num == seq_num) {
 
             pc_lib_log(PC_LOG_INFO, "pc__trans_sent - fire sent event, seq_num: %u, rc: %s",
                     seq_num, pc_client_rc_str(rc));
@@ -313,7 +313,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
     pc_mutex_lock(&client->req_mutex);
     QUEUE_FOREACH(q, &client->req_queue) {
         req= (pc_request_t* )QUEUE_DATA(q, pc_common_req_t, queue);
-        if (req->req_id = req_id) {
+        if (req->req_id == req_id) {
 
             pc_lib_log(PC_LOG_INFO, "pc__trans_resp - fire resp event, req_id: %u, rc: %s",
                     req_id, pc_client_rc_str(rc));

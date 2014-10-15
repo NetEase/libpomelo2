@@ -28,7 +28,7 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(sizeof(tr_uv_tcp_transport_t));
     memset(tt, 0, len);
 
-    (void*)plugin; // unused
+    (void)plugin; // unused
     tt->base.connect = tr_uv_tcp_connect;
     tt->base.send = tr_uv_tcp_send;
     tt->base.disconnect = tr_uv_tcp_disconnect; 
@@ -53,21 +53,21 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
 
 void tr_uv_tcp_release(pc_transport_plugin_t* plugin, pc_transport_t* trans)
 {
-    (void*)plugin; // unused
+    (void)plugin; // unused
 
     pc_lib_free(trans);
 }
 
 void tr_uv_tcp_plugin_on_register(pc_transport_plugin_t* plugin)
 {
-    (void*)plugin; // unused
+    (void)plugin; // unused
 
     json_set_alloc_funcs(pc_lib_malloc, pc_lib_free);
 }
 
 void tr_uv_tcp_plugin_on_deregister(pc_transport_plugin_t* plugin)
 {
-    (void*)plugin; // unused
+    (void)plugin; // unused
     // empty
 }
 
@@ -103,6 +103,8 @@ static void tr_tcp_on_pkg_handler(pc_pkg_type type, const char* data, size_t len
 
         case PC_PKG_KICK:
             tcp__on_kick_recieved(tt);
+            break;
+        default:
             break;
     }
 }
@@ -252,15 +254,15 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
             pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_init - load local storage ok");
 
             // route2code
-            if (tmp = json_object_get(lc, TR_UV_LCK_ROUTE_2_CODE)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_ROUTE_2_CODE))) {
                 tt->route_to_code = tmp;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_CODE_2_ROUTE)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_CODE_2_ROUTE))) {
                 tt->code_to_route = tmp;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_DICT_VERSION)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_DICT_VERSION))) {
                 tt->dict_ver = tmp;
             }
 
@@ -276,15 +278,15 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
                 tt->route_to_code = NULL;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_PROTO_CLIENT)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_CLIENT))) {
                 tt->client_protos = tmp;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_PROTO_SERVER)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_SERVER))) {
                 tt->server_protos = tmp;
             }
 
-            if (tmp = json_object_get(lc, TR_UV_LCK_PROTO_VERSION)) {
+            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_VERSION))) {
                 tt->proto_ver = tmp;
             }
 

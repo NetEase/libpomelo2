@@ -56,7 +56,7 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         *len = 0;
         offset = 0;
 
-        while(length = fread(buf, 1, 1024, f)) {
+        while((length = fread(buf, 1, 1024, f))) {
             *len += length;
             if (data) {
                 memcpy(data + offset, buf, length);

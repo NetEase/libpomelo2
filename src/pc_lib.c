@@ -64,7 +64,7 @@ static void default_log(int level, const char* msg, ...)
     }
 
     strftime(buf, 32, "[%Y-%m-%d %H:%M:%S]", localtime(&t));
-    printf(buf);
+    printf("%s", buf);
     switch(level) {
     case PC_LOG_DEBUG:
         printf("[DEBUG] ");
