@@ -130,6 +130,9 @@
         [ 'OS != "win"', {
           'cflags': [
             '-ggdb',
+            '-Wall',
+            '-Wextra',
+            '-Wno-unused-parameter',
           ],
         }],
       ['pomelo_library=="shared_library"', {
