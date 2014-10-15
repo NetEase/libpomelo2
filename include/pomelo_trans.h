@@ -18,8 +18,8 @@ typedef struct pc_transport_plugin_s pc_transport_plugin_t;
 /**
  * special request id 
  */
-#define PC_NOTIFY_PUSH_REQ_ID 0
-#define PC_INVALID_REQ_ID -1
+#define PC_NOTIFY_PUSH_REQ_ID ((unsigned int)0)
+#define PC_INVALID_REQ_ID ((unsigned int)-1)
 
 struct pc_transport_s {
     int (*init)(pc_transport_t* trans, pc_client_t* client);

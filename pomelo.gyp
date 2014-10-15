@@ -44,8 +44,8 @@
       {  # else 
         'defines':[
           '_LARGEFILE_SOURCE',
-        '_FILE_OFFSET_BITS=64',
-        '_GNU_SOURCE',
+          '_FILE_OFFSET_BITS=64',
+          '_GNU_SOURCE'
         ]
       }],   # OS == "win"
       ],    # conditions
@@ -133,6 +133,9 @@
             '-Wall',
             '-Wextra',
             '-Wno-unused-parameter',
+          ],
+          'defines':[
+            '_GNU_SOURCE',
           ],
         }],
       ['pomelo_library=="shared_library"', {

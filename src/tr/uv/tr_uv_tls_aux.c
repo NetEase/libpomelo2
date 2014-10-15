@@ -162,7 +162,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
 
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
             ret = SSL_write(tls->tls, wi->buf.base, wi->buf.len);
-            assert(ret == -1 || ret == wi->buf.len);
+            assert(ret == -1 || ret == (int)(wi->buf.len));
             if (ret == -1) {
                 tls->should_retry = wi;
                 if (tls__get_error(tls->tls, ret)) {

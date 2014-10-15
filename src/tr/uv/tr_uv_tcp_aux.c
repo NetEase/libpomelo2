@@ -573,11 +573,8 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
 
 void tcp__write_check_timeout_cb(uv_timer_t* w)
 {
-    time_t ct;
     int cont;
     GET_TT(w);
-
-    ct = time(0);
 
     assert(w == &tt->check_timeout);
 

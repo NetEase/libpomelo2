@@ -50,8 +50,8 @@ typedef struct {
     unsigned int type;
 
     uv_buf_t buf;
-    int seq_num; /* for notify, if internal use -1 */
-    int req_id; /* for request, if internal use -1 */
+    unsigned int seq_num; /* for notify, if internal use -1 */
+    unsigned int req_id; /* for request, if internal use -1 */
     time_t ts;
     int timeout;
 } tr_uv_wi_t;

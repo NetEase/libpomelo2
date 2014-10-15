@@ -24,7 +24,7 @@ typedef struct {
     char rb[PC_TLS_READ_BUF_SIZE];
 
     char* retry_wb;
-    size_t retry_wb_len;
+    int retry_wb_len;
 
     tr_uv_wi_t* should_retry;
     QUEUE when_tcp_is_writing_queue;

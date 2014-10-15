@@ -362,7 +362,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     m.route = route;
 
     buf = ((tr_uv_tcp_transport_plugin_t*)tr_uv_tcp_plugin((pc_transport_t*)tt))->pr_msg_encoder(tt, &m);
-    if (buf.len == -1) {
+    if (buf.len == (unsigned int)-1) {
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_send - encode msg failed, msg: %s, route: %s", msg, route);
         return PC_RC_ERROR;
     }
@@ -370,7 +370,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     pkg_buf = pc_pkg_encode(PC_PKG_DATA, buf.base, buf.len);
     pc_lib_free(buf.base);
 
-    if (pkg_buf.len == -1) {
+    if (pkg_buf.len == (unsigned int)-1) {
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_send - encode package failed");
         return PC_RC_ERROR;
     }
