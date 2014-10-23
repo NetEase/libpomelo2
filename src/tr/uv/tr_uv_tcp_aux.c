@@ -190,6 +190,9 @@ void tcp__conn_async_cb(uv_async_t* t)
     hints.ai_flags = AI_ADDRCONFIG;
     hints.ai_socktype = SOCK_STREAM;
 
+    uv_tcp_init(&tt->uv_loop, &tt->socket);
+    tt->socket.data = tt;
+
     ret = getaddrinfo(tt->host, NULL, &hints, &ainfo);
 
     if (ret) {
@@ -224,10 +227,6 @@ void tcp__conn_async_cb(uv_async_t* t)
     }
 
     addr = addr4 ? (struct sockaddr* )addr4 : (struct sockaddr* )addr6;
-
-    uv_tcp_init(&tt->uv_loop, &tt->socket);
-    tt->socket.data = tt;
-
     tt->conn_req.data = tt;
     ret = uv_tcp_connect(&tt->conn_req, &tt->socket, addr, tt->conn_done_cb);
 
