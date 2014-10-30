@@ -318,7 +318,13 @@ static PyObject* connect(PyObject* self, PyObject* args)
     }
 
     client = (pc_client_t* )addr;
+
+    Py_BEGIN_ALLOW_THREADS
+
     ret = pc_client_connect(client, host, port, NULL);
+    
+    Py_END_ALLOW_THREADS
+
     return Py_BuildValue("i", ret);
 }
 
@@ -472,13 +478,20 @@ static PyObject* poll(PyObject* self, PyObject* args)
 {   
     unsigned long addr;
     pc_client_t* client;
+    int ret;
 
     if (!PyArg_ParseTuple(args, "k:poll", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_client_poll(client));
+    Py_BEGIN_ALLOW_THREADS
+
+    ret = pc_client_poll(client);
+
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* quality(PyObject* self, PyObject* args)
@@ -498,13 +511,20 @@ static PyObject* disconnect(PyObject* self, PyObject* args)
 {
     unsigned long addr;
     pc_client_t* client;
+    int ret;
 
     if (!PyArg_ParseTuple(args, "k:disconnect", &addr)) { 
        return NULL;
     }
     client = (pc_client_t* )addr;
 
-    return Py_BuildValue("i", pc_client_disconnect(client));
+    Py_BEGIN_ALLOW_THREADS
+
+    ret = pc_client_disconnect(client);
+
+    Py_END_ALLOW_THREADS
+
+    return Py_BuildValue("i", ret);
 }
 
 static PyObject* destroy(PyObject* self, PyObject* args)
@@ -523,7 +543,12 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     lc_cb = (PyObject*)pc_client_config(client)->ex_data;
     Py_XDECREF(lc_cb);
 
+    Py_BEGIN_ALLOW_THREADS
+
     ret = pc_client_cleanup(client);
+
+    Py_END_ALLOW_THREADS
+
     if (ret == PC_RC_OK) {
         free(client);
     }
