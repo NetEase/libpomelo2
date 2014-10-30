@@ -125,6 +125,8 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
 {
     int timeout;
     const pc_client_config_t* config;
+    int i;
+    int factor;
     assert(tt && tt->reset_fn);
 
     tt->reset_fn(tt);
@@ -148,14 +150,39 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
         return ;
     }
 
-    if (!config->reconn_exp_backoff) {
-        timeout = config->reconn_delay * tt->reconn_times;
-    } else {
-        timeout = config->reconn_delay << (tt->reconn_times - 1);
+    if (!tt->max_reconn_incr) {
+
+        if (!config->reconn_delay) {
+            factor = 1;
+        } else {
+            factor = config->reconn_delay_max / config->reconn_delay;
+            if (factor <= 0) 
+                factor = 1;
+        }
+
+        if (!config->reconn_exp_backoff) {
+            tt->max_reconn_incr = factor + 1;
+        } else {
+            for (i = 1; ; ++i) {
+                if (!(factor >> i)) {
+                    break;
+                }
+            }
+            
+            tt->max_reconn_incr = i + 1;
+        }
+        pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - max reconn delay incr: %d", tt->max_reconn_incr);
     }
 
-    if (timeout > config->reconn_delay_max) 
+    if (tt->reconn_times >= tt->max_reconn_incr) {
         timeout = config->reconn_delay_max;
+    } else {
+        if (!config->reconn_exp_backoff) {
+            timeout = config->reconn_delay * tt->reconn_times;
+        } else {
+            timeout = config->reconn_delay << (tt->reconn_times - 1);
+        }
+    }
 
     timeout = (rand() % timeout) + timeout / 2; 
 

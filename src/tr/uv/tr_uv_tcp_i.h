@@ -93,6 +93,7 @@ struct tr_uv_tcp_transport_s {
     uv_async_t conn_async;
     int reconn_times;
     int is_connecting; // this flag is used for conn_req
+    int max_reconn_incr;
 
     uv_timer_t handshake_timer;
 
