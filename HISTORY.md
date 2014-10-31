@@ -1,3 +1,9 @@
+2014-10-31 / 0.1.4
+====================
+- py: fix protential deadlock for python binding
+- reconn: fix incorrect reconn delay calc
+- bugfix: init tcp handle before dns looking up
+
 2014-10-15 / 0.1.3
 =====================
 - bugfix: typo for = <-> ==
