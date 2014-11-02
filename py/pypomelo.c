@@ -540,9 +540,6 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     client = (pc_client_t* )addr;
     assert(client);
 
-    lc_cb = (PyObject*)pc_client_config(client)->ex_data;
-    Py_XDECREF(lc_cb);
-
     Py_BEGIN_ALLOW_THREADS
 
     ret = pc_client_cleanup(client);
@@ -550,6 +547,9 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     Py_END_ALLOW_THREADS
 
     if (ret == PC_RC_OK) {
+        lc_cb = (PyObject*)pc_client_config(client)->ex_data;
+        Py_XDECREF(lc_cb);
+
         free(client);
     }
 

@@ -329,6 +329,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_init
     jfieldID f = (*env)->GetFieldID(env, cls, "jniUse", "[B");
     jbyteArray arr; 
     jobject lc_cb = NULL;
+    jobject g_obj = NULL;
     pc_client_t* client = NULL;
     int ret;
 
@@ -353,9 +354,12 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_init
         return PC_RC_ERROR;
     }
 
-    ret = pc_client_init(client, NULL, &config);
+    g_obj = (*env)->NewGlobalRef(env, obj);
+
+    ret = pc_client_init(client, g_obj, &config);
 
     if (ret != PC_RC_OK) {
+        (*env)->DeleteGlobalRef(env, g_obj);
         (*env)->DeleteGlobalRef(env, lc_cb);
         free(client);
         return PC_RC_ERROR;
@@ -518,16 +522,22 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_destroy
   (JNIEnv *env, jobject obj)
 {
     jobject lc_cb;
+    jobject g_obj;
     int ret;
     GET_CLIENT;
 
-    lc_cb = pc_client_config(client)->ex_data;
-    assert(lc_cb);
-
-    (*env)->DeleteGlobalRef(env, lc_cb);
-
     ret = pc_client_cleanup(client);
+
     if (ret == PC_RC_OK) {
+        lc_cb = pc_client_config(client)->ex_data;
+        g_obj = pc_client_ex_data(client);
+
+        assert(lc_cb);
+        assert(g_obj);
+
+        (*env)->DeleteGlobalRef(env, lc_cb);
+        (*env)->DeleteGlobalRef(env, g_obj);
+
         free(client);
     }
 
