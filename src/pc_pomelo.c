@@ -524,10 +524,6 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
 
     assert(client->trans && client->trans->send);
 
-    if (client->config.enable_polling) {
-        pc_client_poll(client);
-    }
-
     pc_mutex_lock(&client->req_mutex);
 
     req = NULL;
@@ -656,10 +652,6 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
 
 
     assert(client->trans && client->trans->send);
-
-    if (client->config.enable_polling) {
-        pc_client_poll(client);
-    }
 
     pc_mutex_lock(&client->req_mutex);
 
