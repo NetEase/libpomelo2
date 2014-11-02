@@ -114,7 +114,7 @@ typedef struct {
     int enable_polling;
 
     pc_local_storage_cb_t local_storage_cb;
-    void* ex_data;
+    void* ls_ex_data;
 
     int transport_name;
 } pc_client_config_t;

@@ -289,7 +289,7 @@ static PyObject* create(PyObject* self, PyObject* args)
 
     Py_XINCREF(lc_callback);
     config.local_storage_cb = local_storage_cb;
-    config.ex_data = lc_callback;
+    config.ls_ex_data = lc_callback;
 
     client = (pc_client_t* )malloc(pc_client_size());
     if (!client) {
@@ -547,7 +547,7 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     Py_END_ALLOW_THREADS
 
     if (ret == PC_RC_OK) {
-        lc_cb = (PyObject*)pc_client_config(client)->ex_data;
+        lc_cb = (PyObject*)pc_client_config(client)->ls_ex_data;
         Py_XDECREF(lc_cb);
 
         free(client);

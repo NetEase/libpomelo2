@@ -226,7 +226,8 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
         size_t len;
         int ret;
 
-        ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, NULL, &len, tt->config->ex_data);
+        ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, NULL,
+                &len, tt->config->ls_ex_data);
         if (!ret) {
             
             json_t* lc = NULL;
@@ -239,7 +240,8 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
             buf = (char* )pc_lib_malloc(len);
             memset(buf, 0, len);
 
-            ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, buf, &len2, tt->config->ex_data);
+            ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, buf,
+                    &len2, tt->config->ls_ex_data);
             assert(!ret);
             assert(len == len2);
 

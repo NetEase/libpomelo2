@@ -345,7 +345,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_init
 
     lc_cb = (*env)->NewGlobalRef(env, lc);
     config.local_storage_cb = local_storage_cb;
-    config.ex_data = lc_cb;
+    config.ls_ex_data = lc_cb;
 
     client = (pc_client_t* )malloc(pc_client_size());
 
@@ -529,7 +529,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_destroy
     ret = pc_client_cleanup(client);
 
     if (ret == PC_RC_OK) {
-        lc_cb = pc_client_config(client)->ex_data;
+        lc_cb = pc_client_config(client)->ls_ex_data;
         g_obj = pc_client_ex_data(client);
 
         assert(lc_cb);
