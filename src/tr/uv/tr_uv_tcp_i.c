@@ -452,6 +452,7 @@ int tr_uv_tcp_cleanup(pc_transport_t* trans)
         return PC_RC_ERROR;
     }
 
+    pc_mutex_destroy(&tt->wq_mutex);
     uv_loop_close(&tt->uv_loop);
 
     return PC_RC_OK;

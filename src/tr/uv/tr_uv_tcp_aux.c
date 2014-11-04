@@ -662,8 +662,6 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     C(hb_timeout_timer);
 #undef C
 
-    pc_mutex_destroy(&tt->wq_mutex);
-
     tcp__cleanup_json_t(&tt->route_to_code);
     tcp__cleanup_json_t(&tt->code_to_route);
     tcp__cleanup_json_t(&tt->dict_ver);
