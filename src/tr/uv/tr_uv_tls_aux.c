@@ -26,6 +26,7 @@ static void tls__read_from_bio(tr_uv_tls_transport_t* tls);
 static int tls__get_error(SSL* ssl, int status);
 static void tls__write_to_tcp(tr_uv_tls_transport_t* tls);
 static void tls__cycle(tr_uv_tls_transport_t* tls);
+static void tls__emit_error_event(tr_uv_tls_transport_t* tls);
 
 void tls__reset(tr_uv_tcp_transport_t* tt)
 {
@@ -35,6 +36,11 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
     tr_uv_tls_transport_t* tls = (tr_uv_tls_transport_t* )tt;
 
     pc_lib_log(PC_LOG_DEBUG, "tls__reset - reset ssl");
+
+    SSL_shutdown(tls->tls);
+    tls__write_to_tcp(tls);
+    tls->is_handshake_completed = 0;
+
     if (!SSL_clear(tls->tls)) {
         pc_lib_log(PC_LOG_WARN, "tls__reset - ssl clear error: %s",
                 ERR_error_string(ERR_get_error(), NULL));
@@ -83,13 +89,30 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
     tcp__conn_done_cb(conn, status);
 
     if (!status) {
-        // SSL_read will write ClientHello to bio. 
         pc_lib_log(PC_LOG_INFO, "tls__conn_done_cb - send client hello");
+
+        // SSL_read will write ClientHello to bio. 
+        SSL_set_connect_state(tls->tls);
         tls__read_from_bio(tls);
-        
+
         // write ClientHello out
         tls__write_to_tcp(tls); 
     }
+}
+
+static void tls__emit_error_event(tr_uv_tls_transport_t* tls) 
+{
+    GET_TT;
+
+    if (!tls->is_handshake_completed) {
+        /* won't reconnect if tls handshake failed */
+        pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "TLS Handshake Error", NULL);
+        tt->reset_fn(tt);
+    } else {
+        pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
+        tt->reconn_fn(tt);
+    }
+
 }
 
 static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
@@ -102,7 +125,8 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
 
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )tls;
 
-    assert(tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE);
+    if (tt->state == TR_UV_TCP_NOT_CONN)
+        return ;
 
     if (tt->is_writing) {
         pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - use tcp is writing queue");
@@ -131,13 +155,19 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 pc_lib_free(tls->retry_wb);
                 tls->retry_wb = NULL;
                 tls->retry_wb_len = 0;
-                pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
-                tt->reconn_fn(tt);
+
+                tls__emit_error_event(tls); 
+
                 return ;
             } else {
                 // retry fails, do nothing.
             }
         } else {
+
+            if (!tls->is_handshake_completed) {
+                tls->is_handshake_completed = 1;
+            }
+
             // retry succeeds
             if (tls->should_retry) {
                 QUEUE_INIT(&tls->should_retry->queue);
@@ -167,8 +197,9 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 tls->should_retry = wi;
                 if (tls__get_error(tls->tls, ret)) {
                     pc_lib_log(PC_LOG_ERROR, "tls__write_to_bio - SSL_write error, will reconn");
-                    pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
-                    tt->reconn_fn(tt);
+
+                    tls__emit_error_event(tls); 
+
                     return ;
                 } else {
                     tls->retry_wb = (char* )pc_lib_malloc(wi->buf.len);
@@ -177,6 +208,10 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                     break;
                 }
             } else {
+                if (!tls->is_handshake_completed) {
+                    tls->is_handshake_completed = 1;
+                }
+                
                 pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - move wi to writing queue or tcp write queue, seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
                 QUEUE_INIT(&wi->queue);
                 QUEUE_INSERT_TAIL(head, &wi->queue);
@@ -202,14 +237,19 @@ static void tls__read_from_bio(tr_uv_tls_transport_t* tls)
     do {
         read = SSL_read(tls->tls, tls->rb, PC_TLS_READ_BUF_SIZE);
         if (read > 0) {
+
+            if (!tls->is_handshake_completed) {
+                tls->is_handshake_completed = 1;
+            }
+
             pc_pkg_parser_feed(&tt->pkg_parser, tls->rb, read);
         }
     } while (read > 0);
    
     if (tls__get_error(tls->tls, read)) {
         pc_lib_log(PC_LOG_ERROR, "tls__read_from_bio - SSL_read error, will reconn");
-        pc_trans_fire_event(tt->client, PC_EV_UNEXPECTED_DISCONNECT, "TLS Error", NULL);
-        tt->reconn_fn(tt);
+
+        tls__emit_error_event(tls);
     }
 }
 

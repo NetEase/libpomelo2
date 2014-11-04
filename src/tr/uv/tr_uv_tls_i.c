@@ -170,6 +170,8 @@ int tr_uv_tls_init(pc_transport_t* trans, pc_client_t* client)
     tls->in = BIO_new(BIO_s_mem());
     tls->out = BIO_new(BIO_s_mem());
 
+    tls->is_handshake_completed = 0;
+
     // oom, non-handling
     if (!tls->in || !tls->out) 
         abort();

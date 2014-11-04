@@ -62,6 +62,8 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
 
     tt->is_waiting_hb = 0;
     tt->hb_rtt = -1;
+    tt->is_writing = 0;
+    tt->is_connecting = 0;
 
     uv_read_stop((uv_stream_t* )&tt->socket);
 
@@ -316,7 +318,6 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     if (status == 0) {
         // tcp connected.
         tt->state = TR_UV_TCP_HANDSHAKEING;
-        tt->reconn_times = 0;
 
         ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
 
@@ -998,6 +999,8 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     int need_sync = 0;
     
     assert(tt->state == TR_UV_TCP_HANDSHAKEING);
+
+    tt->reconn_times = 0;
 
     res = json_loadb(data, len, 0, &error);
 

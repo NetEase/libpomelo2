@@ -21,6 +21,8 @@ typedef struct {
     BIO* in;
     BIO* out;
 
+    int is_handshake_completed;
+
     char rb[PC_TLS_READ_BUF_SIZE];
 
     char* retry_wb;
