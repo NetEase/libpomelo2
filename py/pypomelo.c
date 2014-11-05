@@ -207,9 +207,12 @@ static PyObject* lib_init(PyObject* self, PyObject* args)
        return NULL;
     }
 
+#if !defined(PC_NO_UV_TLS_TRANS)
     if (ca_file || ca_path) {
         tr_uv_tls_set_ca_file(ca_file, ca_path);
     }
+#endif
+
     pc_lib_set_default_log_level(log_level); 
     pc_lib_init(NULL, NULL, NULL, "Python Client");
 

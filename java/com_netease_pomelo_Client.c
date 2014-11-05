@@ -236,6 +236,7 @@ JNIEXPORT void JNICALL Java_com_netease_pomelo_Client_libInit
     const char* ca_file = NULL;
     const char* ca_path = NULL;
 
+#if !defined(PC_NO_UV_TLS_TRANS)
     if (cafile) {
         ca_file = (*env)->GetStringUTFChars(env, cafile, NULL);
     }
@@ -247,6 +248,7 @@ JNIEXPORT void JNICALL Java_com_netease_pomelo_Client_libInit
     if (ca_file || ca_path) {
         tr_uv_tls_set_ca_file(ca_file, ca_path);
     }
+#endif
 
     pc_lib_set_default_log_level(logLevel);
     pc_lib_init(NULL, NULL, NULL, "Java Client");
