@@ -23,10 +23,11 @@
 #define GET_TT tr_uv_tcp_transport_t* tt = &tls->base; assert(tt && tls)
 
 static void tls__read_from_bio(tr_uv_tls_transport_t* tls);
-static int tls__get_error(SSL* ssl, int status);
+static int tls__get_error(SSL* tls, int status);
 static void tls__write_to_tcp(tr_uv_tls_transport_t* tls);
 static void tls__cycle(tr_uv_tls_transport_t* tls);
 static void tls__emit_error_event(tr_uv_tls_transport_t* tls);
+static void tls__info_callback(const SSL* tls, int where, int ret);
 
 void tls__reset(tr_uv_tcp_transport_t* tt)
 {
@@ -91,6 +92,7 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
     if (!status) {
         pc_lib_log(PC_LOG_INFO, "tls__conn_done_cb - send client hello");
 
+        SSL_set_info_callback(tls->tls, tls__info_callback);
         // SSL_read will write ClientHello to bio. 
         SSL_set_connect_state(tls->tls);
         tls__read_from_bio(tls);
@@ -98,6 +100,44 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
         // write ClientHello out
         tls__write_to_tcp(tls); 
     }
+}
+
+static void tls__info_callback(const SSL* tls, int where, int ret)
+{
+    char* str;
+
+    if (!(where & (SSL_CB_HANDSHAKE_START 
+                    | SSL_CB_HANDSHAKE_DONE 
+                    | SSL_CB_ALERT 
+                    | SSL_CB_EXIT)))
+        return;
+
+    if (where & SSL_CB_HANDSHAKE_START) {
+
+        pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - handshake start");
+
+    } else if (where & SSL_CB_HANDSHAKE_DONE) {
+
+        pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - handshake done");
+
+    } else if (where & SSL_CB_ALERT) {
+
+        str = (where & SSL_CB_READ) ? "read" : "write";
+        pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - alert: %s %s %s",
+                str, SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+
+    } else if (where & SSL_CB_EXIT) {
+        if (ret == 0) {
+
+            pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - tls failed in %s", 
+                    SSL_state_string_long(tls));
+
+        } else if (ret < 0) {
+            pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - tls error in %s",
+                    SSL_state_string_long(tls));
+        }
+    }
+
 }
 
 static void tls__emit_error_event(tr_uv_tls_transport_t* tls) 
