@@ -39,6 +39,11 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
     pc_lib_log(PC_LOG_DEBUG, "tls__reset - reset ssl");
 
     SSL_shutdown(tls->tls);
+
+    /*
+     * here tls__write_to_tcp will write close_notify alert 
+     * or some other fatal alert that leads to error/disconnect
+     */
     tls__write_to_tcp(tls);
     tls->is_handshake_completed = 0;
 
