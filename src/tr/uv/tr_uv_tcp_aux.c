@@ -140,6 +140,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
     if (!config->enable_reconn) {
          pc_lib_log(PC_LOG_WARN, "tcp__reconn - trans want to reconn, but reconn is disabled");
          pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Reconn Disabled", NULL);
+         tt->reconn_times = 0;
          tt->state = TR_UV_TCP_NOT_CONN;
          return;
     }
@@ -148,6 +149,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
     if (config->reconn_max_retry != PC_ALWAYS_RETRY && config->reconn_max_retry < tt->reconn_times) {
         pc_lib_log(PC_LOG_WARN, "tcp__reconn - reconn time exceeded");
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Exceed Max Retry", NULL);
+        tt->reconn_times = 0;
         tt->state = TR_UV_TCP_NOT_CONN;
         return ;
     }
@@ -648,6 +650,7 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
         uv_close((uv_handle_t*)&tt->socket, NULL);
     }
+    tt->reconn_times = 0;
 
 #define C(x) uv_close((uv_handle_t*)&tt->x, NULL)
     C(conn_timeout);
@@ -677,6 +680,7 @@ void tcp__disconnect_async_cb(uv_async_t* a)
 
     assert(a == &tt->disconnect_async);
     tt->reset_fn(tt);
+    tt->reconn_times = 0;
     pc_trans_fire_event(tt->client, PC_EV_DISCONNECT, NULL, NULL);
 }
 
