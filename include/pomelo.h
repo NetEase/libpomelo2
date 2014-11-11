@@ -24,7 +24,9 @@ extern "C" {
 
 #define PC_MAJOR_VERSION 0
 #define PC_MINOR_VERSION 1
-#define PC_REVISION 4
+#define PC_REVISION 5
+#define PC_VERSION_NUM (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
+#define PC_VERSION_STR ("0.1.5")
 
 /**
  * return code
@@ -267,8 +269,8 @@ void tr_uv_tls_set_ca_file(const char* ca_file, const char* ca_path);
 /**
  * Macro implementation
  */
-#define pc_lib_version() (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
-#define pc_lib_version_str() ("0.1.4")
+#define pc_lib_version() PC_VERSION_NUM
+#define pc_lib_version_str() PC_VERSION_STR 
 
 #ifdef __cplusplus
 }

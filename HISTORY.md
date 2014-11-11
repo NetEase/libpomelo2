@@ -1,3 +1,14 @@
+2014-11-11 / 0.1.5
+====================
+- client: don't poll before request/notify
+- java, py: fix binding code bug
+- refactoring: rename field name ex_data to ls_ex_data of struct pc_config_t
+- tls: fix incorrect event emitting when cert is bad
+- tls: update certificate for test case
+- tr: destroy the mutex after uv loop exit
+- tls: more log output by info_callback
+- tls: more comment 
+
 2014-10-31 / 0.1.4
 ====================
 - py: fix protential deadlock for python binding
