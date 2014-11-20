@@ -62,8 +62,6 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
 
     tt->is_waiting_hb = 0;
     tt->hb_rtt = -1;
-    tt->is_writing = 0;
-    tt->is_connecting = 0;
 
     uv_read_stop((uv_stream_t* )&tt->socket);
 
