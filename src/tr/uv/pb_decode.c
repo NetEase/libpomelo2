@@ -313,6 +313,12 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
                 return 0;
             }
         }
+    } else if (pb__get_type(type_text) && pb__get_type(type_text) == PB_string) {
+        if (!pb_decode_proto(stream, gprotos, proto, protos, key, array)) {
+            if (need_decref)
+                json_decref(array);
+            return 0;
+        }
     } else {
         value = json_object();
         if (!pb_decode_proto(stream, gprotos, proto, protos, NULL, value)) {
@@ -324,6 +330,10 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
         json_array_append(array, value);
         json_decref(value);
     }
+
+#ifdef PB_DEBUG
+    printf("[PB_DEBUG:] decode array %s\n", json_dumps(array, 0));
+#endif
 
     json_object_set(result, key, array);
     if (need_decref)
