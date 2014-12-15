@@ -21,10 +21,6 @@ typedef enum {
     PB_string = 6
 } pb_wire_type_t;
 
-/*Helper Function*/
-int pb__get_type(const char *type);
-int pb__get_constant_type(const char *type);
-
 /* These macros are used for giving out error messages.
  * They are mostly a debugging aid; the main error information
  * is the true/false return value from functions.

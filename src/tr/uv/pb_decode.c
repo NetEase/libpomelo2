@@ -325,7 +325,7 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
                 return 0;
             }
         }
-    } else if (pb__get_type(type_text) && pb__get_type(type_text) == PB_string) {
+    } else if (pb_get_type(type_text) && pb_get_type(type_text) == PB_string) {
         if (!pb_decode_proto(stream, gprotos, proto, protos, key, array)) {
             if (need_decref)
                 json_decref(array);
