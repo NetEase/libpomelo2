@@ -23,7 +23,6 @@ build/
 .tags_sorted_by_file
 **xcodeproj/
 **dSYM/
-*.mk
 gyp-mac-tool
 pomelo.Makefile
 deps/jansson/jansson.Makefile

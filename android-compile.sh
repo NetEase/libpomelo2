@@ -30,5 +30,5 @@ export CXX=arm-linux-androideabi-g++
 export LINK=arm-linux-androideabi-g++
 export PLATFORM=android
 
-gyp --depth=. -Dtarget_arch=arm -DOS=android -Dpomelo_library=static_library -Duse_sys_openssl=false -Dbuild_jpomelo=true $SSL pomelo.gyp
+gyp --depth=. -Dtarget_arch=arm -DOS=android -Dpomelo_library=static_library -Duse_sys_openssl=false -Dbuild_jpomelo=true $SSL pomelo.gyp --format=make
 
