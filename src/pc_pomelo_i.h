@@ -139,6 +139,7 @@ struct pc_client_s {
     pc_mutex_t event_mutex;
     pc_event_t pending_events[PC_PRE_ALLOC_EVENT_SLOT_COUNT];
     QUEUE pending_ev_queue;
+    int is_in_poll;
 };
 
 void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char* resp, int pending);
