@@ -48,7 +48,7 @@ typedef struct {
     pc_buf_t body;
 } pc__msg_raw_t;
 
-static __inline const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
+static PC_INLINE const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
 {
     char code_str[16];
     memset(code_str, 0, 16);
