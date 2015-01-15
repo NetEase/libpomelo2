@@ -328,9 +328,6 @@ static void pc__handle_event(pc_client_t* client, pc_event_t* ev)
         ev->data.ev.arg2 = NULL;
     }
 
-    QUEUE_REMOVE(&ev->queue);
-    QUEUE_INIT(&ev->queue);
-
     if (PC_IS_DYN_ALLOC(ev->type)) {
         pc_lib_free(ev);
     } else {
@@ -368,6 +365,9 @@ int pc_client_poll(pc_client_t* client)
         while(!QUEUE_EMPTY(&client->pending_ev_queue)) {
             q = QUEUE_HEAD(&client->pending_ev_queue);
             ev = (pc_event_t*) QUEUE_DATA(q, pc_event_t, queue);
+
+            QUEUE_REMOVE(&ev->queue);
+            QUEUE_INIT(&ev->queue);
 
             assert((PC_IS_PRE_ALLOC(ev->type) && PC_PRE_ALLOC_IS_BUSY(ev->type)) || PC_IS_DYN_ALLOC(ev->type));
 
