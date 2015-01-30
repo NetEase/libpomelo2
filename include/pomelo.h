@@ -25,8 +25,12 @@ extern "C" {
 #define PC_MAJOR_VERSION 0
 #define PC_MINOR_VERSION 1
 #define PC_REVISION 5
+
+#define PC_T(x) PC__T(x)
+#define PC__T(x) #x
+
 #define PC_VERSION_NUM (PC_MAJOR_VERSION * 10000 + PC_MINOR_VERSION * 100 + PC_REVISION)
-#define PC_VERSION_STR ("0.1.5")
+#define PC_VERSION_STR ( PC_T(PC_MAJOR_VERSION) "." PC_T(PC_MINOR_VERSION) "." PC_T(PC_REVISION) )
 
 /**
  * error code
