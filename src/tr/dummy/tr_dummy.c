@@ -61,13 +61,6 @@ static int dummy_disconnect(pc_transport_t* trans)
 
 static int dummy_cleanup(pc_transport_t* trans) 
 {
-    pc_transport_plugin_t* plugin;
-    assert(trans);
-
-    plugin = trans->plugin(trans);
-    assert(plugin);
-
-    plugin->transport_release(plugin, trans);
     return PC_RC_OK;
 }
 
