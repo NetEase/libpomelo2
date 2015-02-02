@@ -100,7 +100,7 @@ void tr_uv_tls_plugin_on_register(pc_transport_plugin_t* plugin)
     CRYPTO_THREADID_set_callback(crypto_threadid_cb);
 
     pl = (tr_uv_tls_transport_plugin_t* )plugin;
-    pl->ctx = SSL_CTX_new(SSLv3_method());
+    pl->ctx = SSL_CTX_new(TLSv1_2_client_method());
     if (!pl->ctx) {
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tls_plugin_on_register - tls error: %s",
                 ERR_error_string(ERR_get_error(), NULL));
