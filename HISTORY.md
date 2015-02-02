@@ -1,3 +1,7 @@
+2015-02-02 / 0.1.7
+====================
+- dummy: fix a double-free bug for dummy transport
+- tls: use tls 1.2 instead of ssl 3
 
 2015-01-30 / 0.1.6
 ====================
