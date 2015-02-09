@@ -69,3 +69,5 @@ tags
 .swp
 cscope*
 .DS_Store
+cs/unity/Library/
+cs/unity/Temp/

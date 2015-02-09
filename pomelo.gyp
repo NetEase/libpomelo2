@@ -12,6 +12,7 @@
       'build_pypomelo%': "false",
       'python_header%': "/usr/include/python2.7",
       'build_jpomelo%': "false",
+      'build_cspomelo%': "false",
   },
 
     'target_defaults': {
@@ -266,6 +267,26 @@
           ],
           'sources': [
             './java/com_netease_pomelo_Client.c',
+          ],
+        },],
+
+      }],
+      [
+      'build_cspomelo == "true"', {
+        'targets':[ {
+          'target_name': 'cspomelo',
+          'type': 'shared_library',
+          'dependencies': [
+            'libpomelo2',
+          ],
+          'include_dirs': [
+            './include/',
+          ],
+          'cflags': [
+            '-ggdb',
+          ],
+          'sources': [
+            './cs/cspomelo.c',
           ],
         },],
 
