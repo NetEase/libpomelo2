@@ -1082,7 +1082,7 @@
           'ENGINESDIR="/dev/null"',
           'TERMIOS',
         ],
-        'cflags': ['-Wno-missing-field-initializers'],
+        'cflags': ['-Wno-missing-field-initializers', '-fPIC',],
         'conditions': [
           ['OS=="mac"', {
             'defines': [
@@ -1102,7 +1102,7 @@
         ]
       }],
       ['is_clang==1 or gcc_version>=43', {
-        'cflags': ['-Wno-old-style-declaration'],
+        'cflags': ['-Wno-old-style-declaration', '-fPIC',],
       }],
       ['OS=="solaris"', {
         'defines': ['__EXTENSIONS__'],

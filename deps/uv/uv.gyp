@@ -131,6 +131,7 @@
             '-Wall',
             '-Wextra',
             '-Wno-unused-parameter',
+            '-fPIC',
           ],
           'sources': [
             'include/uv-unix.h',
