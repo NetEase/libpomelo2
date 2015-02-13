@@ -1,7 +1,5 @@
 ﻿using UnityEngine;
-using System.Threading;
 using System.Collections;
-using UnityThreading;
 
 namespace test 
 {
@@ -12,25 +10,39 @@ namespace test
 		[System.Runtime.InteropServices.DllImport("cspomelo", EntryPoint="native_log")]
 		private static extern int NLog(string msg);
 
+		System.Text.StringBuilder log = new System.Text.StringBuilder("App Start\n\n\n");
+
 		public void DLog(object data)
 		{
+			log.AppendLine(data.ToString());
 			Debug.Log(data, null);
 			NLog (data.ToString() + '\n');
 		}
 
 		IEnumerator Start()
 		{
-			PomeloClient.Log = DLog;
-#if UNITY_IPHONE || UNITY_ANDROID
-			PomeloClient.LibInit(PomeloClient.PC_LOG_DEBUG, null, Application.temporaryCachePath + "/cspomelo.log");
+#if UNITY_EDITOR
+			string host = "127.0.0.1";
 #else
-			PomeloClient.LibInit(PomeloClient.PC_LOG_DEBUG, null, "/Users/hbb/Desktop/cspomelo.log");
+			string host = "10.0.2.2";
+			var syshost = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+			foreach(var ip in syshost.AddressList)
+			{
+				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+				{
+					host = ip.ToString();
+					break;
+				}
+			}
 #endif
+
+			PomeloClient.Log = DLog;
+			PomeloClient.LibInit(PomeloClient.PC_LOG_DEBUG, null, null);
 
 			client = new PomeloClient();
 			client.Init(false, false);
 			client.AddEventHandler();
-			client.Connect("127.0.0.1", 3010);
+			client.Connect(host, 3010);
 
 			DLog("Wait 2 second");
 			yield return new WaitForSeconds(2);
@@ -70,6 +82,12 @@ namespace test
 			{
 				DLog("no client to destroy!");
 			}
+		}
+
+		void Update()
+		{
+			var txt = GetComponentInChildren<UnityEngine.UI.Text>();
+			txt.text = log.ToString();
 		}
 	}
 
