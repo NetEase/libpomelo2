@@ -128,7 +128,7 @@ CS_POMELO_EXPORT void native_log(const char* msg)
 
 
 typedef void (*request_handler)(const char* err, const char* resp);
-typedef void (*request_callback)(request_handler handler, int rc, const char* resp);
+typedef void (*request_callback)(unsigned int cbid, int rc, const char* resp);
 
 
 
@@ -242,14 +242,14 @@ CS_POMELO_EXPORT void destroy(pc_client_t* client)
 }
 
 CS_POMELO_EXPORT int request(pc_client_t* client, const char* route, const char* msg,
-							 unsigned int cb_id, int timeout, request_callback cb)
+							 unsigned int cbid, int timeout, request_callback cb)
 {
 	request_cb_t* rp = (request_cb_t*)malloc(sizeof(request_cb_t));
 	if (!rp) {
 		return PC_RC_ERROR;
 	}
 	rp->cb = cb;
-	rp->cbid= cb_id;
+	rp->cbid= cbid;
 	return pc_request_with_timeout(client, route, msg, rp, timeout, default_request_cb);
 }
 

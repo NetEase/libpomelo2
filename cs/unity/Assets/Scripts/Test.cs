@@ -107,17 +107,18 @@ namespace test
 #if UNITY_EDITOR
 			string host = "127.0.0.1";
 #else
-			string host = "10.0.2.2";
-			//			var syshost = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-			//			foreach(var ip in syshost.AddressList)
-			//			{
-			//				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-			//				{
-			//					host = ip.ToString();
-			//					break;
-			//				}
-			//			}
+			string host = "192.168.1.133";
+//			var syshost = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+//			foreach(var ip in syshost.AddressList)
+//			{
+//				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+//				{
+//					host = ip.ToString();
+//					break;
+//				}
+//			}
 #endif
+			DLog("server host : " + host);
 			return host;
 		}
 
