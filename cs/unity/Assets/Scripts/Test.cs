@@ -19,50 +19,6 @@ namespace test
 			NLog (data.ToString() + '\n');
 		}
 
-		IEnumerator Start()
-		{
-#if UNITY_EDITOR
-			string host = "127.0.0.1";
-#else
-			string host = "10.0.2.2";
-			var syshost = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-			foreach(var ip in syshost.AddressList)
-			{
-				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-				{
-					host = ip.ToString();
-					break;
-				}
-			}
-#endif
-
-			PomeloClient.Log = DLog;
-			PomeloClient.LibInit(PomeloClient.PC_LOG_DEBUG, null, null);
-
-			client = new PomeloClient();
-			client.Init(false, false);
-			client.AddEventHandler();
-			client.Connect(host, 3010);
-
-			DLog("Wait 2 second");
-			yield return new WaitForSeconds(2);
-
-			client.Request("connector.entryHandler.entry", @"{""name"":""unity"", ""say"":""i'm request""}",  (res)=>{});
-			client.Notify("connector.entryHandler.entry", @"{""name"":""unity"", ""say"":""i'm notify""}");
-
-			DLog("Wait 5 seconds");
-			yield return new WaitForSeconds(5);
-			
-			DLog(string.Format("done!"));
-			
-			while(true)
-			{
-				DLog("...keep request");
-				client.Request("connector.entryHandler.entry", @"{""name"":""unity"", ""say"":""i'm request""}",  (res)=>{});
-				yield return new WaitForSeconds(5);
-			}
-		}
-
 		/// <summary>
 		/// cleanup the pomelo client
 		/// NOTE it's not the best practice since it would not invoke on ios
@@ -82,6 +38,92 @@ namespace test
 			{
 				DLog("no client to destroy!");
 			}
+		}
+
+		void Start()
+		{
+			PomeloClient.Log = DLog;
+			PomeloClient.LibInit(PomeloClient.PC_LOG_DEBUG, null, null);
+
+			client = new PomeloClient();
+			if(! client.Init(false, false))
+			{
+				DLog("client init has occur a fatal error");
+				return;
+			}
+			DLog("client inited");
+
+			client.OnConnectSuccess += OnConnect;
+			client.OnConnectSuccess += ()=>{
+				DLog("client connected");
+			};
+			client.OnConnectFail += (msg)=>{
+				DLog("client connect fail : " + msg);
+			};
+			client.OnDisconnect += OnDisconnect;
+			client.OnDisconnect += (msg)=>{
+				DLog("client disconnected : " + msg);
+			};
+			client.OnError += (err)=>{
+				DLog("client occur an error : " + err);
+			};
+			client.Connect(ServerHost(), ServerPort());
+		}
+
+		void OnConnect()
+		{
+			client.OnConnectSuccess -= OnConnect;
+
+			StartCoroutine(KeepTestClient());
+		}
+
+		void OnDisconnect(string msg)
+		{
+			DLog("client prepare to reconnect");
+			client.OnConnectSuccess += OnConnect;
+			client.Connect(ServerHost(), ServerPort());
+		}
+
+		IEnumerator KeepTestClient()
+		{
+			int i = 0;
+			while(++i < 3)
+			{
+				DLog("...keep request");
+				client.Request("connector.entryHandler.entry", @"{""name"":""unity"", ""say"":""i'm request""}",  (err, res)=>{
+					DLog(string.Format("Request - connector.entryHandler.entry - err={0},res={1}",err,res));
+				});
+
+				client.Notify("connector.entryHandler.entry", @"{""name"":""unity"", ""say"":""i'm notify""}");
+				yield return new WaitForSeconds(5);
+			}
+
+			client.Disconnect();
+			DLog("client query disconnect");
+		}
+
+		string ServerHost()
+		{
+#if UNITY_EDITOR
+			string host = "127.0.0.1";
+#else
+			string host = "10.0.2.2";
+			//			var syshost = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+			//			foreach(var ip in syshost.AddressList)
+			//			{
+			//				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+			//				{
+			//					host = ip.ToString();
+			//					break;
+			//				}
+			//			}
+#endif
+			return host;
+		}
+
+		int ServerPort()
+		{
+			return 3010;
 		}
 
 		void Update()

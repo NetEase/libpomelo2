@@ -4,6 +4,20 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityThreading;
 
+//__________________________________________________________________________________________PINVOKE_CALLBACKS
+
+//private delegate string NativeLCRCallback();
+using NativeLCRCallback = System.Func<string>;
+//private delegate int NativeLCWCallback(IntPtr data_ptr);
+using NativeLCWCallback = System.Func<System.IntPtr, int>;
+//private delegate void NativeRequestCallback(uint rid, int rc, IntPtr res_ptr);
+using NativeRequestCallback = System.Action<uint, int, System.IntPtr>;
+//private delegate void NativeNotifyCallback(IntPtr req, int rc);
+using NativeNotifyCallback = System.Action<System.IntPtr, int>;
+//using NativeEventCallback = System.Action<System.IntPtr, int, System.IntPtr, System.IntPtr, System.IntPtr>;
+delegate void NativeEventCallback(IntPtr client, int ev, IntPtr ex_data, IntPtr arg1_ptr, IntPtr arg2_ptr);
+
+
 public class PomeloClient
 {
 	public const int PC_RC_OK = 0;
@@ -45,8 +59,6 @@ public class PomeloClient
 	
 	public const int PC_EV_INVALID_HANDLER_ID = -1;
 
-
-
 	//__________________________________________________________________________________________STATIC_FUNCTIONS
 
 	static PomeloClient()
@@ -83,32 +95,23 @@ public class PomeloClient
 		return Marshal.PtrToStringAuto(NativeStateToStr(state));
 	}
 
-	//__________________________________________________________________________________________PINVOKE_CALLBACKS
+	//__________________________________________________________________________________________DEFAULT_CALLBACKS_(FROM_OTHER_THERAD)
 
-	private delegate string NativeLCRCallback();
-	private delegate int NativeLCWCallback(IntPtr data_str);
-	private delegate void NativeRequestCallback(string route_str, int rc, IntPtr res_str);
-	private delegate void NativeNotifyCallback(IntPtr req, int rc);
-	private delegate void NativeEventCallback(IntPtr client, int ev, IntPtr ex_data, IntPtr arg1_str, IntPtr arg2_str);
-
-	//__________________________________________________________________________________________DEFAULT_CALLBACKS
-
-	private void OnRequest(string route_str, int rc, IntPtr res_str)
+	private void OnRequest(uint rid, int rc, IntPtr resp_ptr)
 	{
 		Log(string.Format("OnRequest - pinvoke callback START | rc={0}", RcToStr(rc)));
-//		var route = Marshal.PtrToStringAuto(route_str);
-		var route = route_str;
-		var res = Marshal.PtrToStringAuto(res_str);
+		string err = rc == PC_RC_OK ? null : RcToStr(rc);
+		string res = rc != PC_RC_OK ? null : Marshal.PtrToStringAuto(resp_ptr);
 		UnityThreadHelper.Dispatcher.Dispatch(()=>{
-			Log(string.Format("OnRequest - main thread START | route={0}, res={1}", route, res));
+			Log(string.Format("OnRequest - main thread START | err={0}, res={1}", err, res));
 
 			try{
-				requestHandlers[route](res);
+				requestHandlers[rid](err, res);
 			}catch(Exception ex){
-				LogError("OnRequest - " + ex.ToString());
+				LogError("OnRequest - main thread EXCEPTION |\n" + ex.ToString());
 			}
 
-			requestHandlers.Remove(route);
+			requestHandlers.Remove(rid);
 
 			Log(string.Format("OnRequest - main thread END"));
 		});
@@ -124,14 +127,56 @@ public class PomeloClient
 		});
 		Log(string.Format("OnNotify - pinvoke callback END"));
 	}
-	private void OnEvent(IntPtr client, int ev, IntPtr ex_data, IntPtr arg1_str, IntPtr arg2_str)
+	private void OnEvent(IntPtr client, int ev, IntPtr ex_data, IntPtr arg1_ptr, IntPtr arg2_ptr)
 	{
 		Log(string.Format("OnEvent - pinvoke callback START | ev={0}", EvToStr(ev)));
-		var arg1 = Marshal.PtrToStringAuto(arg1_str);
-		var arg2 = Marshal.PtrToStringAuto(arg2_str);
+		var arg1 = Marshal.PtrToStringAuto(arg1_ptr);
+		var arg2 = Marshal.PtrToStringAuto(arg2_ptr);
 		UnityThreadHelper.Dispatcher.Dispatch(()=>{
 			Log(string.Format("OnEvent - main thread START | arg1={0}, arg2={1}", arg1, arg2));
-			// TODO
+			try {
+				switch(ev)
+				{
+				case PC_EV_USER_DEFINED_PUSH:
+					if(eventHandlers.ContainsKey(arg1))
+					{
+						var source = eventHandlers[arg1];
+						EventBinding[] bindings = new EventBinding[source.Count];
+						source.CopyTo(bindings);
+
+						foreach(var bind in bindings)
+						{
+							bind.handler(arg2);
+							if(bind.once)
+								RemoveEventHandler(arg1, bind.handler, true);
+						}
+					}
+					break;
+				case PC_EV_CONNECTED:
+					OnConnectSuccess();
+					break;
+				case PC_EV_CONNECT_ERROR:
+					OnConnectFail(arg1);
+					break;
+				case PC_EV_CONNECT_FAILED:
+					OnConnectFail(arg1);
+					break;
+				case PC_EV_DISCONNECT:
+					OnDisconnect(null); // probably disconnect by client self
+					break;
+				case PC_EV_KICKED_BY_SERVER:
+					OnDisconnect(EvToStr(ev));
+					break;
+				case PC_EV_UNEXPECTED_DISCONNECT:
+					OnError(arg1);
+					break;
+				case PC_EV_PROTO_ERROR:
+					OnError(arg1);
+					break;
+				}
+			} catch (Exception ex) {
+				LogError("OnEvent - main thread EXCEPTION |\n" + ex.ToString());
+			}
 			Log(string.Format("OnEvent - main thread END"));
 		});
 		Log(string.Format("OnEvent - pinvoke callback END"));
@@ -144,10 +189,10 @@ public class PomeloClient
 		Log("OnLCR - pinvoke END");
 		return data;
 	}
-	private int OnLCW(IntPtr data_str)
+	private int OnLCW(IntPtr data_ptr)
 	{
-		Log("OnLCW- pinvoke START | &data=" + (ulong)data_str);
-		var data = Marshal.PtrToStringAuto(data_str);
+		Log("OnLCW- pinvoke START | &data=" + (ulong)data_ptr);
+		var data = Marshal.PtrToStringAuto(data_ptr);
 		UnityThreadHelper.Dispatcher.Dispatch(()=>{
 			Log("OnLCW- main thread START | data=" + data);
 			lcWriter(data);
@@ -167,12 +212,12 @@ public class PomeloClient
 		Log("DefaultLocalConfigWriter - do not save config : " + data);
 	}
 
-	//__________________________________________________________________________________________USER_FUNCTIONS
+	//__________________________________________________________________________________________USER_API
 
-	public readonly Action OnConnectSuccess = delegate {};
-	public readonly Action<string> OnConnectFail = delegate {};
-	public readonly Action<string> OnDisconnect = delegate {};
-	public readonly Action<string> OnError = delegate {};
+	public Action OnConnectSuccess = delegate {};
+	public Action<string> OnConnectFail = delegate {};
+	public Action<string> OnDisconnect = delegate {};
+	public Action<string> OnError = delegate {};
 	
 	private IntPtr client = IntPtr.Zero;
 
@@ -185,9 +230,11 @@ public class PomeloClient
 	private Func<string> lcReader;
 	private Action<string> lcWriter;
 
-	private readonly Dictionary<string, Action<string>> requestHandlers;
-	private readonly Dictionary<string, Action<string>> eventHandlers;
-
+	private uint reqUid = 0;
+	private int evtId = -1;
+	private readonly Dictionary<uint, Action<string, string>> requestHandlers;
+	private readonly Dictionary<string, List<EventBinding>> eventHandlers;
+	
 	public PomeloClient()
 	{
 		nativeLCRCallback = OnLCR;
@@ -196,8 +243,8 @@ public class PomeloClient
 		nativeNotifyCallback = OnNotify;
 		nativeEventCallback = OnEvent;
 
-		requestHandlers = new Dictionary<string, Action<string>>();
-		eventHandlers = new Dictionary<string, Action<string>>();
+		requestHandlers = new Dictionary<uint, Action<string, string>>();
+		eventHandlers = new Dictionary<string, List<EventBinding>>();
 	}
 	
 	public bool Init(bool enableTLS, bool enablePolling)
@@ -211,15 +258,21 @@ public class PomeloClient
 
 		client = NativeCreate(enableTLS, enablePolling, nativeLCRCallback, nativeLCWCallback);
 		Log("Init - create client " + (ulong)client);
-		if(client != IntPtr.Zero)
+		if(client == IntPtr.Zero)
 			return false;
 
-		Log("Init - create client failed");
+		evtId = NativeAddEventHandler(client, nativeEventCallback, IntPtr.Zero, IntPtr.Zero);
 		return true;
 	}
 	public void Destroy()
 	{
 		Log(string.Format("Destroy - main thread START"));
+		// it is not necessary for event handler will be removed when cleanup client
+		// NativeRemoveEventHandler(client, evtId);
+		requestHandlers.Clear();
+		eventHandlers.Clear();
+		reqUid = 0;
+		evtId = -1;
 		NativeDestroy(client);
 		client = IntPtr.Zero;
 		Log(string.Format("Destroy - main thread END"));
@@ -234,22 +287,24 @@ public class PomeloClient
 		CheckClient();
 		NativeDisconnect(client);
 	}
-	public void Request(string route, string msg, Action<string> handler)
+	public void Request(string route, string msg, Action<string, string> handler)
 	{
 		Request(route, msg, 10, handler);
 	}
-	public void Request(string route, string msg, int timeout, Action<string> handler)
+	public void Request(string route, string msg, int timeout, Action<string, string> handler)
 	{
 		CheckClient();
 
-		if(requestHandlers.ContainsKey(route))
+		++reqUid;
+		requestHandlers.Add(reqUid, handler);
+
+		var rc = NativeRequest(client, route, msg, reqUid, timeout, nativeRequestCallback);
+
+		if(rc != PC_RC_OK)
 		{
-			Log("Request - handler has exiteds on request : " + route);
-			return;
+			handler(RcToStr(rc), null);
+			requestHandlers.Remove(reqUid);
 		}
-		requestHandlers.Add(route, handler);
-		// the 4th argument is unused for the function prototype correspond to `c`
-		NativeRequest(client, route, msg, IntPtr.Zero, timeout, nativeRequestCallback);
 	}
 	public void Notify(string route, string msg)
 	{
@@ -266,16 +321,40 @@ public class PomeloClient
 		// TODO
 		throw new NotImplementedException();
 	}
-	public void AddEventHandler(/*TODO*/)
+
+
+	public void AddEventHandler(string eventName, Action<string> handler, bool once = false)
 	{
-		CheckClient();
-		NativeAddEventHandler(client, nativeEventCallback, IntPtr.Zero, IntPtr.Zero);
+		var e = new EventBinding{
+			handler = handler,
+			once = once,
+		};
+		
+		if(! eventHandlers.ContainsKey(eventName))
+			eventHandlers.Add(eventName, new List<EventBinding>());
+		if(! eventHandlers[eventName].Contains(e))
+			eventHandlers[eventName].Add(e);
 	}
-	public void RemoveEventHandler(int handlerId)
+	public void RemoveEventHandler()
 	{
-		CheckClient();
-		NativeRemoveEventHandler(client, handlerId);
+		eventHandlers.Clear();
 	}
+	public void RemoveEventHandler(string eventName)
+	{
+		eventHandlers.Remove(eventName);
+	}
+	public void RemoveEventHandler(string eventName, Action<string> handler, bool once = false)
+	{
+		if(! eventHandlers.ContainsKey(eventName))
+			return;
+		
+		var e = new EventBinding{
+			handler = handler,
+			once = once,
+		};
+		eventHandlers[eventName].Remove(e);
+	}
+
 
 	public int Quality{
 		get{
@@ -295,6 +374,25 @@ public class PomeloClient
 	{
 		if(client == IntPtr.Zero)
 			throw new NullReferenceException("invalid client");
+	}
+
+	private class EventBinding
+	{
+		public Action<string> handler;
+		public bool once;
+
+		public override bool Equals (object obj)
+		{
+			var item = obj as EventBinding;
+			if(item != null)
+				return handler == item.handler && once == item.once;
+			return base.Equals (obj);
+		}
+
+		public override int GetHashCode ()
+		{
+			return base.GetHashCode ();
+		}
 	}
 
 	//__________________________________________________________________________________________PINVOKE_FUNCTIONS
@@ -325,7 +423,7 @@ public class PomeloClient
 	private static extern int NativeDisconnect(IntPtr client);
 	
 	[DllImport("cspomelo", EntryPoint="request")]
-	private static extern int NativeRequest(IntPtr client, string route, string msg, IntPtr ex_data, int timeout, NativeRequestCallback callback);
+	private static extern int NativeRequest(IntPtr client, string route, string msg, uint cb_uid, int timeout, NativeRequestCallback callback);
 	[DllImport("cspomelo", EntryPoint="pc_notify_with_timeout")]
 	private static extern int NativeNotify(IntPtr client, string route, string msg, IntPtr ex_data, int timeout, NativeNotifyCallback callback);
 	//	[DllImport("cspomelo", EntryPoint="poll")]

@@ -127,14 +127,20 @@ CS_POMELO_EXPORT void native_log(const char* msg)
 /////////
 
 
-typedef void (*request_callback)(const char* route, int rc, const char* msg);
+typedef void (*request_handler)(const char* err, const char* resp);
+typedef void (*request_callback)(request_handler handler, int rc, const char* resp);
 
 
-typedef struct
-{
+
+typedef struct {
 	char* (* read) ();
 	int   (* write)(char* data);
 } lc_callback;
+
+typedef struct {
+	unsigned int cbid;
+	request_callback cb;
+} request_cb_t;
 
 
 static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data)
@@ -166,8 +172,11 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
 
 static void default_request_cb(const pc_request_t* req, int rc, const char* resp)
 {
-	request_callback cb = (request_callback)pc_request_ex_data(req);
-	cb(req->base.route, rc, resp);
+	request_cb_t* rp = (request_cb_t*)pc_request_ex_data(req);
+	assert(rp);
+	request_cb_t r = *rp;
+	free(rp);
+	r.cb(r.cbid, rc, resp);
 }
 
 
@@ -232,9 +241,15 @@ CS_POMELO_EXPORT void destroy(pc_client_t* client)
 	}
 }
 
-CS_POMELO_EXPORT int request(pc_client_t* client, const char* route, const char* msg, void* ex_data, int timeout, request_callback cb)
+CS_POMELO_EXPORT int request(pc_client_t* client, const char* route, const char* msg,
+							 unsigned int cb_id, int timeout, request_callback cb)
 {
-	(void)ex_data; // unused
-	return pc_request_with_timeout(client, route, msg, cb, timeout, default_request_cb);
+	request_cb_t* rp = (request_cb_t*)malloc(sizeof(request_cb_t));
+	if (!rp) {
+		return PC_RC_ERROR;
+	}
+	rp->cb = cb;
+	rp->cbid= cb_id;
+	return pc_request_with_timeout(client, route, msg, rp, timeout, default_request_cb);
 }
 
