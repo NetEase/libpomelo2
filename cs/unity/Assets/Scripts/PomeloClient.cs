@@ -318,8 +318,7 @@ public class PomeloClient
 	public void Poll()
 	{
 		CheckClient();
-		// TODO
-		throw new NotImplementedException();
+		NativePoll(client);
 	}
 
 
@@ -426,8 +425,8 @@ public class PomeloClient
 	private static extern int NativeRequest(IntPtr client, string route, string msg, uint cb_uid, int timeout, NativeRequestCallback callback);
 	[DllImport("cspomelo", EntryPoint="pc_notify_with_timeout")]
 	private static extern int NativeNotify(IntPtr client, string route, string msg, IntPtr ex_data, int timeout, NativeNotifyCallback callback);
-	//	[DllImport("cspomelo", EntryPoint="poll")]
-	//	private static extern int NativePoll(int client);
+	[DllImport("cspomelo", EntryPoint="pc_client_poll")]
+	private static extern int NativePoll(IntPtr client);
 	
 	[DllImport("cspomelo", EntryPoint="pc_client_add_ev_handler")]
 	private static extern int NativeAddEventHandler(IntPtr client, NativeEventCallback callback, IntPtr ex_data, IntPtr destructor);
