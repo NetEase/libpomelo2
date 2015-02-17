@@ -253,6 +253,9 @@ public class PomeloClient
 	}
 	public bool Init(bool enableTLS, bool enablePolling, Func<string> reader, Action<string> writer)
 	{
+		if(client != IntPtr.Zero)
+			return false;
+
 		lcReader = reader ?? DefaultLocalConfigReader;
 		lcWriter = writer ?? DefaultLocalConfigWriter;
 
@@ -267,6 +270,7 @@ public class PomeloClient
 	public void Destroy()
 	{
 		Log(string.Format("Destroy - main thread START"));
+		CheckClient();
 		// it is not necessary for event handler will be removed when cleanup client
 		// NativeRemoveEventHandler(client, evtId);
 		requestHandlers.Clear();
