@@ -134,6 +134,7 @@
             '-Wall',
             '-Wextra',
             '-Wno-unused-parameter',
+            '-fPIC',
           ],
           'defines':[
             '_GNU_SOURCE',
@@ -189,6 +190,7 @@
       ],
       'cflags': [
         '-ggdb',
+        '-fPIC',
       ],
       'sources': [
         './test/test-tr_dummy.c',
@@ -206,6 +208,7 @@
       ],
       'cflags': [
         '-ggdb',
+        '-fPIC',
       ],
       'sources': [
         './test/test-tr_tls.c',
@@ -222,6 +225,7 @@
       ],
       'cflags': [
         '-ggdb',
+        '-fPIC',
       ],
       'sources': [
         './test/test-tr_tcp.c',
@@ -244,6 +248,7 @@
           ],
           'cflags': [
             '-ggdb',
+            '-fPIC',
           ],
           'sources': [
             './py/pypomelo.c',
@@ -264,6 +269,7 @@
           ],
           'cflags': [
             '-ggdb',
+            '-fPIC',
           ],
           'sources': [
             './java/com_netease_pomelo_Client.c',

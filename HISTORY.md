@@ -1,3 +1,16 @@
+2015-02-02 / 0.1.7
+====================
+- dummy: fix a double-free bug for dummy transport
+- tls: use tls 1.2 instead of ssl 3
+
+2015-01-30 / 0.1.6
+====================
+- protocol: fix protobuf decode for repeated string
+- accept a pull request which makes compiling more friendly for android platform
+- client: remove event  first before firing the event
+- poll: adding is_in_poll to avoid poll recursion
+- client: fix a bug that leads to coredump when resetting
+
 2014-11-11 / 0.1.5
 ====================
 - client: don't poll before request/notify

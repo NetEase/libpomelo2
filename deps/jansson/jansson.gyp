@@ -17,6 +17,7 @@
       'include_dirs': [
         './src'
       ],
+
       'sources': [
         'src/dump.c',
         'src/error.c',
@@ -49,7 +50,10 @@
             '-no-undefined',
             '-export-symbols-regex \'^json_\'',
             '-version-info 8:0:4',
-          ]
+          ],
+          'cflags': [
+            '-fPIC',
+          ],
         }],   # OS != "win"
       ],    # conditions
     },
