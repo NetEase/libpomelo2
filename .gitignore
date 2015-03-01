@@ -10,7 +10,6 @@
 *.so
 *.so.*
 *.dylib
-*.bundle
 
 # Executables
 *.exe
@@ -70,5 +69,3 @@ tags
 .swp
 cscope*
 .DS_Store
-cs/unity/Library/
-cs/unity/Temp/
