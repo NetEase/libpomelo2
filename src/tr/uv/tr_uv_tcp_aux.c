@@ -1208,6 +1208,7 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
 
     assert(buf.base && buf.len);
 
+    wi = NULL;
     pc_mutex_lock(&tt->wq_mutex);
     for (i = 0; i < TR_UV_PRE_ALLOC_WI_SLOT_COUNT; ++i) {
         if (PC_PRE_ALLOC_IS_IDLE(tt->pre_wis[i].type)) {
