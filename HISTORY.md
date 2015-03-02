@@ -1,3 +1,9 @@
+2015-03-02 / 0.2.0
+====================
+- compile: enable -fPIC by default
+- cs: add c# binding, Thanks to @hbbalfred
+- bugfix: fix a fatal bug for tcp__handshake_ack
+
 2015-02-02 / 0.1.7
 ====================
 - dummy: fix a double-free bug for dummy transport
