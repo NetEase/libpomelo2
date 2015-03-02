@@ -25,7 +25,7 @@
 pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
 {   
     size_t len = sizeof(tr_uv_tcp_transport_t);
-    tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(sizeof(tr_uv_tcp_transport_t));
+    tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(len);
     memset(tt, 0, len);
 
     (void)plugin; // unused
