@@ -46,3 +46,7 @@ These two options is used to configure compilation for pypomelo.
 - -Dbuild_jpomelo=[true|false], `false` by default.
 
 configure jpomelo compilation for java
+
+- -Dbuild_cspomelo=[true|false], `false` by default.
+
+configure cspomelo compilation for c#
