@@ -1,7 +1,12 @@
-﻿using UnityEngine;
+﻿/**
+ * Copyright (c) 2014-2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
+using UnityEngine;
 using System.Collections;
 
-namespace test 
+namespace test
 {
     public class Test : MonoBehaviour
     {
@@ -32,7 +37,7 @@ namespace test
         /// cleanup the pomelo client
         /// NOTE it's not the best practice since it would not invoke on ios
         /// </summary>
-        /// 
+        ///
         void OnApplicationQuit()
         {
             if(client != null)

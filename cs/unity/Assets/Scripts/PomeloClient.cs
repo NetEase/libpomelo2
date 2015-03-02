@@ -1,4 +1,9 @@
-﻿using UnityEngine;
+﻿/**
+ * Copyright (c) 2014-2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -56,7 +61,7 @@ public class PomeloClient
     public const int PC_EV_KICKED_BY_SERVER = 5;
     public const int PC_EV_UNEXPECTED_DISCONNECT = 6;
     public const int PC_EV_PROTO_ERROR = 7;
-    
+
     public const int PC_EV_INVALID_HANDLER_ID = -1;
 
     //__________________________________________________________________________________________STATIC_FUNCTIONS
@@ -65,7 +70,7 @@ public class PomeloClient
     {
         UnityThreadHelper.EnsureHelper();
     }
-    
+
     public static Action<object> Log = Nothing;
     public static Action<object> LogError = Nothing;
     static void Nothing(object msg){}
@@ -229,7 +234,7 @@ public class PomeloClient
 #endif
         return 0;
     }
-    
+
     private static string DefaultLocalConfigReader()
     {
 #if DEBUG
@@ -250,7 +255,7 @@ public class PomeloClient
     public Action<string> OnConnectFail = delegate {};
     public Action<string> OnDisconnect = delegate {};
     public Action<string> OnError = delegate {};
-    
+
     private IntPtr client = IntPtr.Zero;
 
     private readonly NativeLCRCallback nativeLCRCallback;
@@ -266,7 +271,7 @@ public class PomeloClient
     private int evtId = -1;
     private readonly Dictionary<uint, Action<string, string>> requestHandlers;
     private readonly Dictionary<string, List<EventBinding>> eventHandlers;
-    
+
     public PomeloClient()
     {
         // why doesn't pass the method directly
@@ -280,7 +285,7 @@ public class PomeloClient
         requestHandlers = new Dictionary<uint, Action<string, string>>();
         eventHandlers = new Dictionary<string, List<EventBinding>>();
     }
-    
+
     public bool Init(bool enableTLS, bool enablePolling)
     {
         return Init(enableTLS, enablePolling, DefaultLocalConfigReader, DefaultLocalConfigWriter);
@@ -372,7 +377,7 @@ public class PomeloClient
             handler = handler,
             once = once,
         };
-        
+
         if(! eventHandlers.ContainsKey(eventName))
             eventHandlers.Add(eventName, new List<EventBinding>());
         if(! eventHandlers[eventName].Contains(e))
@@ -390,7 +395,7 @@ public class PomeloClient
     {
         if(! eventHandlers.ContainsKey(eventName))
             return;
-        
+
         var e = new EventBinding{
             handler = handler,
             once = once,
@@ -446,36 +451,36 @@ public class PomeloClient
     private static extern void NativeLibInit(int log_level, string ca_file, string ca_path);
     [DllImport("__Internal", EntryPoint="pc_lib_cleanup")]
     private static extern void NativeLibCleanup();
-    
+
     [DllImport("__Internal", EntryPoint="pc_client_ev_str")]
     private static extern IntPtr NativeEvToStr(int ev);
     [DllImport("__Internal", EntryPoint="pc_client_rc_str")]
     private static extern IntPtr NativeRcToStr(int rc);
     [DllImport("__Internal", EntryPoint="pc_client_state_str")]
     private static extern IntPtr NativeStateToStr(int state);
-    
+
     [DllImport("__Internal", EntryPoint="create")]
     private static extern IntPtr NativeCreate(bool enable_tls, bool enable_poll, NativeLCRCallback read, NativeLCWCallback write);
     [DllImport("__Internal", EntryPoint="destroy")]
     private static extern int NativeDestroy(IntPtr client);
-    
+
     [DllImport("__Internal", EntryPoint="pc_client_connect")]
     private static extern int NativeConnect(IntPtr client, string host, int port, string handsharkOpts);
     [DllImport("__Internal", EntryPoint="pc_client_disconnect")]
     private static extern int NativeDisconnect(IntPtr client);
-    
+
     [DllImport("__Internal", EntryPoint="request")]
     private static extern int NativeRequest(IntPtr client, string route, string msg, uint cb_uid, int timeout, NativeRequestCallback callback);
     [DllImport("__Internal", EntryPoint="pc_notify_with_timeout")]
     private static extern int NativeNotify(IntPtr client, string route, string msg, IntPtr ex_data, int timeout, NativeNotifyCallback callback);
     [DllImport("__Internal", EntryPoint="pc_client_poll")]
     private static extern int NativePoll(IntPtr client);
-    
+
     [DllImport("__Internal", EntryPoint="pc_client_add_ev_handler")]
     private static extern int NativeAddEventHandler(IntPtr client, NativeEventCallback callback, IntPtr ex_data, IntPtr destructor);
     [DllImport("__Internal", EntryPoint="pc_client_rm_ev_handler")]
     private static extern int NativeRemoveEventHandler(IntPtr client, int handler_id);
-    
+
     [DllImport("__Internal", EntryPoint="pc_client_conn_quality")]
     private static extern int NativeQuality(IntPtr client);
     [DllImport("__Internal", EntryPoint="pc_client_state")]
@@ -485,36 +490,36 @@ public class PomeloClient
     private static extern void NativeLibInit(int log_level, string ca_file, string ca_path);
     [DllImport("cspomelo", EntryPoint="pc_lib_cleanup")]
     private static extern void NativeLibCleanup();
-    
+
     [DllImport("cspomelo", EntryPoint="pc_client_ev_str")]
     private static extern IntPtr NativeEvToStr(int ev);
     [DllImport("cspomelo", EntryPoint="pc_client_rc_str")]
     private static extern IntPtr NativeRcToStr(int rc);
     [DllImport("cspomelo", EntryPoint="pc_client_state_str")]
     private static extern IntPtr NativeStateToStr(int state);
-    
+
     [DllImport("cspomelo", EntryPoint="create")]
     private static extern IntPtr NativeCreate(bool enable_tls, bool enable_poll, NativeLCRCallback read, NativeLCWCallback write);
     [DllImport("cspomelo", EntryPoint="destroy")]
     private static extern int NativeDestroy(IntPtr client);
-    
+
     [DllImport("cspomelo", EntryPoint="pc_client_connect")]
     private static extern int NativeConnect(IntPtr client, string host, int port, string handsharkOpts);
     [DllImport("cspomelo", EntryPoint="pc_client_disconnect")]
     private static extern int NativeDisconnect(IntPtr client);
-    
+
     [DllImport("cspomelo", EntryPoint="request")]
     private static extern int NativeRequest(IntPtr client, string route, string msg, uint cb_uid, int timeout, NativeRequestCallback callback);
     [DllImport("cspomelo", EntryPoint="pc_notify_with_timeout")]
     private static extern int NativeNotify(IntPtr client, string route, string msg, IntPtr ex_data, int timeout, NativeNotifyCallback callback);
     [DllImport("cspomelo", EntryPoint="pc_client_poll")]
     private static extern int NativePoll(IntPtr client);
-    
+
     [DllImport("cspomelo", EntryPoint="pc_client_add_ev_handler")]
     private static extern int NativeAddEventHandler(IntPtr client, NativeEventCallback callback, IntPtr ex_data, IntPtr destructor);
     [DllImport("cspomelo", EntryPoint="pc_client_rm_ev_handler")]
     private static extern int NativeRemoveEventHandler(IntPtr client, int handler_id);
-    
+
     [DllImport("cspomelo", EntryPoint="pc_client_conn_quality")]
     private static extern int NativeQuality(IntPtr client);
     [DllImport("cspomelo", EntryPoint="pc_client_state")]

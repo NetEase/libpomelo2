@@ -1,8 +1,11 @@
+/**
+ * Copyright (c) 2014-2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 #include <pomelo.h>
 #include <pc_pomelo_i.h>
 #include <assert.h>
-
-
 
 #ifdef _WIN32
 #define CS_POMELO_EXPORT __declspec(dllexport)
@@ -10,14 +13,11 @@
 #define CS_POMELO_EXPORT
 #endif
 
-
-/////////
 #include <pc_lib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-
 
 #if defined(__ANDROID__)
 
@@ -33,15 +33,15 @@ void android_log(int level, const char* msg, ...)
 {
     char buf[256];
     va_list va;
-    
+
     if (level < 0) {
         return;
     }
-    
+
     va_start(va, msg);
     vsnprintf(buf, 256, msg, va);
     va_end(va);
-    
+
     switch(level) {
         case PC_LOG_DEBUG:
             LOGD("%s", buf);
@@ -62,26 +62,25 @@ void android_log(int level, const char* msg, ...)
 
 #elif defined(__UNITYEDITOR__)
 
-
 static FILE* f = NULL;
 void unity_log(int level, const char* msg, ...)
 {
     if (!f) {
         return;
     }
-    
+
     time_t t = time(NULL);
     char buf[32];
     va_list va;
     int n;
-    
+
     if (level < 0) {
         return;
     }
-    
+
     n = strftime(buf, 32, "[%Y-%m-%d %H:%M:%S]", localtime(&t));
     fwrite(buf, sizeof(char), n, f);
-    
+
     switch(level) {
         case PC_LOG_DEBUG:
             fprintf(f, "[DEBUG] ");
@@ -96,11 +95,11 @@ void unity_log(int level, const char* msg, ...)
             fprintf(f, "[ERROR] ");
             break;
     }
-    
+
     va_start(va, msg);
     vfprintf(f, msg, va);
     va_end(va);
-    
+
     fprintf(f, "\n");
 }
 #endif
@@ -115,6 +114,7 @@ CS_POMELO_EXPORT int init_log(const char* path)
 #endif
     return 0;
 }
+
 CS_POMELO_EXPORT void native_log(const char* msg)
 {
     if (!msg || strlen(msg) == 0) {
@@ -123,13 +123,8 @@ CS_POMELO_EXPORT void native_log(const char* msg)
     pc_lib_log(PC_LOG_DEBUG, msg);
 }
 
-/////////
-
-
 typedef void (*request_handler)(const char* err, const char* resp);
 typedef void (*request_callback)(unsigned int cbid, int rc, const char* resp);
-
-
 
 typedef struct {
     char* (* read) ();
@@ -141,12 +136,11 @@ typedef struct {
     request_callback cb;
 } request_cb_t;
 
-
 static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, void* ex_data)
 {
     lc_callback_t* lc_cb = (lc_callback_t* )ex_data;
     char* res = NULL;
-    
+
     if (op == PC_LOCAL_STORAGE_OP_WRITE) {
         return lc_cb->write(data);
     } else {
@@ -154,7 +148,7 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         if (!res) {
             return -1;
         }
-        
+
         *len = strlen(res);
         if (*len == 0) {
             return -1;
@@ -178,7 +172,6 @@ static void default_request_cb(const pc_request_t* req, int rc, const char* resp
     r.cb(r.cbid, rc, resp);
 }
 
-
 CS_POMELO_EXPORT void lib_init(int log_level, const char* ca_file, const char* ca_path)
 {
 #if !defined(PC_NO_UV_TLS_TRANS)
@@ -186,7 +179,7 @@ CS_POMELO_EXPORT void lib_init(int log_level, const char* ca_file, const char* c
         tr_uv_tls_set_ca_file(ca_file, ca_path);
     }
 #endif
-    
+
     pc_lib_set_default_log_level(log_level);
 #if defined(__ANDROID__)
     pc_lib_init(android_log, NULL, NULL, "CSharp Client");
@@ -223,19 +216,19 @@ CS_POMELO_EXPORT pc_client_t* create(int enable_tls, int enable_poll, char* (*re
     if (pc_client_init(client, NULL, &config) == PC_RC_OK) {
         return client;
     }
-    
+
     return NULL;
 }
 
 CS_POMELO_EXPORT void destroy(pc_client_t* client)
 {
     lc_callback_t* lc_cb;
-    
+
 #if defined(__UNITYEDITOR__)
     fclose(f);
     f = NULL;
 #endif
-    
+
     if (pc_client_cleanup(client) == PC_RC_OK) {
         lc_cb = (lc_callback_t*)pc_client_config(client)->ls_ex_data;
         if (lc_cb) {
