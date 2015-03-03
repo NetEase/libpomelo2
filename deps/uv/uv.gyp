@@ -1,4 +1,7 @@
 {
+  'variables': {
+    'uv_library%': 'static_library',
+  },
   'target_defaults': {
     'conditions': [
       ['OS != "win"', {
@@ -121,6 +124,7 @@
             '-Wall',
             '-Wextra',
             '-Wno-unused-parameter',
+            '-fPIC',
           ],
           'sources': [
             'include/uv-unix.h',
@@ -213,7 +217,6 @@
             'src/unix/linux-syscalls.c',
             'src/unix/linux-syscalls.h',
             'src/unix/pthread-fixes.c',
-            'src/unix/android-ifaddrs.c'
           ],
           'link_settings': {
             'libraries': [ '-ldl' ],
