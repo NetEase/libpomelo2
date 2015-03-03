@@ -3,9 +3,13 @@
  * MIT Licensed.
  */
 
-#include <pomelo.h>
-#include <pc_pomelo_i.h>
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+
+#include <pomelo.h>
 
 #ifdef _WIN32
 #define CS_POMELO_EXPORT __declspec(dllexport)
@@ -13,16 +17,9 @@
 #define CS_POMELO_EXPORT
 #endif
 
-#include <pc_lib.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-
 #if defined(__ANDROID__)
 
 #include <android/log.h>
-
 #define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, "cspomelo", __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG ,"cspomelo", __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO  ,"cspomelo", __VA_ARGS__)

@@ -7,8 +7,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include <pomelo.h>
+
 #include "com_netease_pomelo_Client.h"
-#include "pomelo.h"
 
 #define JNI_BYTE_LEN (sizeof(pc_client_t*))
 

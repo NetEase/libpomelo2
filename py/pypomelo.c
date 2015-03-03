@@ -4,9 +4,11 @@
  */
 
 #include <assert.h>
-#include <Python.h>
-#include <pomelo.h>
 #include <string.h>
+
+#include <Python.h>
+
+#include <pomelo.h>
 
 #ifdef _WIN32
 #define PY_POMELO_EXPORT __declspec(dllexport)
