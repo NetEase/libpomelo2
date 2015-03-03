@@ -290,6 +290,7 @@
           ],
           'cflags': [
             '-ggdb',
+            '-fPIC',
           ],
           'sources': [
             './cs/cspomelo.c',
