@@ -34,10 +34,6 @@ use system pre-install jansson.
 
 static library or shared library for libpomelo2
 
-- -Dtarget_arch=[ia32 | x64 ], `ia32` by default.
-
-if you enable openssl and do not use system pre-install openssl, this option is used when compiling openssl from deps/openssl
-
 - -Dbuild_pypomelo=[true | false], `false` by default.
 - -Dpython_header=<include path>, `/usr/include/python2.7` by default.
 
