@@ -122,8 +122,8 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     if (PC_MSG_HAS_ROUTE(type)) {
         if(compressRoute) {
             PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_CODE_BYTES, len);
-            msg->route.route_code |= data[offset++] << 8;
-            msg->route.route_code |= data[offset++];
+            msg->route.route_code |= (uint8_t)data[offset++] << 8;
+            msg->route.route_code |= (uint8_t)data[offset++];
         } else {
             size_t route_len;
             PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_LEN_BYTES, len);
