@@ -68,16 +68,16 @@ static size_t pc__parse_pkg_head(pc_pkg_parser_t *parser, const char *data, size
     parser->head_offset += len;
 
     /* a complete head got */
-    if(parser->head_offset == parser->head_size) {
+    if (parser->head_offset == parser->head_size) {
         size_t pkg_len = 0;
         int i;
         /* skip the first byte which is the type */
-        for(i = 1; i < PC_PKG_HEAD_BYTES; ++i) {
+        for (i = 1; i < PC_PKG_HEAD_BYTES; ++i) {
             pkg_len <<= 8;
             pkg_len += parser->head_buf[i] & 0xff;
         }
 
-        if(pkg_len > 0) {
+        if (pkg_len > 0) {
             parser->pkg_buf = (char *)pc_lib_malloc(pkg_len);
             memset(parser->pkg_buf, 0, pkg_len);
         }

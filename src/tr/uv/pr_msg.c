@@ -22,7 +22,7 @@
 
 #define PC_MSG_HAS_ROUTE(TYPE) ((TYPE) != PC_MSG_RESPONSE)
 
-#define PC_MSG_VALIDATE(TYPE) ((TYPE) == PC_MSG_REQUEST ||                    \
+#define PC_IS_VALID_TYPE(TYPE) ((TYPE) == PC_MSG_REQUEST ||                    \
         (TYPE) == PC_MSG_NOTIFY ||                                            \
         (TYPE) == PC_MSG_RESPONSE ||                                          \
         (TYPE) == PC_MSG_PUSH)
@@ -40,7 +40,7 @@ typedef enum {
 typedef struct {
     uint32_t id;
     pc_msg_type type;
-    uint8_t compressRoute;
+    uint8_t is_route_compressed;
     union {
         uint16_t route_code;
         const char *route_str;
@@ -56,14 +56,6 @@ static PC_INLINE const char *pc__resolve_dictionary(const json_t* code2route, ui
     return json_string_value(json_object_get(code2route, code_str));
 }
 
-#define PC__MSG_CHECK_LEN(INDEX, LENGTH)                                      \
-do {                                                                          \
-    if((INDEX) > (LENGTH)) {                                                  \
-        pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");    \
-        goto error;                                                           \
-    }                                                                         \
-} while(0)
-
 
 static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf) 
 {
@@ -76,67 +68,88 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 
     uint8_t flag; 
     uint8_t type;
-    uint8_t compressRoute;
+    uint8_t is_route_compressed;
+    uint16_t route_code = 0;
+    size_t route_len;
 
     // invalid req id for error msg
     // notify req id for push message
     uint32_t id = PC_INVALID_REQ_ID;
 
+    int i = 0;
+    uint8_t m;
+ 
     if (len < PC_MSG_FLAG_BYTES) {
         return NULL;
     }
 
     flag = data[offset++];
     type = flag >> 1;
-    compressRoute = flag & 0x01;
+    is_route_compressed = flag & 0x01;
 
-    if (!PC_MSG_VALIDATE(type)) {
+    if (!PC_IS_VALID_TYPE(type)) {
         pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - unknow message type");
         return NULL; 
+    }
+
+    if (PC_MSG_HAS_ID(type)) {
+        id = 0;
+        do {
+            if (offset < len) {
+                m = data[offset++];
+                id = id + ((m & 0x7f) << (7 * i));
+                i++;
+            } else {
+                pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");
+                return NULL;
+            }
+        } while(m & 0x80);
+    } else {
+        id = PC_NOTIFY_PUSH_REQ_ID;
+    }
+
+    // route
+    if (PC_MSG_HAS_ROUTE(type)) {
+        if (is_route_compressed) {
+            if (offset + PC_MSG_ROUTE_CODE_BYTES - 1 < len) {
+                route_code |= (uint8_t)data[offset++] << 8;
+                route_code |= (uint8_t)data[offset++];
+            } else {
+                pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");
+                return NULL;
+            }
+        } else {
+            if (offset + PC_MSG_ROUTE_LEN_BYTES - 1 < len) {
+                route_len = data[offset++];
+                if (offset + route_len - 1 < len) {
+                    route_str = (char *)pc_lib_malloc(route_len + 1);
+                    memset(route_str, 0, route_len + 1);
+                    memcpy(route_str, data + offset, route_len);
+                    offset += route_len;
+                } else {
+                    pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");
+                    return NULL;
+                }
+            } else {
+                pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - invalid length");
+                return NULL;
+            }
+        }
     }
 
     msg = (pc__msg_raw_t *)pc_lib_malloc(sizeof(pc__msg_raw_t));
     memset(msg, 0, sizeof(pc__msg_raw_t));
 
     msg->type = (pc_msg_type)type;
-    msg->compressRoute = compressRoute;
+    msg->is_route_compressed = is_route_compressed;
 
-    if(PC_MSG_HAS_ID(type)) {
-        int i = 0;
-        uint8_t m;
-        id = 0;
-     
-        do{
-            PC__MSG_CHECK_LEN(offset + 1, len);
-            m = data[offset++];
-            id = id + ((m & 0x7f) << (7 * i));
-            i++;
-        }while(m & 0x80);
-    } else {
-        id = PC_NOTIFY_PUSH_REQ_ID;
-    }
     assert(id != PC_INVALID_REQ_ID);
     msg->id = id;
 
-    // route
-    if (PC_MSG_HAS_ROUTE(type)) {
-        if(compressRoute) {
-            PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_CODE_BYTES, len);
-            msg->route.route_code |= (uint8_t)data[offset++] << 8;
-            msg->route.route_code |= (uint8_t)data[offset++];
-        } else {
-            size_t route_len;
-            PC__MSG_CHECK_LEN(offset + PC_MSG_ROUTE_LEN_BYTES, len);
-            route_len = data[offset++];
-            PC__MSG_CHECK_LEN(offset + route_len, len);
-
-            route_str = (char *)pc_lib_malloc(route_len + 1);
-            memset(route_str, 0, route_len + 1);
-            memcpy(route_str, data + offset, route_len);
-            msg->route.route_str = route_str;
-
-            offset += route_len;
-        }
+    if (is_route_compressed) {
+        msg->route.route_code = route_code;
+    } else {
+        msg->route.route_str = route_str;
     }
 
     // borrow memory from original pc_buf_t 
@@ -145,11 +158,6 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     msg->body.len = body_len;
 
     return msg;
-
-error:
-    pc_lib_free(msg);
-    pc_lib_free((char* )route_str);
-    return NULL;
 }
 
 pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_protos, const pc_buf_t* buf) 
@@ -182,14 +190,15 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     if (PC_MSG_HAS_ROUTE(raw_msg->type)) {
         // uncompress route dictionary
         route_str = NULL;
-        if (raw_msg->compressRoute) {
+        if (raw_msg->is_route_compressed) {
             origin_route = pc__resolve_dictionary(code2route, raw_msg->route.route_code);
-            if(!origin_route) {
+            if (!origin_route) {
                 pc_lib_log(PC_LOG_ERROR, "pc_default_msg_decode - fail to uncompress route dictionary: %d",
                         raw_msg->route.route_code);
             } else {
                 route_str = (char* )pc_lib_malloc(strlen(origin_route) + 1);
-                strcpy((char* )route_str, origin_route);
+                memset((char*)route_str, 0, strlen(origin_route) + 1);
+                strcpy((char*)route_str, origin_route);
             }
         } else {
             // till now, raw_msg->route.route_str is hold by pc_msg_t
@@ -199,6 +208,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
 
         msg.route = route_str;
     } else {
+        // FIXME: for resp, we can not get route here, so just set it to NULL
         msg.route = NULL;
     }
 
