@@ -522,6 +522,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
             continue;
         };
 
+        // FIXME: review
         pc_lib_free(wi->buf.base);
         wi->buf.base = NULL;
         wi->buf.len = 0;

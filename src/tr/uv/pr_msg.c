@@ -245,6 +245,7 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             assert(data);
 
             msg.msg = data;
+            // FIXME: review
             json_decref(json_msg);
             json_msg = NULL;
         }
