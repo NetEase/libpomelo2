@@ -210,7 +210,7 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         if (res) {
             *len = strlen(res);
             if (data) {
-                strncpy(data, res, *len);
+                memcpy(data, res, *len);
             }
             (*env)->ReleaseStringUTFChars(env, data_str, res);
         }
