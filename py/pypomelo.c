@@ -155,13 +155,8 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
             ret = PyInt_AsLong(result);
         }
 
-        Py_XDECREF(result);
-        Py_XDECREF(args);
-
-        PyGILState_Release(state);
-
-        return ret;
     } else {
+
         args = Py_BuildValue("(i)", op);
         assert(args);
         result = PyEval_CallObject(lc_cb, args);
@@ -173,30 +168,24 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
             assert(PyString_Check(result) || result == Py_None);
             if (result != Py_None) {
                 res = PyString_AsString(result);
+                if (res) {
+                    *len = strlen(res);
+                    if (*len != 0) {
+                        if (data) {
+                            memcpy(data, res, *len);
+                        }
+                        ret = 0;
+                    }
+                } /* if (res) */
             }
-        }
-
-        Py_XDECREF(args);
-        Py_XDECREF(result);
-
-        PyGILState_Release(state);
-
-        if (res) {
-            *len = strlen(res);
-            if (*len == 0) {
-                return -1;
-            }
-
-            if (data) {
-                strncpy(data, res, *len);
-            }
-            return 0;
-        } else {
-            return -1;
         }
     }
-    // never go to here.
-    return -1;
+
+    Py_XDECREF(result);
+    Py_XDECREF(args);
+    PyGILState_Release(state);
+
+    return ret;
 }
 
 static PyObject* lib_init(PyObject* self, PyObject* args)
