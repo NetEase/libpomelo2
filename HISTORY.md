@@ -1,3 +1,8 @@
+2015-04-10 / 0.2.1
+====================
+- upgrade libuv to 1.4.2 
+- multi bugfix
+
 2015-03-02 / 0.2.0
 ====================
 - compile: enable -fPIC by default
