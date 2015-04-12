@@ -327,6 +327,9 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
             return ;
         }
 
+        /* XXX: ignore return of uv_tcp_keepalive */
+        uv_tcp_keepalive(&tt->socket, 1, 60);
+
         pc_lib_log(PC_LOG_INFO, "tcp__conn_done_cb - tcp connected, send handshake");
 
         tcp__send_handshake(tt);
