@@ -7,8 +7,8 @@
 #define TR_UV_TCP_I_H
 
 #include <uv.h>
-#include <jansson.h>
 
+#include <pc_JSON.h>
 #include <pomelo.h>
 #include <pomelo_trans.h>
 #include <pc_mutex.h>
@@ -99,7 +99,7 @@ struct tr_uv_tcp_transport_s {
 
     const char* host;
     int port;
-    json_t *handshake_opts;
+    pc_JSON* handshake_opts;
 
     pc_mutex_t wq_mutex;
     uv_async_t write_async;
@@ -132,14 +132,13 @@ struct tr_uv_tcp_transport_s {
     /**
      * holds ownership of these json 
      */
-    json_t *route_to_code;
-    json_t *code_to_route;
-    json_t *dict_ver;
+    pc_JSON* route_to_code;
+    pc_JSON* code_to_route;
+    pc_JSON* dict_ver;
 
-    json_t *server_protos;
-    json_t *client_protos;
-    json_t *proto_ver;
-
+    pc_JSON* server_protos;
+    pc_JSON* client_protos;
+    pc_JSON* proto_ver;
 };
 
 typedef struct {

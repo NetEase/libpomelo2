@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
-#include <jansson.h>
+#include <stdio.h>
 
 #include <pc_lib.h>
 
@@ -48,12 +48,15 @@ typedef struct {
     pc_buf_t body;
 } pc__msg_raw_t;
 
-static PC_INLINE const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
+static PC_INLINE const char *pc__resolve_dictionary(const pc_JSON* code2route, uint16_t code)
 {
+    pc_JSON* tmp;
     char code_str[16];
     memset(code_str, 0, 16);
     sprintf(code_str, "%u", code);
-    return json_string_value(json_object_get(code2route, code_str));
+    tmp = pc_JSON_GetObjectItem(code2route, code_str);
+    assert(tmp && tmp->type == pc_JSON_String);
+    return tmp->valuestring;
 }
 
 
@@ -160,12 +163,12 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     return msg;
 }
 
-pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_protos, const pc_buf_t* buf) 
+pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf) 
 {
     const char *route_str = NULL;
     const char *origin_route = NULL;
 
-    json_t* json_msg = NULL;
+    pc_JSON* json_msg = NULL;
     const char* data = NULL;
     pc_buf_t body;
     pc_msg_t msg;
@@ -222,32 +225,35 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
     body = raw_msg->body;
     if (body.len > 0) {
         // response message has no route 
+        // FIXME: disable protobuf now
+        // TODO:
         json_msg = NULL;
-        if (!msg.route) {
-            json_msg = pc_body_json_decode(body.base, 0, body.len);
-        } else {
-            json_t *pb_def = json_object_get(server_protos, msg.route);
-            if (pb_def) {
-                // protobuf decode
-                json_msg = pc_body_pb_decode(body.base, 0, body.len, server_protos, pb_def);
-            } else {
-                json_msg = pc_body_json_decode(body.base, 0, body.len);
-            }
-        }
+        /* if (!msg.route) {
+         *   json_msg = pc_body_json_decode(body.base, 0, body.len);
+         * } else {
+         *   json_t *pb_def = json_object_get(server_protos, msg.route);
+         *   if (pb_def) {
+         *       // protobuf decode
+         * json_msg = pc_body_pb_decode(body.base, 0, body.len, server_protos, pb_def);
+         *  } else {
+         *       json_msg = pc_body_json_decode(body.base, 0, body.len);
+         *   }
+         * }
+         */
+        json_msg = pc_body_json_decode(body.base, 0, body.len);
 
         if (!json_msg) {
             pc_lib_free((char*)msg.route);
             msg.id = PC_INVALID_REQ_ID;
             msg.route = NULL;
         } else {
-            data = json_dumps(json_msg, JSON_COMPACT); 
+            data = pc_JSON_PrintUnformatted(json_msg); 
 
             assert(data);
 
             msg.msg = data;
             // FIXME: review
-            json_decref(json_msg);
-            json_msg = NULL;
+            pc_JSON_Delete(json_msg);
         }
     }
 
@@ -306,7 +312,7 @@ pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
 }
 
 pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
-        int routeCode, const pc_buf_t body)
+        int route_code, const pc_buf_t body)
 {
     pc_buf_t buf;
  
@@ -332,8 +338,8 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
 
     // route code
     if(PC_MSG_HAS_ROUTE(type)) {
-        base[offset++] = (routeCode >> 8) & 0xff;
-        base[offset++] = routeCode & 0xff;
+        base[offset++] = (route_code >> 8) & 0xff;
+        base[offset++] = route_code & 0xff;
     }
 
     // body
@@ -341,10 +347,10 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
     return buf;
 }
 
-static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
+static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compress_route,
         char *base, size_t offset)
 {
-    base[offset++] = (type << 1) | (compressRoute ? 1 : 0);
+    base[offset++] = (type << 1) | (compress_route ? 1 : 0);
     return offset;
 }
 
@@ -384,15 +390,14 @@ static uint8_t pc__msg_id_length(uint32_t id)
     return len;
 }
 
-pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_protos, const pc_msg_t* msg)
+pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_protos, const pc_msg_t* msg)
 {
     pc_buf_t msg_buf;
     pc_buf_t body_buf;
-    json_t* json_msg;
-    json_error_t err;
+    pc_JSON* json_msg;
     int route_code = -1;
-    json_t* code = NULL;
-    json_t* pb_def = NULL;
+    pc_JSON* code = NULL;
+    // json_t* pb_def = NULL;
     pc_msg_type type;
 
     msg_buf.base = NULL;
@@ -402,31 +407,37 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
 
     assert(msg && msg->msg && msg->route);
 
-    json_msg = json_loads(msg->msg, 0, &err);
+    json_msg = pc_JSON_ParseWithOpts(msg->msg, 0, 1);
     if (!json_msg) {
-        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - the msg is not invalid json, error: %s", err.text);
+        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - the msg is not invalid json");
         return msg_buf;
     }
 
     assert(json_msg);
 
-    // encode body
-    pb_def = json_object_get(client_protos, msg->route);
-    if (pb_def) {
-        body_buf = pc_body_pb_encode(json_msg, client_protos, pb_def);
-        if(body_buf.len == -1) {
-            assert(body_buf.base == NULL);
-            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with protobuf: %s\n", msg->route);
-        }
-    } else {
-        body_buf = pc_body_json_encode(json_msg);
-        if(body_buf.len == -1) {
-            assert(body_buf.base == NULL);
-            pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with json: %s\n", msg->route);
-        }
+    // encode body FIXME: disable protobuf
+    /* pb_def = pc_JSON_GetObjectItem(client_protos, msg->route);
+     * if (pb_def) {
+     * body_buf = pc_body_pb_encode(json_msg, client_protos, pb_def);
+     * if(body_buf.len == -1) {
+     * assert(body_buf.base == NULL);
+     * pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with protobuf: %s\n", msg->route);
+     * }
+     * } else {
+     *   body_buf = pc_body_json_encode(json_msg);
+     *   if(body_buf.len == -1) {
+     * assert(body_buf.base == NULL);
+     * pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with json: %s\n", msg->route);
+     *   }
+    * }
+    */
+    body_buf = pc_body_json_encode(json_msg);
+    if (body_buf.len == -1) {
+        assert(body_buf.base == NULL);
+        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with json: %s\n", msg->route);
     }
 
-    json_decref(json_msg);
+    pc_JSON_Delete(json_msg);
     json_msg = NULL;
 
     if (body_buf.len == -1) {
@@ -437,9 +448,9 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
 
     type = msg->id == PC_NOTIFY_PUSH_REQ_ID ? PC_MSG_NOTIFY : PC_MSG_REQUEST;
     
-    code = json_object_get(route2code, msg->route);
-    if (code) {
-        route_code = (int)json_integer_value(code);
+    code = pc_JSON_GetObjectItem(route2code, msg->route);
+    if (code && code->type == pc_JSON_Number) {
+        route_code = code->valueint;
     }
 
     if (route_code > 0) {

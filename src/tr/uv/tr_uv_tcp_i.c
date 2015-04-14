@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include <pc_JSON.h>
 #include <pomelo.h>
 #include <pc_lib.h>
 #include <pc_pomelo_i.h>
@@ -62,7 +63,7 @@ void tr_uv_tcp_plugin_on_register(pc_transport_plugin_t* plugin)
 {
     (void)plugin; // unused
 
-    json_set_alloc_funcs(pc_lib_malloc, pc_lib_free);
+    // json_set_alloc_funcs(pc_lib_malloc, pc_lib_free);
 }
 
 void tr_uv_tcp_plugin_on_deregister(pc_transport_plugin_t* plugin)
@@ -229,10 +230,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
         ret = tt->config->local_storage_cb(PC_LOCAL_STORAGE_OP_READ, NULL,
                 &len, tt->config->ls_ex_data);
         if (!ret) {
-            
-            json_t* lc = NULL;
-            json_error_t err;
-            json_t* tmp;
+            pc_JSON* lc = NULL;
             char* buf;
             size_t len2;
 
@@ -245,63 +243,46 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
             assert(!ret);
             assert(len == len2);
 
-            lc = json_loadb(buf, len, 0, &err);
+            lc = pc_JSON_Parse(buf);
             pc_lib_free(buf);
 
             if (!lc) {
-                pc_lib_log(PC_LOG_WARN, "tr_uv_tcp_init - load local storage failed, not valid json: %s", err.text);
+                pc_lib_log(PC_LOG_WARN, "tr_uv_tcp_init - load local storage failed, not valid json");
                 goto next;
             }
 
             pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_init - load local storage ok");
 
             // route2code
-            if ((tmp = json_object_get(lc, TR_UV_LCK_ROUTE_2_CODE))) {
-                tt->route_to_code = tmp;
-            }
-
-            if ((tmp = json_object_get(lc, TR_UV_LCK_CODE_2_ROUTE))) {
-                tt->code_to_route = tmp;
-            }
-
-            if ((tmp = json_object_get(lc, TR_UV_LCK_DICT_VERSION))) {
-                tt->dict_ver = tmp;
-            }
+            tt->route_to_code = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_ROUTE_2_CODE);
+            tt->code_to_route = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_CODE_2_ROUTE);
+            tt->dict_ver = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_DICT_VERSION);
 
             // the local dict is complete
-            if (tt->dict_ver && tt->code_to_route && tt->route_to_code) {
-                json_incref(tt->dict_ver);
-                json_incref(tt->code_to_route);
-                json_incref(tt->route_to_code);
-            } else {
-                // otherwise, ignore local storage
+            if (!tt->dict_ver || !tt->code_to_route || !tt->route_to_code) {
+                pc_JSON_Delete(tt->dict_ver);
+                pc_JSON_Delete(tt->code_to_route);
+                pc_JSON_Delete(tt->route_to_code);
+
                 tt->dict_ver = NULL;
                 tt->code_to_route = NULL;
                 tt->route_to_code = NULL;
-            }
+            } 
 
-            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_CLIENT))) {
-                tt->client_protos = tmp;
-            }
+            tt->client_protos = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_PROTO_CLIENT);
+            tt->server_protos = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_PROTO_SERVER);
+            tt->proto_ver = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_PROTO_VERSION);
 
-            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_SERVER))) {
-                tt->server_protos = tmp;
-            }
+            if (!tt->proto_ver || !tt->client_protos || !tt->server_protos) {
+                pc_JSON_Delete(tt->proto_ver);
+                pc_JSON_Delete(tt->server_protos);
+                pc_JSON_Delete(tt->client_protos);
 
-            if ((tmp = json_object_get(lc, TR_UV_LCK_PROTO_VERSION))) {
-                tt->proto_ver = tmp;
-            }
-
-            if (tt->proto_ver && tt->client_protos && tt->server_protos) {
-                json_incref(tt->proto_ver);
-                json_incref(tt->client_protos);
-                json_incref(tt->server_protos);
-            } else {
                 tt->proto_ver = NULL;
                 tt->client_protos = NULL;
                 tt->server_protos = NULL;
             }
-            json_decref(lc);
+            pc_JSON_Delete(lc);
         }
     }
 
@@ -316,21 +297,20 @@ next:
  */
 int tr_uv_tcp_connect(pc_transport_t* trans, const char* host, int port, const char* handshake_opts)
 {
-    json_t* handshake;
-    json_error_t err;
+    pc_JSON* handshake;
     GET_TT;
 
     assert(host);
  
     if (tt->handshake_opts) {
-        json_decref(tt->handshake_opts);
+        pc_JSON_Delete(tt->handshake_opts);
         tt->handshake_opts = NULL;
     }
 
     if (handshake_opts) {
-        handshake = json_loads(handshake_opts, 0, &err);
+        handshake = pc_JSON_Parse(handshake_opts);
         if (!handshake) {
-            pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_connect - handshake_opts is invalid json string, error: %s", err.text);
+            pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_connect - handshake_opts is invalid json string");
             return PC_RC_INVALID_JSON;
         }
         tt->handshake_opts = handshake;

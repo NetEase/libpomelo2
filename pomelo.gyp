@@ -109,6 +109,7 @@
       './src/pc_trans.c',
       './src/pc_trans_repo.c',
       './src/tr/dummy/tr_dummy.c',
+      './src/pc_JSON.c'
       ],
       'conditions': [
         [ 'OS != "win"', {
@@ -133,11 +134,7 @@
       ['no_uv_support == "false"', {
         'sources': [
           './src/tr/uv/pr_msg.c',
-        './src/tr/uv/pr_msg_pb.c',
         './src/tr/uv/pr_msg_json.c',
-        './src/tr/uv/pb_util.c',
-        './src/tr/uv/pb_decode.c',
-        './src/tr/uv/pb_encode.c',
         './src/tr/uv/pr_pkg.c',
         './src/tr/uv/tr_uv_tcp.c',
         './src/tr/uv/tr_uv_tcp_i.c',
