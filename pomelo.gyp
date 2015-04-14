@@ -6,7 +6,6 @@
       'use_sys_openssl%': "true",
       'library%': "static_library",
       'use_sys_uv%': "false",
-      'use_sys_jansson%': "false",
       'no_tls_support%': "false",
       'no_uv_support%': "false",
       'build_pypomelo%': "false",
@@ -52,23 +51,7 @@
       ],    # conditions
 
         'conditions': [
-        ['use_sys_jansson == "false"', {
-          'dependencies': [
-            './deps/jansson/jansson.gyp:jansson',
-          ],
-
-          'include_dirs': [
-            './deps/jansson/src',
-          ]
-        }, {
-          'link_settings': {
-            'libraries': [
-              '-ljansson',
-            ]
-          }
-        }], # use_sys_jansson
-
-      [ 'no_uv_support == "false"', {
+        [ 'no_uv_support == "false"', {
         'conditions' : [
           ['use_sys_uv == "false"', {
             'dependencies': [
