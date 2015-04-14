@@ -5,17 +5,17 @@
 
 #include <assert.h>
 #include <string.h>
-#include <jansson.h>
 
 #include <pomelo.h>
 #include <pc_lib.h>
+#include <pc_JSON.h>
 
 #include "pr_msg.h"
 #include "pb.h"
 
 #define PC_PB_EVAL_FACTOR 2
 
-pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_t *pb_def)
+pc_buf_t pc_body_pb_encode(const pc_JSON* msg, const pc_JSON* gprotos, const pc_JSON* pb_def)
 {
     pc_buf_t buf;
     pc_buf_t json_buf;
@@ -63,15 +63,15 @@ pc_buf_t pc_body_pb_encode(const json_t *msg, const json_t *gprotos, const json_
     return buf;
 }
 
-json_t *pc_body_pb_decode(const char *data, size_t offset, size_t len,
-                      const json_t *gprotos, const json_t *pb_def) 
+pc_JSON* pc_body_pb_decode(const char *data, size_t offset, size_t len,
+                      const pc_JSON* gprotos, const pc_JSON* pb_def) 
 {
-    json_t *result = json_object();
+    pc_JSON *result = pc_JSON_CreateObject();
     if (!pc_pb_decode((const uint8_t *)(data + offset), len,
                       gprotos, pb_def, result)) {
-        json_decref(result);
+        pc_JSON_Delete(result);
+        result = NULL;
         pc_lib_log(PC_LOG_ERROR, "pc_body_pb_decode - failed to decode msg based on protobuf");
-        return NULL;
     }
 
     return result;
