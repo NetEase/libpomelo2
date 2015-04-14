@@ -120,7 +120,7 @@ static const char *parse_number(pc_JSON *item,const char *num)
 }
 
 /* Render the number nicely from the given item into a string. */
-static char *print_number(pc_JSON *item)
+static char *print_number(const pc_JSON *item)
 {
     char *str;
     double d=item->valuedouble;
@@ -252,15 +252,15 @@ static char *print_string_ptr(const char *str)
     return out;
 }
 /* Invote print_string_ptr (which is useful) on an item. */
-static char *print_string(pc_JSON *item)    {return print_string_ptr(item->valuestring);}
+static char *print_string(const pc_JSON *item)    {return print_string_ptr(item->valuestring);}
 
 /* Predeclare these prototypes. */
 static const char *parse_value(pc_JSON *item,const char *value);
-static char *print_value(pc_JSON *item,int depth,int fmt);
+static char *print_value(const pc_JSON *item,int depth,int fmt);
 static const char *parse_array(pc_JSON *item,const char *value);
-static char *print_array(pc_JSON *item,int depth,int fmt);
+static char *print_array(const pc_JSON *item,int depth,int fmt);
 static const char *parse_object(pc_JSON *item,const char *value);
-static char *print_object(pc_JSON *item,int depth,int fmt);
+static char *print_object(const pc_JSON *item,int depth,int fmt);
 
 /* Utility to jump whitespace and cr/lf */
 static const char *skip(const char *in) {while (in && *in && (unsigned char)*in<=32) in++; return in;}
@@ -285,8 +285,8 @@ pc_JSON *pc_JSON_ParseWithOpts(const char *value,const char **return_parse_end,i
 pc_JSON *pc_JSON_Parse(const char *value) {return pc_JSON_ParseWithOpts(value,0,0);}
 
 /* Render a pc_JSON item/entity/structure to text. */
-char *pc_JSON_Print(pc_JSON *item)                {return print_value(item,0,1);}
-char *pc_JSON_PrintUnformatted(pc_JSON *item)    {return print_value(item,0,0);}
+char *pc_JSON_Print(const pc_JSON *item)                {return print_value(item,0,1);}
+char *pc_JSON_PrintUnformatted(const pc_JSON *item)    {return print_value(item,0,0);}
 
 /* Parser core - when encountering text, process appropriately. */
 static const char *parse_value(pc_JSON *item,const char *value)
@@ -304,7 +304,7 @@ static const char *parse_value(pc_JSON *item,const char *value)
 }
 
 /* Render a value to text. */
-static char *print_value(pc_JSON *item,int depth,int fmt)
+static char *print_value(const pc_JSON *item,int depth,int fmt)
 {
     char *out=0;
     if (!item) return 0;
@@ -350,7 +350,7 @@ static const char *parse_array(pc_JSON *item,const char *value)
 }
 
 /* Render an array to text */
-static char *print_array(pc_JSON *item,int depth,int fmt)
+static char *print_array(const pc_JSON *item,int depth,int fmt)
 {
     char **entries;
     char *out=0,*ptr,*ret;int len=5;
@@ -444,7 +444,7 @@ static const char *parse_object(pc_JSON *item,const char *value)
 }
 
 /* Render an object to text. */
-static char *print_object(pc_JSON *item,int depth,int fmt)
+static char *print_object(const pc_JSON *item,int depth,int fmt)
 {
     char **entries=0,**names=0;
     char *out=0,*ptr,*ret,*str;int len=7,i=0,j;
@@ -512,9 +512,9 @@ static char *print_object(pc_JSON *item,int depth,int fmt)
 }
 
 /* Get Array size/item / object item. */
-int    pc_JSON_GetArraySize(pc_JSON *array)                            {pc_JSON *c=array->child;int i=0;while(c)i++,c=c->next;return i;}
-pc_JSON *pc_JSON_GetArrayItem(pc_JSON *array,int item)                {pc_JSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
-pc_JSON *pc_JSON_GetObjectItem(pc_JSON *object,const char *string)    {pc_JSON *c=object->child; while (c && pc_JSON_strcasecmp(c->string,string)) c=c->next; return c;}
+int    pc_JSON_GetArraySize(const pc_JSON *array)                            {pc_JSON *c=array->child;int i=0;while(c)i++,c=c->next;return i;}
+pc_JSON *pc_JSON_GetArrayItem(const pc_JSON *array,int item)                {pc_JSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
+pc_JSON *pc_JSON_GetObjectItem(const pc_JSON *object,const char *string)    {pc_JSON *c=object->child; while (c && pc_JSON_strcasecmp(c->string,string)) c=c->next; return c;}
 
 /* Utility for array list handling. */
 static void suffix_object(pc_JSON *prev,pc_JSON *item) {prev->next=item;item->prev=prev;}
@@ -556,7 +556,7 @@ pc_JSON *pc_JSON_CreateDoubleArray(const double *numbers,int count)    {int i;pc
 pc_JSON *pc_JSON_CreateStringArray(const char **strings,int count)    {int i;pc_JSON *n=0,*p=0,*a=pc_JSON_CreateArray();for(i=0;a && i<count;i++){n=pc_JSON_CreateString(strings[i]);if(!i)a->child=n;else suffix_object(p,n);p=n;}return a;}
 
 /* Duplication */
-pc_JSON *pc_JSON_Duplicate(pc_JSON *item,int recurse)
+pc_JSON *pc_JSON_Duplicate(const pc_JSON *item,int recurse)
 {
     pc_JSON *newitem,*cptr,*nptr=0,*newchild;
     /* Bail on bad ptr */

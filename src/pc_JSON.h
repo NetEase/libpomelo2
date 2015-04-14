@@ -70,18 +70,18 @@ extern void pc_JSON_InitHooks(pc_JSON_Hooks* hooks);
 /* Supply a block of JSON, and this returns a pc_JSON object you can interrogate. Call pc_JSON_Delete when finished. */
 extern pc_JSON *pc_JSON_Parse(const char *value);
 /* Render a pc_JSON entity to text for transfer/storage. Free the char* when finished. */
-extern char  *pc_JSON_Print(pc_JSON *item);
+extern char  *pc_JSON_Print(const pc_JSON *item);
 /* Render a pc_JSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
-extern char  *pc_JSON_PrintUnformatted(pc_JSON *item);
+extern char  *pc_JSON_PrintUnformatted(const pc_JSON *item);
 /* Delete a pc_JSON entity and all subentities. */
 extern void   pc_JSON_Delete(pc_JSON *c);
 
 /* Returns the number of items in an array (or object). */
-extern int      pc_JSON_GetArraySize(pc_JSON *array);
+extern int      pc_JSON_GetArraySize(const pc_JSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
-extern pc_JSON *pc_JSON_GetArrayItem(pc_JSON *array,int item);
+extern pc_JSON *pc_JSON_GetArrayItem(const pc_JSON *array,int item);
 /* Get item "string" from object. Case insensitive. */
-extern pc_JSON *pc_JSON_GetObjectItem(pc_JSON *object,const char *string);
+extern pc_JSON *pc_JSON_GetObjectItem(const pc_JSON *object,const char *string);
 
 /* For analysing failed parses. This returns a pointer to the parse error. You'll probably need to look a few chars back to make sense of it. Defined when pc_JSON_Parse() returns 0. 0 when pc_JSON_Parse() succeeds. */
 extern const char *pc_JSON_GetErrorPtr(void);
@@ -120,7 +120,7 @@ extern void pc_JSON_ReplaceItemInArray(pc_JSON *array,int which,pc_JSON *newitem
 extern void pc_JSON_ReplaceItemInObject(pc_JSON *object,const char *string,pc_JSON *newitem);
 
 /* Duplicate a pc_JSON item */
-extern pc_JSON *pc_JSON_Duplicate(pc_JSON *item,int recurse);
+extern pc_JSON *pc_JSON_Duplicate(const pc_JSON *item,int recurse);
 /* Duplicate will create a new, identical pc_JSON item to the one you pass, in new memory that will
 need to be released. With recurse!=0, it will duplicate any children connected to the item.
 The item->next and ->prev pointers are always zero on return from Duplicate. */
