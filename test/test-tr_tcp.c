@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,7 +76,7 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
 }
 
 
-static void event_cb(pc_client_t* client, int ev_type, void* ex_data, const char* arg1, const char* arg2) 
+static void event_cb(pc_client_t* client, int ev_type, void* ex_data, const char* arg1, const char* arg2)
 {
 
     PC_TEST_ASSERT(ex_data == EV_HANDLER_EX);
@@ -79,7 +84,7 @@ static void event_cb(pc_client_t* client, int ev_type, void* ex_data, const char
             arg1 ? arg1 : "", arg2 ? arg2 : "");
 }
 
-static void request_cb(const pc_request_t* req, int rc, const char* resp) 
+static void request_cb(const pc_request_t* req, int rc, const char* resp)
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
     PC_TEST_ASSERT(resp);
@@ -94,7 +99,7 @@ static void request_cb(const pc_request_t* req, int rc, const char* resp)
     PC_TEST_ASSERT(pc_request_timeout(req) == REQ_TIMEOUT);
 }
 
-static void notify_cb(const pc_notify_t* noti, int rc) 
+static void notify_cb(const pc_notify_t* noti, int rc)
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
 
@@ -110,18 +115,18 @@ int main()
     pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
     int handler_id;
     pc_lib_init(NULL, NULL, NULL, NULL);
-    
+
     client = (pc_client_t*)malloc(pc_client_size());
 
     PC_TEST_ASSERT(client);
 
     config.local_storage_cb = local_storage_cb;
     pc_client_init(client, (void*)0x11, &config);
-    
+
     PC_TEST_ASSERT(pc_client_ex_data(client) == (void*)0x11);
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_INITED);
-  
-    handler_id = pc_client_add_ev_handler(client, event_cb, EV_HANDLER_EX, NULL); 
+
+    handler_id = pc_client_add_ev_handler(client, event_cb, EV_HANDLER_EX, NULL);
 
     pc_client_connect(client, "127.0.0.1", 3010, NULL);
 

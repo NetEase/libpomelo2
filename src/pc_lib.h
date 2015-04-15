@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -10,7 +10,7 @@
 
 #if defined(_WIN32) && !defined(__cplusplus)
 #define PC_INLINE __inline
-#else 
+#else
 #define PC_INLINE inline
 #endif
 

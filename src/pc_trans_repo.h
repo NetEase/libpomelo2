@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -10,4 +10,4 @@
 
 pc_transport_plugin_t* pc__get_transport_plugin(int trans_name);
 
-#endif // PC_TRANS_REPO_H
+#endif /* PC_TRANS_REPO_H */

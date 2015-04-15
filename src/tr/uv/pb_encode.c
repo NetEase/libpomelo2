@@ -1,29 +1,13 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
-/* pb_encode.c -- encode a protobuf using minimal resources
- *
- * 2013 fantasyni <fantasyni@163.com>
- */
-
-//#define PB_INTERNALS
-//#define PB_DEBUG
-//#define __BIG_ENDIAN__
-
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "pb.h"
-#include "pb_util.h"
-
-/* The warn_unused_result attribute appeared first in gcc-3.4.0 */
-#if !defined(__GNUC__) || ( __GNUC__ < 3) || (__GNUC__ == 3 && __GNUC_MINOR__ < 4)
-#define checkreturn
-#else
-/* Verify that we remember to check all return values for proper error propagation */
-#define checkreturn __attribute__((warn_unused_result))
-#endif
 
 typedef struct _pb_ostream_t pb_ostream_t;
 
@@ -51,7 +35,7 @@ struct _pb_ostream_t {
     size_t bytes_written;
 };
 
-static int pb_encode(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, json_t *msg);
+static int pb_encode(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos, pc_JSON *msg);
 
 static pb_ostream_t pb_ostream_from_buffer(uint8_t *buf, size_t bufsize);
 static int pb_write(pb_ostream_t *stream, const uint8_t *buf, size_t count);
@@ -61,12 +45,12 @@ static int pb_write(pb_ostream_t *stream, const uint8_t *buf, size_t count);
  * You may want to use these from your caller or callbacks.
  */
 
-static int pb_encode_proto(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, const json_t *proto, json_t *value);
+static int pb_encode_proto(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos, const pc_JSON *proto, pc_JSON *value);
 
-static int pb_encode_array(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, const json_t *proto, json_t *array);
+static int pb_encode_array(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos, const pc_JSON *proto, pc_JSON *array);
 /* Encode field header based on LTYPE and field number defined in the field structure.
  * Call this from the callback before writing out field contents. */
-static int pb_encode_tag_for_field(pb_ostream_t *stream, const json_t *field);
+static int pb_encode_tag_for_field(pb_ostream_t *stream, const pc_JSON *field);
 
 /* Encode field header by manually specifing wire type. You need to use this if
  * you want to write out packed arrays from a callback field. */
@@ -92,20 +76,20 @@ static int pb_encode_fixed32(pb_ostream_t *stream, const void *value);
 static int pb_encode_fixed64(pb_ostream_t *stream, const void *value);
 
 /* Eecode submessage in __messages protos */
-static int pb_encode_submessage(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, json_t *value);
+static int pb_encode_submessage(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos, pc_JSON *value);
 /* pb_ostream_t implementation */
 
-int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const json_t *gprotos, const json_t *protos, const json_t *msg) {
-    // TODO: const 
+int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const pc_JSON *gprotos, const pc_JSON *protos, const pc_JSON *msg) {
+    /* TODO: const */
     pb_ostream_t stream = pb_ostream_from_buffer(buf, len);
-    if (!pb_encode(&stream, gprotos, protos, (json_t*)msg)) {
+    if (!pb_encode(&stream, gprotos, protos, (pc_JSON*)msg)) {
         return 0;
     }
     *written = stream.bytes_written;
     return 1;
 }
 
-static int checkreturn buf_write(pb_ostream_t *stream, const uint8_t *buf,
+static int  buf_write(pb_ostream_t *stream, const uint8_t *buf,
         size_t count) {
     uint8_t *dest = (uint8_t *) stream->state;
     memcpy(dest, buf, count);
@@ -122,7 +106,7 @@ static pb_ostream_t pb_ostream_from_buffer(uint8_t *buf, size_t bufsize) {
     return stream;
 }
 
-static int checkreturn pb_write(pb_ostream_t *stream, const uint8_t *buf,
+static int  pb_write(pb_ostream_t *stream, const uint8_t *buf,
         size_t count) {
     if (stream->callback != NULL ) {
         if (stream->bytes_written + count > stream->max_size)
@@ -138,13 +122,13 @@ static int checkreturn pb_write(pb_ostream_t *stream, const uint8_t *buf,
 
 /* Main encoding stuff */
 
-static int checkreturn pb_encode_array(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos,
-        const json_t *proto, json_t *array) {
-    json_t *type = json_object_get(proto, "type");
-    const char *type_text = json_string_value(type);
-    size_t len = json_array_size(array);
+static int  pb_encode_array(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos,
+        const pc_JSON *proto, pc_JSON *array) {
+    pc_JSON *type = pc_JSON_GetObjectItem(proto, "type");
+    const char *type_text = type->valuestring;
+    size_t len = pc_JSON_GetArraySize(array);
     size_t i;
-    // simple msg
+    /* simple msg */
     if (pb_get_type(type_text) && pb_get_type(type_text) != PB_string) {
         if (!pb_encode_tag_for_field(stream, proto)) {
             return 0;
@@ -155,7 +139,7 @@ static int checkreturn pb_encode_array(pb_ostream_t *stream, const json_t *gprot
         }
         for (i = 0; i < len; i++) {
             if (!pb_encode_proto(stream, gprotos, protos, proto,
-                        json_array_get(array, i))) {
+                        pc_JSON_GetArrayItem(array, i))) {
                 return 0;
             }
         }
@@ -165,7 +149,7 @@ static int checkreturn pb_encode_array(pb_ostream_t *stream, const json_t *gprot
                 return 0;
             }
             if (!pb_encode_proto(stream, gprotos, protos, proto,
-                        json_array_get(array, i))) {
+                        pc_JSON_GetArrayItem(array, i))) {
                 return 0;
             }
         }
@@ -173,21 +157,19 @@ static int checkreturn pb_encode_array(pb_ostream_t *stream, const json_t *gprot
     return 1;
 }
 
-static int checkreturn pb_encode(pb_ostream_t *stream, const json_t *gprotos,
-        const json_t *protos, json_t *msg) {
-    json_t *root = msg, *value, *option, *proto;
+static int  pb_encode(pb_ostream_t *stream, const pc_JSON *gprotos,
+        const pc_JSON *protos, pc_JSON *msg) {
+    pc_JSON *root = msg, *value, *option, *proto;
 
     const char *option_text;
     const char *key;
-    void *iter = json_object_iter(root);
-    while (iter) {
-        key = json_object_iter_key(iter);
-        value = json_object_iter_value(iter);
-
-        proto = json_object_get(protos, key);
+    value = root->child;
+    while (value) {
+        key = value->string;
+        proto = pc_JSON_GetObjectItem(protos, key);
         if (proto) {
-            option = json_object_get(proto, "option");
-            option_text = json_string_value(option);
+            option = pc_JSON_GetObjectItem(proto, "option");
+            option_text = option->valuestring;
             if (strcmp(option_text, "required") == 0
                     || strcmp(option_text, "optional") == 0) {
                 if (!pb_encode_tag_for_field(stream, proto)) {
@@ -198,7 +180,7 @@ static int checkreturn pb_encode(pb_ostream_t *stream, const json_t *gprotos,
                     return 0;
                 }
             } else if (strcmp(option_text, "repeated") == 0) {
-                if (json_is_array(value)) {
+                if (value->type == pc_JSON_Array) {
                     if (!pb_encode_array(stream, gprotos, protos, proto, value)) {
                         return 0;
                     }
@@ -207,52 +189,52 @@ static int checkreturn pb_encode(pb_ostream_t *stream, const json_t *gprotos,
         } else {
             return 0;
         }
-        iter = json_object_iter_next(root, iter);
+        value = value->next;
     }
     return 1;
 }
 
-static int checkreturn pb_encode_proto(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos,
-        const json_t *proto, json_t *value) {
-    json_t *_messages;
-    json_t *_type = json_object_get(proto, "type");
-    json_t *sub_msg;
-    const char *type = json_string_value(_type);
+static int  pb_encode_proto(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos,
+        const pc_JSON *proto, pc_JSON *value) {
+    pc_JSON *_messages;
+    pc_JSON *_type = pc_JSON_GetObjectItem(proto, "type");
+    pc_JSON *sub_msg;
+    const char *type = _type->valuestring;
     const char *str;
-    json_int_t int_val;
+    int int_val;
     float float_val;
     double double_val;
     int length;
 
-    _messages = json_object_get(protos, "__messages");
+    _messages = pc_JSON_GetObjectItem(protos, "__messages");
     switch (pb_get_type(type)) {
         case PB_uInt32:
-            int_val = (json_int_t)json_number_value(value);
+            int_val = value->valueint;
             if (!pb_encode_varint(stream, int_val)) {
                 return 0;
             }
             break;
         case PB_int32:
         case PB_sInt32:
-            int_val = (json_int_t)json_number_value(value);
+            int_val = value->valueint;
             if (!pb_encode_svarint(stream, int_val)) {
                 return 0;
             }
             break;
         case PB_float:
-            float_val = (float)json_number_value(value);
+            float_val = (float)value->valuedouble;
             if (!pb_encode_fixed32(stream, &float_val)) {
                 return 0;
             }
             break;
         case PB_double:
-            double_val = json_number_value(value);
+            double_val = value->valuedouble;
             if (!pb_encode_fixed64(stream, &double_val)) {
                 return 0;
             }
             break;
         case PB_string:
-            str = json_string_value(value);
+            str = value->valuestring;
             length = strlen(str);
             if (!pb_encode_string(stream, (const uint8_t *)str, length)) {
                 return 0;
@@ -260,16 +242,16 @@ static int checkreturn pb_encode_proto(pb_ostream_t *stream, const json_t *gprot
             break;
         default:
             if (_messages) {
-                sub_msg = json_object_get(_messages, type);
+                sub_msg = pc_JSON_GetObjectItem(_messages, type);
                 if (!sub_msg) {
-                    // check root msg in gprotos
+                    /* check root msg in gprotos */
                     const char *head = "message ";
                     size_t len = strlen(head) + strlen(type) + 1;
                     char *head_text = (char *)malloc(len);
                     memset(head_text, 0, len);
                     strcpy(head_text, head);
                     strcat(head_text, type);
-                    sub_msg = json_object_get(gprotos, head_text);
+                    sub_msg = pc_JSON_GetObjectItem(gprotos, head_text);
                     free(head_text);
                 }
                 if (sub_msg) {
@@ -289,7 +271,7 @@ static int checkreturn pb_encode_proto(pb_ostream_t *stream, const json_t *gprot
 
 /* Encode an integer in the varint format.
  * This works for bool, enum, int32, int64, uint32 and uint64 field types. */
-static int checkreturn pb_encode_varint(pb_ostream_t *stream, uint64_t value) {
+static int  pb_encode_varint(pb_ostream_t *stream, uint64_t value) {
     uint8_t buffer[10];
     size_t i = 0;
 
@@ -308,7 +290,7 @@ static int checkreturn pb_encode_varint(pb_ostream_t *stream, uint64_t value) {
 
 /* Encode an integer in the zig-zagged svarint format.
  * This works for sint32 and sint64. */
-static int checkreturn pb_encode_svarint(pb_ostream_t *stream, int64_t value) {
+static int  pb_encode_svarint(pb_ostream_t *stream, int64_t value) {
     uint64_t zigzagged;
     if (value < 0)
         zigzagged = (uint64_t)(~(value << 1));
@@ -320,7 +302,7 @@ static int checkreturn pb_encode_svarint(pb_ostream_t *stream, int64_t value) {
 
 /* Encode a fixed32, sfixed32 or float value.
  * You need to pass a pointer to a 4-byte wide C variable. */
-static int checkreturn pb_encode_fixed32(pb_ostream_t *stream, const void *value) {
+static int  pb_encode_fixed32(pb_ostream_t *stream, const void *value) {
 #ifdef __BIG_ENDIAN__
     const uint8_t *bytes = value;
     uint8_t lebytes[4];
@@ -336,7 +318,7 @@ static int checkreturn pb_encode_fixed32(pb_ostream_t *stream, const void *value
 
 /* Encode a fixed64, sfixed64 or double value.
  * You need to pass a pointer to a 8-byte wide C variable. */
-static int checkreturn pb_encode_fixed64(pb_ostream_t *stream, const void *value) {
+static int  pb_encode_fixed64(pb_ostream_t *stream, const void *value) {
 #ifdef __BIG_ENDIAN__
     const uint8_t *bytes = value;
     uint8_t lebytes[8];
@@ -356,7 +338,7 @@ static int checkreturn pb_encode_fixed64(pb_ostream_t *stream, const void *value
 
 /* Encode field header by manually specifing wire type. You need to use this if
  * you want to write out packed arrays from a callback field. */
-static int checkreturn pb_encode_tag(pb_ostream_t *stream, int wiretype,
+static int  pb_encode_tag(pb_ostream_t *stream, int wiretype,
         uint32_t field_number) {
     uint64_t tag = wiretype | (field_number << 3);
     return pb_encode_varint(stream, tag);
@@ -364,18 +346,18 @@ static int checkreturn pb_encode_tag(pb_ostream_t *stream, int wiretype,
 
 /* Encode field header based on LTYPE and field number defined in the field structure.
  * Call this from the callback before writing out field contents. */
-static int checkreturn pb_encode_tag_for_field(pb_ostream_t *stream, const json_t *field) { // type,tag
+static int  pb_encode_tag_for_field(pb_ostream_t *stream, const pc_JSON *field) { /* type,tag */
     int wiretype;
-    json_t *type = json_object_get(field, "type");
-    json_t *tag = json_object_get(field, "tag");
+    pc_JSON *type = pc_JSON_GetObjectItem(field, "type");
+    pc_JSON *tag = pc_JSON_GetObjectItem(field, "tag");
 
-    wiretype = pb_get_constant_type(json_string_value(type));
+    wiretype = pb_get_constant_type(type->valuestring);
 
-    return pb_encode_tag(stream, wiretype, (uint32_t)json_number_value(tag));
+    return pb_encode_tag(stream, wiretype, (uint32_t)tag->valueint);
 }
 
 /* Encode a string or bytes type field. For strings, pass strlen(s) as size. */
-static int checkreturn pb_encode_string(pb_ostream_t *stream, const uint8_t *buffer,
+static int  pb_encode_string(pb_ostream_t *stream, const uint8_t *buffer,
         size_t size) {
     if (!pb_encode_varint(stream, (uint64_t) size))
         return 0;
@@ -384,7 +366,7 @@ static int checkreturn pb_encode_string(pb_ostream_t *stream, const uint8_t *buf
 }
 
 /* Eecode submessage in __messages protos */
-static int pb_encode_submessage(pb_ostream_t *stream, const json_t *gprotos, const json_t *protos, json_t *value) {
+static int pb_encode_submessage(pb_ostream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos, pc_JSON *value) {
     /* First calculate the message size using a non-writing substream. */
     pb_ostream_t substream = { 0, 0, 0, 0 };
     size_t size;

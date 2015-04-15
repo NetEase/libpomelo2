@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -11,7 +11,7 @@
 #include "pc_lib.h"
 #include "pc_pomelo_i.h"
 
-void pc_trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, const char* arg2) 
+void pc_trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, const char* arg2)
 {
     int pending = 0;
 
@@ -22,7 +22,7 @@ void pc_trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, con
 
     if (client->config.enable_polling) {
         pending = 1;
-    } 
+    }
 
     pc__trans_fire_event(client, ev_type, arg1, arg2, pending);
 }
@@ -43,7 +43,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
         pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - push msg but without a route or msg");
         return;
     }
- 
+
     if (ev_type == PC_EV_CONNECT_ERROR || ev_type == PC_EV_UNEXPECTED_DISCONNECT
             || ev_type == PC_EV_PROTO_ERROR || ev_type == PC_EV_CONNECT_FAILED) {
         if (!arg1) {
@@ -98,7 +98,7 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
         return ;
     }
 
-    pc_lib_log(PC_LOG_INFO, "pc__trans_fire_event - fire event: %s, arg1: %s, arg2: %s", 
+    pc_lib_log(PC_LOG_INFO, "pc__trans_fire_event - fire event: %s, arg1: %s, arg2: %s",
             pc_client_ev_str(ev_type), arg1 ? arg1 : "", arg2 ? arg2 : "");
     pc_mutex_lock(&client->state_mutex);
     switch(ev_type) {
@@ -133,16 +133,16 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
             client->state = PC_ST_CONNECTING;
             break;
         case PC_EV_USER_DEFINED_PUSH:
-            // do nothing here.
+            /* do nothing here */
             break;
 
         default:
-            // never run to here
+            /* never run to here */
             pc_lib_log(PC_LOG_ERROR, "pc__trans_fire_event - unknown network event: %d", ev_type);
     }
     pc_mutex_unlock(&client->state_mutex);
 
-    // invoke handler
+    /* invoke handler */
     pc_mutex_lock(&client->handler_mutex);
     QUEUE_FOREACH(q, &client->ev_handlers) {
         handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
@@ -167,7 +167,7 @@ void pc_trans_sent(pc_client_t* client, unsigned int seq_num, int rc)
     pc__trans_sent(client, seq_num, rc, pending);
 }
 
-void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pending) 
+void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pending)
 {
     QUEUE* q;
     pc_notify_t* notify;
@@ -208,7 +208,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
         return ;
     }
 
-    // callback immediately
+    /* callback immediately */
     pc_mutex_lock(&client->notify_mutex);
     target = NULL;
     QUEUE_FOREACH(q, &client->notify_queue) {
@@ -217,7 +217,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
 
             pc_lib_log(PC_LOG_INFO, "pc__trans_sent - fire sent event, seq_num: %u, rc: %s",
                     seq_num, pc_client_rc_str(rc));
-            
+
             target = notify;
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
@@ -308,7 +308,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
         return ;
     }
 
-    // invoke callback immediately
+    /* invoke callback immediately */
     target = NULL;
     pc_mutex_lock(&client->req_mutex);
     QUEUE_FOREACH(q, &client->req_queue) {

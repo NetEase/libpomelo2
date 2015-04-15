@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -13,20 +13,20 @@
 #include "tr_uv_tls_aux.h"
 
 pc_transport_t* tr_uv_tls_create(pc_transport_plugin_t* plugin)
-{   
+{
     size_t len = sizeof(tr_uv_tls_transport_t);
     tr_uv_tls_transport_t* tls = (tr_uv_tls_transport_t* )pc_lib_malloc(len);
     memset(tls, 0, len);
 
-    // inherit from tr_uv_tcp
+    /* inherit from tr_uv_tcp */
     tls->base.base.connect = tr_uv_tcp_connect;
     tls->base.base.send = tr_uv_tcp_send;
-    tls->base.base.disconnect = tr_uv_tcp_disconnect; 
+    tls->base.base.disconnect = tr_uv_tcp_disconnect;
     tls->base.base.cleanup = tr_uv_tcp_cleanup;
     tls->base.base.quality = tr_uv_tcp_quality;
     tls->base.reconn_fn = tcp__reconn;
 
-    // reimplemetating method
+    /* reimplemetating method */
     tls->base.base.init = tr_uv_tls_init;
     tls->base.base.internal_data = tr_uv_tls_internal_data;
     tls->base.base.plugin = tr_uv_tls_plugin;
@@ -46,7 +46,7 @@ void tr_uv_tls_release(pc_transport_plugin_t* plugin, pc_transport_t* trans)
     pc_lib_free(trans);
 }
 
-/* 
+/*
  * the initilization code for openssl lib is extracted from nodejs
  */
 static uv_rwlock_t* locks;
@@ -172,8 +172,8 @@ int tr_uv_tls_init(pc_transport_t* trans, pc_client_t* client)
 
     tls->is_handshake_completed = 0;
 
-    // oom, non-handling
-    if (!tls->in || !tls->out) 
+    /* oom, non-handling */
+    if (!tls->in || !tls->out)
         abort();
 
     SSL_set_bio(tls->tls, tls->in, tls->out);

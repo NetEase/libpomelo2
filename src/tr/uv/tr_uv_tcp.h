@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -10,4 +10,4 @@
 
 pc_transport_plugin_t* pc_tr_uv_tcp_trans_plugin();
 
-#endif // TR_UV_TCP_H 
+#endif /* TR_UV_TCP_H */

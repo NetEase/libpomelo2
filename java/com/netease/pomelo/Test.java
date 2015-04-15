@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -34,7 +34,7 @@ public class Test {
     } catch (Exception e) {
 
     }
- 
+
 
     c.request("connector.entryHandler.entry", "{\"name\": \"test\"}", 10, new Client.RequestCallback() {
         public void handle(int rc, String resp) {

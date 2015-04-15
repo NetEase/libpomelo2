@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -36,7 +36,7 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
         return PC_RC_INVALID_ARG;
     }
 
-    // error report that using uninitialised value by valgrind here can be suppressed
+    /* error report that using uninitialised value by valgrind here can be suppressed */
     if (client->magic_num == pc__init_magic_num) {
         pc_lib_log(PC_LOG_INFO, "pc_client_init - client has already inited");
         return PC_RC_OK;
@@ -93,8 +93,8 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
     client->seq_num = 0;
     client->req_id_seq = 1;
 
-    memset(&client->requests[0], 0, sizeof(pc_request_t) * PC_PRE_ALLOC_REQUEST_SLOT_COUNT); 
-    memset(&client->notifies[0], 0, sizeof(pc_notify_t) * PC_PRE_ALLOC_NOTIFY_SLOT_COUNT); 
+    memset(&client->requests[0], 0, sizeof(pc_request_t) * PC_PRE_ALLOC_REQUEST_SLOT_COUNT);
+    memset(&client->notifies[0], 0, sizeof(pc_notify_t) * PC_PRE_ALLOC_NOTIFY_SLOT_COUNT);
 
     for (i = 0; i < PC_PRE_ALLOC_REQUEST_SLOT_COUNT; ++i) {
         QUEUE_INIT(&client->requests[i].base.queue);
@@ -107,7 +107,7 @@ int pc_client_init(pc_client_t* client, void* ex_data, const pc_client_config_t*
         client->notifies[i].base.client = client;
         client->notifies[i].base.type = PC_REQ_TYPE_NOTIFY | PC_PRE_ALLOC_ST_IDLE | PC_PRE_ALLOC;
     }
-    
+
     pc_mutex_init(&client->event_mutex);
     if (client->config.enable_polling) {
 
@@ -163,7 +163,7 @@ int pc_client_connect(pc_client_t* client, const char* host, int port, const cha
         client->state = PC_ST_CONNECTING;
         pc_mutex_unlock(&client->state_mutex);
 
-        ret = client->trans->connect(client->trans, host, port, handshake_opts); 
+        ret = client->trans->connect(client->trans, host, port, handshake_opts);
 
         if (ret != PC_RC_OK) {
             pc_lib_log(PC_LOG_ERROR, "pc_client_connect - transport connect error, rc: %s", pc_client_rc_str(ret));
@@ -178,7 +178,7 @@ int pc_client_connect(pc_client_t* client, const char* host, int port, const cha
     return PC_RC_ERROR;
 }
 
-int pc_client_disconnect(pc_client_t* client) 
+int pc_client_disconnect(pc_client_t* client)
 {
     int state;
     int ret;
@@ -208,7 +208,7 @@ int pc_client_disconnect(pc_client_t* client)
             client->state = PC_ST_DISCONNECTING;
             pc_mutex_unlock(&client->state_mutex);
 
-            ret = client->trans->disconnect(client->trans); 
+            ret = client->trans->disconnect(client->trans);
 
             if (ret != PC_RC_OK) {
                 pc_lib_log(PC_LOG_ERROR, "pc_client_disconnect - transport disconnect error: %s",
@@ -247,7 +247,7 @@ int pc_client_cleanup(pc_client_t* client)
     assert(client->trans && client->trans->cleanup);
 
     /*
-     * when cleaning transport up, transport should ack all 
+     * when cleaning transport up, transport should ack all
      * the request it holds from client so that client can release them
      *
      * transport->cleanup may be blocking.
@@ -271,7 +271,7 @@ int pc_client_cleanup(pc_client_t* client)
 
     assert(QUEUE_EMPTY(&client->req_queue));
     assert(QUEUE_EMPTY(&client->notify_queue));
-    
+
     while(!QUEUE_EMPTY(&client->ev_handlers)) {
         q = QUEUE_HEAD(&client->ev_handlers);
         QUEUE_REMOVE(q);
@@ -317,7 +317,7 @@ static void pc__handle_event(pc_client_t* client, pc_event_t* ev)
         pc__trans_sent(client, ev->data.notify.seq_num, ev->data.notify.rc, 0/* not pending */);
         pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans sent, seq_num: %u, rc: %s",
                 ev->data.notify.seq_num, pc_client_rc_str(ev->data.notify.rc));
-    } else { 
+    } else {
         pc__trans_fire_event(client, ev->data.ev.ev_type, ev->data.ev.arg1, ev->data.ev.arg2, 0/* not pending */);
         pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans event: %s, arg1: %s",
                 pc_client_ev_str(ev->data.ev.ev_type), ev->data.ev.arg1 ? ev->data.ev.arg1 : "");
@@ -462,7 +462,7 @@ int pc_client_state(pc_client_t* client)
 {
     int state;
 
-    if (!client) { 
+    if (!client) {
         pc_lib_log(PC_LOG_DEBUG, "pc_client_state - client is null");
         return PC_ST_UNKNOWN;
     }
@@ -478,7 +478,7 @@ int pc_client_state(pc_client_t* client)
     return state;
 }
 
-int pc_client_conn_quality(pc_client_t* client) 
+int pc_client_conn_quality(pc_client_t* client)
 {
     if (!client) {
         pc_lib_log(PC_LOG_ERROR, "pc_client_conn_quality - client is null, invalid arg");
@@ -496,7 +496,7 @@ int pc_client_conn_quality(pc_client_t* client)
     return PC_RC_ERROR;
 }
 
-void* pc_client_trans_data(pc_client_t* client) 
+void* pc_client_trans_data(pc_client_t* client)
 {
     if (!client) {
         pc_lib_log(PC_LOG_ERROR, "pc_client_trans_data - client is null, invalid arg");
@@ -559,7 +559,7 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
     if (!req) {
         req = (pc_request_t* )pc_lib_malloc(sizeof(pc_request_t));
         memset(req, 0, sizeof(pc_request_t));
-        
+
         pc_lib_log(PC_LOG_DEBUG, "pc_request_with_timeout - use dynamic alloc request");
         req->base.type = PC_DYN_ALLOC | PC_REQ_TYPE_REQUEST;
         req->base.client = client;

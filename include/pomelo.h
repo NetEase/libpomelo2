@@ -274,7 +274,7 @@ PC_EXPORT const char* pc_client_rc_str(int rc);
 
 void tr_uv_tls_set_ca_file(const char* ca_file, const char* ca_path);
 
-#endif // uv_tls
+#endif /* uv_tls */
 
 /**
  * Macro implementation
@@ -286,4 +286,4 @@ void tr_uv_tls_set_ca_file(const char* ca_file, const char* ca_path);
 }
 #endif
 
-#endif // PC_POMELO_H 
+#endif /* PC_POMELO_H */

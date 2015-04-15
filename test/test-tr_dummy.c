@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,11 +26,11 @@ static pc_client_t* client;
 #define NOTI_EX ((void*)0x33)
 #define NOTI_TIMEOUT 30
 
-void request_cb(const pc_request_t* req, int rc, const char* resp) 
+void request_cb(const pc_request_t* req, int rc, const char* resp)
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
     PC_TEST_ASSERT(resp);
-    PC_TEST_ASSERT(!strcmp(resp, TR_DUMMY_RESP)); 
+    PC_TEST_ASSERT(!strcmp(resp, TR_DUMMY_RESP));
 
     PC_TEST_ASSERT(pc_request_client(req) == client);
     PC_TEST_ASSERT(!strcmp(pc_request_route(req), REQ_ROUTE));
@@ -34,7 +39,7 @@ void request_cb(const pc_request_t* req, int rc, const char* resp)
     PC_TEST_ASSERT(pc_request_timeout(req) == REQ_TIMEOUT);
 }
 
-void notify_cb(const pc_notify_t* noti, int rc) 
+void notify_cb(const pc_notify_t* noti, int rc)
 {
     PC_TEST_ASSERT(rc == PC_RC_OK);
 
@@ -51,16 +56,16 @@ int main()
     pc_lib_init(NULL, NULL, NULL, NULL);
 
     config.transport_name = PC_TR_NAME_DUMMY;
-    
+
     client = (pc_client_t*)malloc(pc_client_size());
 
     PC_TEST_ASSERT(client);
 
     pc_client_init(client, (void*)0x11, &config);
-    
+
     PC_TEST_ASSERT(pc_client_ex_data(client) == (void*)0x11);
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_INITED);
-  
+
     pc_client_connect(client, "127.0.0.1", 1234, NULL);
 
     PC_TEST_ASSERT(pc_client_state(client) == PC_ST_CONNECTED);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -11,7 +11,7 @@
 #include "tr_uv_tls.h"
 #include "tr_uv_tls_i.h"
 
-static tr_uv_tls_transport_plugin_t instance = 
+static tr_uv_tls_transport_plugin_t instance =
 {
     {
         {
@@ -20,12 +20,12 @@ static tr_uv_tls_transport_plugin_t instance =
             tr_uv_tls_plugin_on_register,
             tr_uv_tls_plugin_on_deregister,
             PC_TR_NAME_UV_TLS
-        }, // pc_transport_plugin_t
-        pr_default_msg_encoder, // encoder
-        pr_default_msg_decoder  // decoder
+        }, /* pc_transport_plugin_t */
+        pr_default_msg_encoder, /* encoder */
+        pr_default_msg_decoder  /* decoder */
     },
-    NULL, // ssl ctx
-    0 // enable verify
+    NULL, /* ssl ctx */
+    0 /* enable verify */
 };
 
 pc_transport_plugin_t* pc_tr_uv_tls_trans_plugin()

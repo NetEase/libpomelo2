@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -13,7 +13,7 @@ int pc_transport_plugin_register(pc_transport_plugin_t* plugin)
 {
     int trans_name;
     if (!plugin || plugin->transport_name >= PC_TRANSPORT_PLUGIN_SLOT_COUNT
-        || plugin->transport_name < 0 || !plugin->transport_create || !plugin->transport_release) 
+        || plugin->transport_name < 0 || !plugin->transport_create || !plugin->transport_release)
         return PC_RC_INVALID_ARG;
 
     trans_name = plugin->transport_name;
@@ -31,7 +31,7 @@ int pc_transport_plugin_register(pc_transport_plugin_t* plugin)
 int pc_transport_plugin_deregister(int trans_name)
 {
     pc_transport_plugin_t* tp;
-    if (trans_name >= PC_TRANSPORT_PLUGIN_SLOT_COUNT || trans_name < 0)  
+    if (trans_name >= PC_TRANSPORT_PLUGIN_SLOT_COUNT || trans_name < 0)
         return PC_RC_INVALID_ARG;
 
     tp = pc__transport_plugin_repo[trans_name];
@@ -44,9 +44,9 @@ int pc_transport_plugin_deregister(int trans_name)
     return PC_RC_OK;
 }
 
-pc_transport_plugin_t* pc__get_transport_plugin(int trans_name) 
+pc_transport_plugin_t* pc__get_transport_plugin(int trans_name)
 {
-    if (trans_name >= PC_TRANSPORT_PLUGIN_SLOT_COUNT || trans_name < 0)  
+    if (trans_name >= PC_TRANSPORT_PLUGIN_SLOT_COUNT || trans_name < 0)
         return NULL;
 
     return pc__transport_plugin_repo[trans_name];

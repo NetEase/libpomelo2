@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -7,8 +7,8 @@
 #define TR_UV_TCP_I_H
 
 #include <uv.h>
-#include <jansson.h>
 
+#include <pc_JSON.h>
 #include <pomelo.h>
 #include <pomelo_trans.h>
 #include <pc_mutex.h>
@@ -21,7 +21,7 @@
 #define TR_UV_WI_TYPE_NONE 0x10
 #define TR_UV_WI_TYPE_NOTIFY 0x20
 #define TR_UV_WI_TYPE_RESP 0x40
-#define TR_UV_WI_TYPE_INTERNAL 0x80 // handshake and heartbeat
+#define TR_UV_WI_TYPE_INTERNAL 0x80 /* handshake and heartbeat */
 #define TR_UV_WI_TYPE_MASK 0xf0
 
 #define TR_UV_WI_IS_NOTIFY(type) (((type) & TR_UV_WI_TYPE_MASK) == TR_UV_WI_TYPE_NOTIFY)
@@ -83,8 +83,8 @@ struct tr_uv_tcp_transport_s {
     uv_loop_t uv_loop;
     uv_tcp_t socket;
     uv_thread_t worker;
-    
-    // used for thread checking
+
+    /* used for thread checking */
     unsigned long thread_id;
 
     uv_connect_t conn_req;
@@ -92,14 +92,14 @@ struct tr_uv_tcp_transport_s {
     uv_timer_t reconn_delay_timer;
     uv_async_t conn_async;
     int reconn_times;
-    int is_connecting; // this flag is used for conn_req
+    int is_connecting; /* this flag is used for conn_req */
     int max_reconn_incr;
 
     uv_timer_t handshake_timer;
 
     const char* host;
     int port;
-    json_t *handshake_opts;
+    pc_JSON* handshake_opts;
 
     pc_mutex_t wq_mutex;
     uv_async_t write_async;
@@ -122,7 +122,7 @@ struct tr_uv_tcp_transport_s {
     uv_timer_t hb_timeout_timer;
     int is_waiting_hb;
 
-    // here, we use heartbeat round-trip time to evaluate the quality of connection.
+    /* here, we use heartbeat round-trip time to evaluate the quality of connection. */
     int hb_rtt;
 
     pc_pkg_parser_t pkg_parser;
@@ -130,16 +130,15 @@ struct tr_uv_tcp_transport_s {
     char tcp_read_buf[PC_TCP_READ_BUFFER_SIZE];
 
     /**
-     * holds ownership of these json 
+     * holds ownership of these json
      */
-    json_t *route_to_code;
-    json_t *code_to_route;
-    json_t *dict_ver;
+    pc_JSON* route_to_code;
+    pc_JSON* code_to_route;
+    pc_JSON* dict_ver;
 
-    json_t *server_protos;
-    json_t *client_protos;
-    json_t *proto_ver;
-
+    pc_JSON* server_protos;
+    pc_JSON* client_protos;
+    pc_JSON* proto_ver;
 };
 
 typedef struct {

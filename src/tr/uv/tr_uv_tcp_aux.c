@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -20,7 +20,7 @@
 #include "tr_uv_tcp_i.h"
 #include "pr_pkg.h"
 
-#define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt) 
+#define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt)
 
 static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 {
@@ -31,7 +31,7 @@ static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
         pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset notify, seq_num: %u", wi->seq_num);
         pc_trans_sent(client, wi->seq_num, PC_RC_RESET);
     }
-    // drop internal write item
+    /* drop internal write item */
 
     pc_lib_free(wi->buf.base);
     wi->buf.base = NULL;
@@ -158,7 +158,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
             factor = 1;
         } else {
             factor = config->reconn_delay_max / config->reconn_delay;
-            if (factor <= 0) 
+            if (factor <= 0)
                 factor = 1;
         }
 
@@ -170,7 +170,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
                     break;
                 }
             }
-            
+
             tt->max_reconn_incr = i + 1;
         }
         pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - max reconn delay incr: %d", tt->max_reconn_incr);
@@ -186,10 +186,10 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
         }
     }
 
-    timeout = (rand() % timeout) + timeout / 2; 
+    timeout = (rand() % timeout) + timeout / 2;
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - reconnect, delay: %d", timeout);
-    
+
     uv_timer_start(&tt->reconn_delay_timer, tcp__reconn_delay_timer_cb, timeout * 1000, 0);
 }
 
@@ -303,10 +303,13 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     tt->is_connecting = 0;
     if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
 
-        // NOTE: we hack uv here to get the rest timeout value of conn_timeout,
-        // and use it as the timeout value of handshake.
-        //
-        // it maybe lead to be non-compatiable to uv in future.
+        /*
+         * NOTE: we hack uv here to get the rest timeout value of conn_timeout,
+         *
+         * and use it as the timeout value of handshake.
+         *
+         * it maybe lead to be non-compatiable to uv in future.
+         */
 #ifdef _WIN32
         hs_timeout = (int)(tt->conn_timeout.due - tt->uv_loop.time);
 #else
@@ -316,10 +319,10 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     }
 
     if (status == 0) {
-        // tcp connected.
+        /* tcp connected. */
         tt->state = TR_UV_TCP_HANDSHAKEING;
 
-        ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
+        ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb);
 
         if (ret) {
             pc_lib_log(PC_LOG_ERROR, "tcp__conn_done_cb - start read from tcp error, reconn");
@@ -338,7 +341,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
             uv_timer_start( &tt->handshake_timer, tcp__handshake_timer_cb, hs_timeout, 0);
         }
         return ;
-    } 
+    }
 
     if (status == UV_ECANCELED) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect timeout");
@@ -348,7 +351,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Error", NULL);
     }
 
-    tt->reconn_fn(tt); 
+    tt->reconn_fn(tt);
 }
 
 void tcp__write_async_cb(uv_async_t* a)
@@ -373,7 +376,7 @@ void tcp__write_async_cb(uv_async_t* a)
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
-            
+
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
             if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
@@ -398,23 +401,23 @@ void tcp__write_async_cb(uv_async_t* a)
             need_check = 1;
         }
 
-        buf_cnt++; 
+        buf_cnt++;
     }
 
     if (buf_cnt == 0) {
         pc_mutex_unlock(&tt->wq_mutex);
         if (need_check) {
-            // if there are pending req, we should start to check timeout
+            /* if there are pending req, we should start to check timeout */
             if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
                 pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
-                uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+                uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb,
                         PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
             }
         }
         return ;
     }
 
-    bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt); 
+    bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt);
 
     i = 0;
     while (!QUEUE_EMPTY(&tt->write_wait_queue)) {
@@ -440,7 +443,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
     tt->write_req.data = tt;
 
-    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb); 
+    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb);
 
     pc_lib_free(bufs);
 
@@ -449,7 +452,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
         pc_mutex_lock(&tt->wq_mutex);
         while(!QUEUE_EMPTY(&tt->writing_queue)) {
-            q = QUEUE_HEAD(&tt->writing_queue); 
+            q = QUEUE_HEAD(&tt->writing_queue);
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
 
@@ -466,7 +469,7 @@ void tcp__write_async_cb(uv_async_t* a)
             if (TR_UV_WI_IS_RESP(wi->type)) {
                 pc_trans_resp(tt->client, wi->req_id, ret, NULL);
             }
-            // if internal, do nothing here.
+            /* if internal, do nothing here. */
 
             if (PC_IS_PRE_ALLOC(wi->type)) {
                 PC_PRE_ALLOC_SET_IDLE(wi->type);
@@ -480,13 +483,13 @@ void tcp__write_async_cb(uv_async_t* a)
 
     tt->is_writing = 1;
 
-    // enable check timeout timer
+    /* enable check timeout timer */
     if (need_check && !uv_is_active((uv_handle_t* )&tt->check_timeout)) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
-        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb,
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
     }
-    
+
 }
 
 void tcp__write_done_cb(uv_write_t* w, int status)
@@ -510,7 +513,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
     pc_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
-        q = QUEUE_HEAD(&tt->writing_queue); 
+        q = QUEUE_HEAD(&tt->writing_queue);
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
 
@@ -525,7 +528,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
             continue;
         };
 
-        // FIXME: review
+        /* FIXME: review */
         pc_lib_free(wi->buf.base);
         wi->buf.base = NULL;
         wi->buf.len = 0;
@@ -537,7 +540,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
         if (TR_UV_WI_IS_RESP(wi->type)) {
             pc_trans_resp(tt->client, wi->req_id, status, NULL);
         }
-        // if internal, do nothing here.
+        /* if internal, do nothing here. */
 
         if (PC_IS_PRE_ALLOC(wi->type)) {
             PC_PRE_ALLOC_SET_IDLE(wi->type);
@@ -575,28 +578,30 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
                     pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
                 }
 
-                // if internal, just drop it.
-                
+                /* if internal, just drop it. */
+
                 pc_lib_free(wi->buf.base);
                 wi->buf.base = NULL;
                 wi->buf.len = 0;
 
-                if (PC_IS_PRE_ALLOC(wi->type)) { 
+                if (PC_IS_PRE_ALLOC(wi->type)) {
                     PC_PRE_ALLOC_SET_IDLE(wi->type);
                 } else {
                     pc_lib_free(wi);
                 }
                 continue;
             } else {
-                // continue to check timeout next tick
-                // if there are wis has timeout configured but not triggered this time. 
+                /*
+                 * continue to check timeout next tick
+                 * if there are wis has timeout configured but not triggered this time.
+                 */
                 cont = 1;
             }
-        } 
-        // add the non-timeout wi to queue tmp
+        }
+        /* add the non-timeout wi to queue tmp */
         QUEUE_INSERT_TAIL(&tmp, q);
-    } // while
-    // restore ql with the non-timeout wi
+    } /* while */
+    /* restore ql with the non-timeout wi */
     QUEUE_ADD(ql, &tmp);
     QUEUE_INIT(&tmp);
     return cont;
@@ -613,7 +618,7 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__write_check_timeout_cb - start to check timeout");
     pc_mutex_lock(&tt->wq_mutex);
-    cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont); 
+    cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont);
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
     pc_mutex_unlock(&tt->wq_mutex);
 
@@ -626,10 +631,10 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
     pc_lib_log(PC_LOG_DEBUG, "tcp__write_check_timeout_cb - finish to check timeout");
 }
 
-static void tcp__cleanup_json_t(json_t** j)
+static void tcp__cleanup_pc_json(pc_JSON** j)
 {
     if (*j) {
-        json_decref(*j);
+        pc_JSON_Delete(*j);
         *j = NULL;
     }
 }
@@ -647,7 +652,7 @@ void tcp__cleanup_async_cb(uv_async_t* a)
         tt->host = NULL;
     }
 
-    tcp__cleanup_json_t(&tt->handshake_opts);
+    tcp__cleanup_pc_json(&tt->handshake_opts);
 
     if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
         uv_close((uv_handle_t*)&tt->socket, NULL);
@@ -667,13 +672,13 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     C(hb_timeout_timer);
 #undef C
 
-    tcp__cleanup_json_t(&tt->route_to_code);
-    tcp__cleanup_json_t(&tt->code_to_route);
-    tcp__cleanup_json_t(&tt->dict_ver);
+    tcp__cleanup_pc_json(&tt->route_to_code);
+    tcp__cleanup_pc_json(&tt->code_to_route);
+    tcp__cleanup_pc_json(&tt->dict_ver);
 
-    tcp__cleanup_json_t(&tt->server_protos);
-    tcp__cleanup_json_t(&tt->client_protos);
-    tcp__cleanup_json_t(&tt->proto_ver);
+    tcp__cleanup_pc_json(&tt->server_protos);
+    tcp__cleanup_pc_json(&tt->client_protos);
+    tcp__cleanup_pc_json(&tt->proto_ver);
 }
 
 void tcp__disconnect_async_cb(uv_async_t* a)
@@ -686,8 +691,8 @@ void tcp__disconnect_async_cb(uv_async_t* a)
     pc_trans_fire_event(tt->client, PC_EV_DISCONNECT, NULL, NULL);
 }
 
-void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt) 
-{ 
+void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
+{
     uv_buf_t buf;
     int i;
     tr_uv_wi_t* wi;
@@ -722,9 +727,9 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; // internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }
@@ -743,14 +748,16 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     assert(tt->state == TR_UV_TCP_DONE);
     assert(uv_is_active((uv_handle_t*)&tt->hb_timeout_timer));
 
-    // we hacking uv timer to get the heartbeat rtt, rtt in millisec
-    // int is enough to hold the value
+    /*
+     * we hacking uv timer to get the heartbeat rtt, rtt in millisec
+     * int is enough to hold the value
+     */
 #ifdef _WIN32
     start = (int)(tt->hb_timeout_timer.due - tt->hb_timeout * 1000);
 #else
     start = (int)(tt->hb_timeout_timer.timeout - tt->hb_timeout * 1000);
 #endif
-    
+
     rtt = (int)(tt->uv_loop.time - start);
 
     uv_timer_stop(&tt->hb_timeout_timer);
@@ -794,7 +801,7 @@ void tcp__heartbeat_timeout_cb(uv_timer_t* t)
     tt->reconn_fn(tt);
 }
 
-void tcp__handshake_timer_cb(uv_timer_t* t) 
+void tcp__handshake_timer_cb(uv_timer_t* t)
 {
     GET_TT(t);
 
@@ -863,7 +870,7 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_data_recieved - recived data, req_id: %d", msg.id);
     if (msg.id != PC_NOTIFY_PUSH_REQ_ID) {
-        // request
+        /* request */
         pc_trans_resp(tt->client, msg.id, PC_RC_OK, msg.msg);
 
         QUEUE_FOREACH(q, &tt->resp_pending_queue) {
@@ -906,56 +913,45 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
 {
     uv_buf_t buf;
     tr_uv_wi_t* wi;
-    json_t* sys;
-    json_t* body;
-    json_t* pc_type;
-    json_t* pc_version;
+    pc_JSON* sys;
+    pc_JSON* body;
+
     char* data;
     int i;
 
-    body = json_object();
-    sys = json_object();
+    body = pc_JSON_CreateObject();
+    sys = pc_JSON_CreateObject();
 
     assert(tt->state == TR_UV_TCP_HANDSHAKEING);
 
     assert((tt->proto_ver && tt->client_protos && tt->server_protos)
             || (!tt->proto_ver && !tt->client_protos && !tt->server_protos));
 
-    assert((tt->dict_ver && tt->route_to_code && tt->code_to_route) 
+    assert((tt->dict_ver && tt->route_to_code && tt->code_to_route)
             || (!tt->dict_ver && !tt->route_to_code && !tt->code_to_route));
 
     if (tt->proto_ver) {
-        json_object_set(sys, "protoVersion", tt->proto_ver);
+        pc_JSON_AddItemReferenceToObject(sys, "protoVersion", tt->proto_ver);
     }
 
     if (tt->dict_ver) {
-        json_object_set(sys, "dictVersion", tt->dict_ver);
+        pc_JSON_AddItemReferenceToObject(sys, "dictVersion", tt->dict_ver);
     }
 
-    pc_type = json_string(pc_lib_platform_type);
-    json_object_set(sys, "type", pc_type);
-    json_decref(pc_type);
-    pc_type = NULL;
+    pc_JSON_AddItemToObject(sys, "type", pc_JSON_CreateString(pc_lib_platform_type));
+    pc_JSON_AddItemToObject(sys, "version", pc_JSON_CreateString(pc_lib_version_str()));
 
-    pc_version = json_string(pc_lib_version_str());
-    json_object_set(sys, "version", pc_version);
-    json_decref(pc_version);
-    pc_version = NULL;
-
-    json_object_set(body, "sys", sys);
-    json_decref(sys);
-    sys = NULL;
+    pc_JSON_AddItemToObject(body, "sys", sys);
 
     if (tt->handshake_opts) {
-        json_object_set(body, "user", tt->handshake_opts);
+        pc_JSON_AddItemReferenceToObject(body, "user", tt->handshake_opts);
     }
 
-    data = json_dumps(body, JSON_COMPACT);
-
+    data = pc_JSON_PrintUnformatted(body);
     buf = pc_pkg_encode(PC_PKG_HANDSHAKE, data, strlen(data));
 
     pc_lib_free(data);
-    json_decref(body);
+    pc_JSON_Delete(body);
 
     wi = NULL;
     pc_mutex_lock(&tt->wq_mutex);
@@ -976,15 +972,15 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     QUEUE_INIT(&wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
 
-    // insert to head
+    /* insert to head */
     QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; //internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
-    wi->ts = time(NULL); // TODO: time() 
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
+    wi->ts = time(NULL); /* TODO: time() */
 
     uv_async_send(&tt->write_async);
 }
@@ -993,20 +989,19 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
 
 void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t len)
 {
-    json_error_t error;
-    json_int_t code;
-    json_t* res;
-    json_t* tmp;
-    json_t* protos;
-    json_int_t i;
-    json_t* sys;
+    int code = -1;
+    pc_JSON* res;
+    pc_JSON* tmp;
+    pc_JSON* protos;
+    pc_JSON* sys;
+    int i;
     int need_sync = 0;
-    
+
     assert(tt->state == TR_UV_TCP_HANDSHAKEING);
 
     tt->reconn_times = 0;
 
-    res = json_loadb(data, len, 0, &error);
+    res = pc_JSON_Parse(data);
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - tcp get handshake resp");
 
@@ -1015,31 +1010,41 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     }
 
     if (!res) {
-        pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake resp is not valid json, error: %s", error.text);
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake resp is not valid json");
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
         tt->reset_fn(tt);
     }
 
-    code = json_integer_value(json_object_get(res, "code"));
-    if (code != PC_HANDSHAKE_OK) {
+    tmp = pc_JSON_GetObjectItem(res, "code");
+    if (!tmp || tmp->type != pc_JSON_Number || (code = tmp->valueint) != PC_HANDSHAKE_OK) {
         pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake fail, code: %d", code);
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
-        json_decref(res);
+        pc_JSON_Delete(res);
         tt->reset_fn(tt);
         return ;
     }
 
-    // we just use sys here, ignore user field.
-    sys = json_object_get(res, "sys");
-
-    assert(sys);
+    /* we just use sys here, ignore user field. */
+    sys = pc_JSON_GetObjectItem(res, "sys");
+    if (!sys) {
+        pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake fail, no sys field");
+        pc_trans_fire_event(tt->client, PC_EV_CONNECT_FAILED, "Handshake Error", NULL);
+        pc_JSON_Delete(res);
+        tt->reset_fn(tt);
+        return ;
+    }
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake ok");
-    // setup heartbeat
-    i = json_integer_value(json_object_get(sys, "heartbeat"));
+    /* setup heartbeat */
+    tmp = pc_JSON_GetObjectItem(sys, "heartbeat");
+    if (!tmp || tmp->type != pc_JSON_Number) {
+        i = -1;
+    } else {
+        i = tmp->valueint;
+    }
 
     if (i <= 0) {
-        // no need heartbeat
+        /* no need heartbeat */
         tt->hb_interval= -1;
         tt->hb_timeout = -1;
         pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - no heartbeat specified");
@@ -1049,12 +1054,12 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         tt->hb_timeout = tt->hb_interval * PC_HEARTBEAT_TIMEOUT_FACTOR;
     }
 
-    tmp = json_object_get(sys, "useDict");
-    if (!tmp || json_equal(tmp, json_false())) {
+    tmp = pc_JSON_GetObjectItem(sys, "useDict");
+    if (!tmp || tmp->type == pc_JSON_False) {
         if (tt->dict_ver && tt->route_to_code && tt->code_to_route) {
-            json_decref(tt->dict_ver);
-            json_decref(tt->route_to_code);
-            json_decref(tt->code_to_route);
+            pc_JSON_Delete(tt->dict_ver);
+            pc_JSON_Delete(tt->route_to_code);
+            pc_JSON_Delete(tt->code_to_route);
 
             tt->dict_ver = NULL;
             tt->route_to_code = NULL;
@@ -1062,41 +1067,37 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
             need_sync = 1;
         }
     } else {
-        json_t* route2code = json_object_get(sys, "routeToCode");
-        json_t* code2route = json_object_get(sys, "codeToRoute");
-        json_t* dict_ver = json_object_get(sys, "dictVersion");
+        pc_JSON* route2code = pc_JSON_DetachItemFromObject(sys, "routeToCode");
+        pc_JSON* code2route = pc_JSON_DetachItemFromObject(sys, "codeToRoute");
+        pc_JSON* dict_ver = pc_JSON_DetachItemFromObject(sys, "dictVersion");
 
         assert((dict_ver && route2code && code2route) || (!dict_ver && !route2code && !code2route));
 
         if (dict_ver) {
             if (tt->dict_ver && tt->route_to_code && tt->code_to_route) {
-                json_decref(tt->dict_ver);
-                json_decref(tt->route_to_code);
-                json_decref(tt->code_to_route);
+                pc_JSON_Delete(tt->dict_ver);
+                pc_JSON_Delete(tt->route_to_code);
+                pc_JSON_Delete(tt->code_to_route);
+
                 tt->dict_ver = NULL;
                 tt->route_to_code = NULL;
                 tt->code_to_route = NULL;
             }
 
             tt->dict_ver = dict_ver;
-            json_incref(dict_ver);
-
             tt->route_to_code = route2code;
-            json_incref(route2code);
-
             tt->code_to_route = code2route;
-            json_incref(code2route);
             need_sync = 1;
         }
         assert(tt->dict_ver && tt->route_to_code && tt->code_to_route);
     }
 
-    tmp = json_object_get(sys, "useProto");
-    if (!tmp || json_equal(tmp, json_false())) {
+    tmp = pc_JSON_GetObjectItem(sys, "useProto");
+    if (!tmp || tmp->type == pc_JSON_False) {
         if (tt->client_protos && tt->proto_ver && tt->server_protos) {
-            json_decref(tt->client_protos);
-            json_decref(tt->proto_ver);
-            json_decref(tt->server_protos);
+            pc_JSON_Delete(tt->client_protos);
+            pc_JSON_Delete(tt->proto_ver);
+            pc_JSON_Delete(tt->server_protos);
 
             tt->client_protos = NULL;
             tt->proto_ver = NULL;
@@ -1104,77 +1105,76 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
             need_sync = 1;
         }
     } else {
-        json_t* server_protos = NULL;
-        json_t* client_protos = NULL;
-        json_t* proto_ver = NULL;
+        pc_JSON* server_protos = NULL;
+        pc_JSON* client_protos = NULL;
+        pc_JSON* proto_ver = NULL;
 
-        protos = json_object_get(sys, "protos"); 
+        protos = pc_JSON_GetObjectItem(sys, "protos");
 
         if (protos) {
-            server_protos = json_object_get(protos, "server");
-            client_protos = json_object_get(protos, "client");
-            proto_ver = json_object_get(protos, "version");
+            server_protos = pc_JSON_DetachItemFromObject(protos, "server");
+            client_protos = pc_JSON_DetachItemFromObject(protos, "client");
+            proto_ver = pc_JSON_DetachItemFromObject(protos, "version");
         }
 
         assert((proto_ver && server_protos && client_protos) || (!proto_ver && !server_protos && !client_protos));
 
         if (proto_ver) {
             if (tt->client_protos && tt->proto_ver && tt->server_protos) {
-                json_decref(tt->client_protos);
-                json_decref(tt->proto_ver);
-                json_decref(tt->server_protos);
+                pc_JSON_Delete(tt->client_protos);
+                pc_JSON_Delete(tt->proto_ver);
+                pc_JSON_Delete(tt->server_protos);
 
                 tt->client_protos = NULL;
                 tt->proto_ver = NULL;
                 tt->server_protos = NULL;
-            }   
+            }
 
             tt->client_protos = client_protos;
-            json_incref(client_protos);
-
             tt->server_protos = server_protos;
-            json_incref(server_protos);
-
             tt->proto_ver = proto_ver;
-            json_incref(proto_ver);
+
             need_sync = 1;
         }
         assert(tt->proto_ver && tt->server_protos && tt->client_protos);
     }
 
-    json_decref(res);
+    pc_JSON_Delete(res);
+    res = NULL;
 
     if (tt->config->local_storage_cb && need_sync) {
-        json_t* lc = json_object();
+        pc_JSON* lc = pc_JSON_CreateObject();
         char* data;
         size_t len;
 
         if (tt->dict_ver) {
-            json_object_set(lc, TR_UV_LCK_DICT_VERSION, tt->dict_ver);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_DICT_VERSION, tt->dict_ver);
         }
 
         if (tt->route_to_code) {
-            json_object_set(lc, TR_UV_LCK_ROUTE_2_CODE, tt->route_to_code);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_ROUTE_2_CODE, tt->route_to_code);
         }
 
         if (tt->code_to_route) {
-            json_object_set(lc, TR_UV_LCK_CODE_2_ROUTE, tt->code_to_route);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_CODE_2_ROUTE, tt->code_to_route);
         }
 
         if (tt->proto_ver) {
-            json_object_set(lc, TR_UV_LCK_PROTO_VERSION, tt->proto_ver);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_PROTO_VERSION, tt->proto_ver);
         }
+
         if (tt->client_protos) {
-            json_object_set(lc, TR_UV_LCK_PROTO_CLIENT, tt->client_protos);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_PROTO_CLIENT, tt->client_protos);
         }
+
         if (tt->server_protos) {
-            json_object_set(lc, TR_UV_LCK_PROTO_SERVER, tt->server_protos);
+            pc_JSON_AddItemReferenceToObject(lc, TR_UV_LCK_PROTO_SERVER, tt->server_protos);
         }
-        data = json_dumps(lc, JSON_COMPACT);
-        json_decref(lc);
+        data = pc_JSON_PrintUnformatted(lc);
+        pc_JSON_Delete(lc);
 
         if (!data) {
-            pc_lib_log(PC_LOG_WARN, 
+            pc_lib_log(PC_LOG_WARN,
                     "tcp__on_handshake_resp - serialize handshake data failed");
         } else {
             len = strlen(data);
@@ -1234,9 +1234,9 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; //internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }

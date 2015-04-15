@@ -16,7 +16,7 @@ typedef struct pc_transport_s pc_transport_t;
 typedef struct pc_transport_plugin_s pc_transport_plugin_t;
 
 /**
- * special request id 
+ * special request id
  */
 #define PC_NOTIFY_PUSH_REQ_ID ((unsigned int)0)
 #define PC_INVALID_REQ_ID ((unsigned int)-1)
@@ -73,4 +73,4 @@ PC_EXPORT void pc_trans_resp(pc_client_t* client, unsigned int req_id, int rc, c
 }
 #endif
 
-#endif // PC_POMELO_TRANS_H
+#endif /* PC_POMELO_TRANS_H */

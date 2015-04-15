@@ -1,5 +1,0 @@
-language: c
-compiler:
-  - gcc
-  - clang
-script: autoreconf -f -i && ./configure && make check

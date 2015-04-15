@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -35,7 +35,7 @@ static int dummy_connect(pc_transport_t* trans, const char* host, int port, cons
     return PC_RC_OK;
 }
 
-static int dummy_send(pc_transport_t* trans, const char* route, unsigned int seq_num, const char* msg, unsigned int req_id, int timeout) 
+static int dummy_send(pc_transport_t* trans, const char* route, unsigned int seq_num, const char* msg, unsigned int req_id, int timeout)
 {
     dummy_transport_t* d_tr = (dummy_transport_t* )trans;
     assert(d_tr);
@@ -59,12 +59,12 @@ static int dummy_disconnect(pc_transport_t* trans)
     return PC_RC_OK;
 }
 
-static int dummy_cleanup(pc_transport_t* trans) 
+static int dummy_cleanup(pc_transport_t* trans)
 {
     return PC_RC_OK;
 }
 
-static void* dummy_internal_data(pc_transport_t* trans) 
+static void* dummy_internal_data(pc_transport_t* trans)
 {
     return NULL;
 }
@@ -94,7 +94,7 @@ static pc_transport_t* dummy_trans_create(pc_transport_plugin_t* plugin)
 
     return trans;
 }
-    
+
 static void dummy_trans_release(pc_transport_plugin_t* plugin, pc_transport_t* trans)
 {
     pc_lib_free(trans);
@@ -104,12 +104,12 @@ static pc_transport_plugin_t instance =
 {
     dummy_trans_create,
     dummy_trans_release,
-    NULL, // on_register
-    NULL, // on_deregister
+    NULL, /* on_register */
+    NULL, /* on_deregister */
     PC_TR_NAME_DUMMY
 };
 
-pc_transport_plugin_t* pc_tr_dummy_trans_plugin() 
+pc_transport_plugin_t* pc_tr_dummy_trans_plugin()
 {
     return &instance;
 }

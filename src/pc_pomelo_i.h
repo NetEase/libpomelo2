@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -16,11 +16,11 @@
 #define PC_DYN_ALLOC 0x0
 #define PC_ALLOC_MASK 0x1
 
-#define PC_IS_PRE_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_PRE_ALLOC) 
+#define PC_IS_PRE_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_PRE_ALLOC)
 #define PC_IS_DYN_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_DYN_ALLOC)
 
 #define PC_PRE_ALLOC_ST_IDLE 0x0
-#define PC_PRE_ALLOC_ST_BUSY 0x2 
+#define PC_PRE_ALLOC_ST_BUSY 0x2
 #define PC_PRE_ALLOC_ST_MASK 0x2
 
 #define PC_PRE_ALLOC_IS_IDLE(type) (((type) & PC_PRE_ALLOC_ST_MASK) == PC_PRE_ALLOC_ST_IDLE)
@@ -114,7 +114,7 @@ typedef struct {
 struct pc_client_s {
     int magic_num;
 
-    // as the state will be updated by multi threads
+    /* as the state will be updated by multi threads */
     pc_mutex_t state_mutex;
     int state;
 
@@ -146,5 +146,5 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
 void pc__trans_sent(pc_client_t* client, unsigned int req_num, int rc, int pending);
 void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, const char* arg2, int pending);
 
-#endif // PC_POMELO_I_H
+#endif /* PC_POMELO_I_H */
 

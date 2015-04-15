@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -67,7 +67,7 @@ static void default_request_cb(const pc_request_t* req, int rc, const char* resp
     assert(env);
 
     cls = (*env)->GetObjectClass(env, req_cb);
-    m = (*env)->GetMethodID(env, cls, "handle", "(ILjava/lang/String;)V"); 
+    m = (*env)->GetMethodID(env, cls, "handle", "(ILjava/lang/String;)V");
 
     resp_str = (*env)->NewStringUTF(env, resp);
 
@@ -109,7 +109,7 @@ static void default_notify_cb(const pc_notify_t* notify, int rc)
     assert(env);
 
     cls = (*env)->GetObjectClass(env, notify_cb);
-    m = (*env)->GetMethodID(env, cls, "handle", "(I)V"); 
+    m = (*env)->GetMethodID(env, cls, "handle", "(I)V");
 
     (*env)->CallVoidMethod(env, notify_cb, m, rc);
     (*env)->DeleteGlobalRef(env, notify_cb);
@@ -117,7 +117,7 @@ static void default_notify_cb(const pc_notify_t* notify, int rc)
     if (!enable_polling) {
         ret = (*g_vm)->DetachCurrentThread(g_vm);
         assert(!ret);
-    }   
+    }
 }
 
 static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, const char* arg1, const char* arg2)
@@ -148,7 +148,7 @@ static void default_event_cb(pc_client_t* client, int ev_type, void* ex_data, co
     assert(env);
 
     cls = (*env)->GetObjectClass(env, ev_cb);
-    m = (*env)->GetMethodID(env, cls, "handle", "(ILjava/lang/String;Ljava/lang/String;)V"); 
+    m = (*env)->GetMethodID(env, cls, "handle", "(ILjava/lang/String;Ljava/lang/String;)V");
 
     if (arg1) {
         arg1_str = (*env)->NewStringUTF(env, arg1);
@@ -218,11 +218,11 @@ static int local_storage_cb(pc_local_storage_op_t op, char* data, size_t* len, v
         if (shoud_detach) {
             (*g_vm)->DetachCurrentThread(g_vm);
         }
-        
+
         return res ? 0 : -1;
     }
-    
-    // never go here.
+
+    /* never go here. */
     return -1;
 }
 
@@ -330,7 +330,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_init
 {
     jclass cls = (*env)->GetObjectClass(env, obj);
     jfieldID f = (*env)->GetFieldID(env, cls, "jniUse", "[B");
-    jbyteArray arr; 
+    jbyteArray arr;
     jobject lc_cb = NULL;
     jobject g_obj = NULL;
     pc_client_t* client = NULL;
@@ -430,7 +430,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_request
 
     req = (*env)->NewGlobalRef(env, req_cb);
 
-    ret = pc_request_with_timeout(client, route_str, msg_str, req, timeout, default_request_cb); 
+    ret = pc_request_with_timeout(client, route_str, msg_str, req, timeout, default_request_cb);
     if (ret != PC_RC_OK) {
         (*env)->DeleteGlobalRef(env, req);
     }
@@ -465,7 +465,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_notify
 
     noti = (*env)->NewGlobalRef(env, notify_cb);
 
-    ret = pc_notify_with_timeout(client, route_str, msg_str, noti, timeout, default_notify_cb); 
+    ret = pc_notify_with_timeout(client, route_str, msg_str, noti, timeout, default_notify_cb);
 
     if (ret != PC_RC_OK) {
         (*env)->DeleteGlobalRef(env, noti);
@@ -562,7 +562,7 @@ JNIEXPORT jint JNICALL Java_com_netease_pomelo_Client_addEventHandler
     GET_CLIENT;
 
     handler_g = (*env)->NewGlobalRef(env, handler);
-    
+
     ret = pc_client_add_ev_handler(client, default_event_cb,
             handler_g, default_handler_destructor);
 

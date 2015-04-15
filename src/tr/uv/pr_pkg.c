@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -34,7 +34,7 @@ void pc_pkg_parser_init(pc_pkg_parser_t *parser, pc_on_pkg_handler_t handler, vo
     parser->state = PC_PKG_HEAD;
 }
 
-void pc_pkg_parser_reset(pc_pkg_parser_t *parser) 
+void pc_pkg_parser_reset(pc_pkg_parser_t *parser)
 {
     pc_lib_free(parser->pkg_buf);
     parser->head_offset = 0;
@@ -58,7 +58,7 @@ void pc_pkg_parser_feed(pc_pkg_parser_t *parser, const char *data, size_t nread)
     }
 }
 
-static size_t pc__parse_pkg_head(pc_pkg_parser_t *parser, const char *data, size_t offset, size_t nread) 
+static size_t pc__parse_pkg_head(pc_pkg_parser_t *parser, const char *data, size_t offset, size_t nread)
 {
     size_t need_len = parser->head_size - parser->head_offset;
     size_t data_len = nread - offset;
@@ -90,7 +90,7 @@ static size_t pc__parse_pkg_head(pc_pkg_parser_t *parser, const char *data, size
     return offset + len;
 }
 
-static size_t pc__parse_pkg_body(pc_pkg_parser_t *parser, const char *data, size_t offset, size_t nread) 
+static size_t pc__parse_pkg_body(pc_pkg_parser_t *parser, const char *data, size_t offset, size_t nread)
 {
     size_t need_len = parser->pkg_size - parser->pkg_offset;
     size_t data_len = nread - offset;
@@ -109,7 +109,7 @@ static size_t pc__parse_pkg_body(pc_pkg_parser_t *parser, const char *data, size
     return offset + len;
 }
 
-uv_buf_t pc_pkg_encode(pc_pkg_type type, const char *data, size_t len) 
+uv_buf_t pc_pkg_encode(pc_pkg_type type, const char *data, size_t len)
 {
     uv_buf_t buf;
     size_t sz;
@@ -139,7 +139,7 @@ uv_buf_t pc_pkg_encode(pc_pkg_type type, const char *data, size_t len)
         }
 
         memcpy(buf.base + PC_PKG_HEAD_BYTES, data, len);
-    } 
+    }
 
     return buf;
 }

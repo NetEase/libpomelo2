@@ -1,12 +1,12 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
-#include <jansson.h>
+#include <stdio.h>
 
 #include <pc_lib.h>
 
@@ -48,16 +48,19 @@ typedef struct {
     pc_buf_t body;
 } pc__msg_raw_t;
 
-static PC_INLINE const char *pc__resolve_dictionary(const json_t* code2route, uint16_t code)
+static PC_INLINE const char *pc__resolve_dictionary(const pc_JSON* code2route, uint16_t code)
 {
+    pc_JSON* tmp;
     char code_str[16];
     memset(code_str, 0, 16);
     sprintf(code_str, "%u", code);
-    return json_string_value(json_object_get(code2route, code_str));
+    tmp = pc_JSON_GetObjectItem(code2route, code_str);
+    assert(tmp && tmp->type == pc_JSON_String);
+    return tmp->valuestring;
 }
 
 
-static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf) 
+static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 {
     const char* data = buf->base;
     size_t len = buf->len;
@@ -66,19 +69,21 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     size_t body_len;
     size_t offset = 0;
 
-    uint8_t flag; 
+    uint8_t flag;
     uint8_t type;
     uint8_t is_route_compressed;
     uint16_t route_code = 0;
     size_t route_len;
 
-    // invalid req id for error msg
-    // notify req id for push message
+    /*
+     * invalid req id for error msg
+     * notify req id for push message
+     */
     uint32_t id = PC_INVALID_REQ_ID;
 
     int i = 0;
     uint8_t m;
- 
+
     if (len < PC_MSG_FLAG_BYTES) {
         return NULL;
     }
@@ -89,7 +94,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 
     if (!PC_IS_VALID_TYPE(type)) {
         pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - unknow message type");
-        return NULL; 
+        return NULL;
     }
 
     if (PC_MSG_HAS_ID(type)) {
@@ -108,7 +113,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
         id = PC_NOTIFY_PUSH_REQ_ID;
     }
 
-    // route
+    /* route */
     if (PC_MSG_HAS_ROUTE(type)) {
         if (is_route_compressed) {
             if (offset + PC_MSG_ROUTE_CODE_BYTES - 1 < len) {
@@ -152,7 +157,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
         msg->route.route_str = route_str;
     }
 
-    // borrow memory from original pc_buf_t 
+    /* borrow memory from original pc_buf_t */
     body_len = len - offset;
     msg->body.base = (char* )data + offset;
     msg->body.len = body_len;
@@ -160,12 +165,12 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     return msg;
 }
 
-pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_protos, const pc_buf_t* buf) 
+pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf)
 {
     const char *route_str = NULL;
     const char *origin_route = NULL;
 
-    json_t* json_msg = NULL;
+    pc_JSON* json_msg = NULL;
     const char* data = NULL;
     pc_buf_t body;
     pc_msg_t msg;
@@ -186,9 +191,9 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
 
     msg.id = raw_msg->id;
 
-    // route
+    /* route */
     if (PC_MSG_HAS_ROUTE(raw_msg->type)) {
-        // uncompress route dictionary
+        /* uncompress route dictionary */
         route_str = NULL;
         if (raw_msg->is_route_compressed) {
             origin_route = pc__resolve_dictionary(code2route, raw_msg->route.route_code);
@@ -201,14 +206,14 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
                 strcpy((char*)route_str, origin_route);
             }
         } else {
-            // till now, raw_msg->route.route_str is hold by pc_msg_t
+            /* till now, raw_msg->route.route_str is hold by pc_msg_t */
             route_str = raw_msg->route.route_str;
             raw_msg->route.route_str = NULL;
         }
 
         msg.route = route_str;
     } else {
-        // FIXME: for resp, we can not get route here, so just set it to NULL
+        /* FIXME: for resp, we can not get route here, so just set it to NULL */
         msg.route = NULL;
     }
 
@@ -218,17 +223,16 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
         return msg;
     }
 
-    // body.base is within msg
+    /* body.base is within msg */
     body = raw_msg->body;
     if (body.len > 0) {
-        // response message has no route 
         json_msg = NULL;
         if (!msg.route) {
             json_msg = pc_body_json_decode(body.base, 0, body.len);
         } else {
-            json_t *pb_def = json_object_get(server_protos, msg.route);
+            pc_JSON* pb_def = pc_JSON_GetObjectItem(server_protos, msg.route);
             if (pb_def) {
-                // protobuf decode
+                /* pb definition found */
                 json_msg = pc_body_pb_decode(body.base, 0, body.len, server_protos, pb_def);
             } else {
                 json_msg = pc_body_json_decode(body.base, 0, body.len);
@@ -240,14 +244,13 @@ pc_msg_t pc_default_msg_decode(const json_t* code2route, const json_t* server_pr
             msg.id = PC_INVALID_REQ_ID;
             msg.route = NULL;
         } else {
-            data = json_dumps(json_msg, JSON_COMPACT); 
+            data = pc_JSON_PrintUnformatted(json_msg);
 
             assert(data);
 
             msg.msg = data;
-            // FIXME: review
-            json_decref(json_msg);
-            json_msg = NULL;
+            /* FIXME: review */
+            pc_JSON_Delete(json_msg);
         }
     }
 
@@ -270,13 +273,13 @@ static PC_INLINE size_t pc__msg_encode_route(const char *route, uint16_t route_l
         char *base, size_t offset);
 
 pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
-        const char *route, const pc_buf_t msg) 
+        const char *route, const pc_buf_t msg)
 {
     pc_buf_t buf;
     uint8_t id_len = PC_MSG_HAS_ID(type) ? pc__msg_id_length(id) : 0;
     uint16_t route_len = PC_MSG_HAS_ROUTE(type) ? strlen(route) : 0;
 
-    size_t msg_len = PC_MSG_FLAG_BYTES + id_len + 
+    size_t msg_len = PC_MSG_FLAG_BYTES + id_len +
         PC_MSG_ROUTE_LEN_BYTES + route_len + msg.len;
     char *base = NULL;
     size_t offset = 0;
@@ -287,29 +290,29 @@ pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
     base = buf.base = (char *)pc_lib_malloc(msg_len);
     buf.len = msg_len;
 
-    // flag
+    /* flag */
     offset = pc__msg_encode_flag(type, 0, base, offset);
 
-    // message id
+    /* message id */
     if(PC_MSG_HAS_ID(type)) {
         offset = pc__msg_encode_id(id, base, offset);
     }
 
-    // route
+    /* route */
     if(PC_MSG_HAS_ROUTE(type)) {
         offset = pc__msg_encode_route(route, route_len, base, offset);
     }
 
-    // body
+    /* body */
     memcpy(base + offset, msg.base, msg.len);
     return buf;
 }
 
 pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
-        int routeCode, const pc_buf_t body)
+        int route_code, const pc_buf_t body)
 {
     pc_buf_t buf;
- 
+
     uint8_t id_len = PC_MSG_HAS_ID(type) ? pc__msg_id_length(id) : 0;
     uint16_t route_len = PC_MSG_HAS_ROUTE(type) ? PC_MSG_ROUTE_CODE_BYTES : 0;
     size_t msg_len = PC_MSG_FLAG_BYTES + id_len + route_len + body.len;
@@ -322,29 +325,29 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
     base = buf.base = (char *)pc_lib_malloc(msg_len);
     buf.len = msg_len;
 
-    // flag
+    /* flag */
     offset = pc__msg_encode_flag(type, 1, base, offset);
 
-    // message id
+    /* message id */
     if(PC_MSG_HAS_ID(type)) {
         offset = pc__msg_encode_id(id, base, offset);
     }
 
-    // route code
+    /* route code */
     if(PC_MSG_HAS_ROUTE(type)) {
-        base[offset++] = (routeCode >> 8) & 0xff;
-        base[offset++] = routeCode & 0xff;
+        base[offset++] = (route_code >> 8) & 0xff;
+        base[offset++] = route_code & 0xff;
     }
 
-    // body
+    /* body */
     memcpy(base + offset, body.base, body.len);
     return buf;
 }
 
-static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compressRoute,
+static PC_INLINE size_t pc__msg_encode_flag(pc_msg_type type, int compress_route,
         char *base, size_t offset)
 {
-    base[offset++] = (type << 1) | (compressRoute ? 1 : 0);
+    base[offset++] = (type << 1) | (compress_route ? 1 : 0);
     return offset;
 }
 
@@ -384,15 +387,14 @@ static uint8_t pc__msg_id_length(uint32_t id)
     return len;
 }
 
-pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_protos, const pc_msg_t* msg)
+pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_protos, const pc_msg_t* msg)
 {
     pc_buf_t msg_buf;
     pc_buf_t body_buf;
-    json_t* json_msg;
-    json_error_t err;
+    pc_JSON* json_msg;
     int route_code = -1;
-    json_t* code = NULL;
-    json_t* pb_def = NULL;
+    pc_JSON* code = NULL;
+    pc_JSON* pb_def = NULL;
     pc_msg_type type;
 
     msg_buf.base = NULL;
@@ -402,17 +404,17 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
 
     assert(msg && msg->msg && msg->route);
 
-    json_msg = json_loads(msg->msg, 0, &err);
+    json_msg = pc_JSON_ParseWithOpts(msg->msg, 0, 1);
     if (!json_msg) {
-        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - the msg is not invalid json, error: %s", err.text);
+        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - the msg is not invalid json");
         return msg_buf;
     }
 
     assert(json_msg);
 
-    // encode body
-    pb_def = json_object_get(client_protos, msg->route);
+    pb_def = pc_JSON_GetObjectItem(client_protos, msg->route);
     if (pb_def) {
+        /* pb definition found */
         body_buf = pc_body_pb_encode(json_msg, client_protos, pb_def);
         if(body_buf.len == -1) {
             assert(body_buf.base == NULL);
@@ -426,7 +428,12 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
         }
     }
 
-    json_decref(json_msg);
+    if (body_buf.len == -1) {
+        assert(body_buf.base == NULL);
+        pc_lib_log(PC_LOG_ERROR, "pc_default_msg_encode - fail to encode message with json: %s\n", msg->route);
+    }
+
+    pc_JSON_Delete(json_msg);
     json_msg = NULL;
 
     if (body_buf.len == -1) {
@@ -436,10 +443,10 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
     assert(body_buf.base && body_buf.len != -1);
 
     type = msg->id == PC_NOTIFY_PUSH_REQ_ID ? PC_MSG_NOTIFY : PC_MSG_REQUEST;
-    
-    code = json_object_get(route2code, msg->route);
-    if (code) {
-        route_code = (int)json_integer_value(code);
+
+    code = pc_JSON_GetObjectItem(route2code, msg->route);
+    if (code && code->type == pc_JSON_Number) {
+        route_code = code->valueint;
     }
 
     if (route_code > 0) {
@@ -465,8 +472,8 @@ pc_buf_t pc_default_msg_encode(const json_t* route2code, const json_t* client_pr
     return msg_buf;
 }
 
-// for transport plugin
-uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)  
+/* for transport plugin */
+uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)
 {
     pc_buf_t pb;
     uv_buf_t ub;
@@ -477,7 +484,7 @@ uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)
     return ub;
 }
 
-pc_msg_t pr_default_msg_decoder(tr_uv_tcp_transport_t* tt, const uv_buf_t* buf) 
+pc_msg_t pr_default_msg_decoder(tr_uv_tcp_transport_t* tt, const uv_buf_t* buf)
 {
     pc_buf_t pb;
     pb.base = buf->base;

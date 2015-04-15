@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -84,5 +84,5 @@ static inline void pc_mutex_destroy(pc_mutex_t* mutex)
 
 #endif
 
-#endif // PC_MUTEX_H
+#endif /* PC_MUTEX_H */
 

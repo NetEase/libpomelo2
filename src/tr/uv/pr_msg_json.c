@@ -1,18 +1,18 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
 #include <assert.h>
 #include <string.h>
-#include <jansson.h>
 
+#include <pc_JSON.h>
 #include <pomelo.h>
 #include <pc_lib.h>
 
 #include "pr_msg.h"
 
-pc_buf_t pc_body_json_encode(const json_t *msg)
+pc_buf_t pc_body_json_encode(const pc_JSON* msg)
 {
     pc_buf_t buf;
     char* res;
@@ -22,7 +22,7 @@ pc_buf_t pc_body_json_encode(const json_t *msg)
 
     assert(msg);
 
-    res = json_dumps(msg, JSON_COMPACT);
+    res = pc_JSON_PrintUnformatted(msg);
     if (!res) {
         pc_lib_log(PC_LOG_ERROR, "pc_body_json_encode - json encode error");
     } else {
@@ -32,13 +32,15 @@ pc_buf_t pc_body_json_encode(const json_t *msg)
     return buf;
 }
 
-json_t *pc_body_json_decode(const char *data, size_t offset, size_t len)
+pc_JSON* pc_body_json_decode(const char *data, size_t offset, size_t len)
 {
-    json_error_t error;
-    json_t *res = json_loadb(data + offset, len - offset, 0, &error);
+    const char* end = NULL;
+    pc_JSON* res = pc_JSON_ParseWithOpts(data + offset, &end, 0);
 
-    if (!res) {
-        pc_lib_log(PC_LOG_ERROR, "pc_body_json_decode - json decode error: %s", error.text);
+    if (!res || end != data + len) {
+        pc_JSON_Delete(res);
+        res = NULL;
+        pc_lib_log(PC_LOG_ERROR, "pc_body_json_decode - json decode error");
     }
 
     return res;

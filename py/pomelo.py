@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+#  Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
 #  MIT Licensed.
 #
 
@@ -73,11 +73,11 @@ class Client:
         self._internal_data = None
 
     # use_tls - enable tls, Boolean
-    # enable_poll - Boolean  
+    # enable_poll - Boolean
     def init(self, use_tls, enable_poll, lc_callback):
         self._internal_data = pypomelo.create(use_tls, enable_poll, lc_callback);
         return self._internal_data is None
-    
+
     def connect(self, host, port):
         return pypomelo.connect(self._internal_data, host, port)
 
@@ -85,13 +85,13 @@ class Client:
         return pypomelo.state(self._internal_data);
 
     # handler - function (ev_type, arg1, arg2)
-    #               ev_type - int 
+    #               ev_type - int
     #               arg1, arg2 - string or None
     def add_ev_handler(self, handler):
         return pypomelo.add_ev_handler(self._internal_data, handler)
 
     # handler - function (ev_type, arg1, arg2)
-    #               ev_type - int 
+    #               ev_type - int
     #               arg1, arg2 - string or None
     def rm_ev_handler(self, handler_id):
         return pypomelo.rm_ev_handler(self._internal_data, handler_id)

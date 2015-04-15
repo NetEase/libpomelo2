@@ -1,30 +1,13 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
-/* pb_decode.c -- decode a protobuf using minimal resources
- *
- * 2013 fantasyni<fantasyni@163.com>
- */
-
-/* The warn_unused_result attribute appeared first in gcc-3.4.0 */
-#if !defined(__GNUC__) || ( __GNUC__ < 3) || (__GNUC__ == 3 && __GNUC_MINOR__ < 4)
-#define checkreturn
-#else
-/* Verify that we remember to check all return values for proper error propagation */
-#define checkreturn __attribute__((warn_unused_result))
-#endif
-
-//#define __BIG_ENDIAN__
-// #define PB_DEBUG
-#define PB_INTERNALS
-
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "pb.h"
-#include "pb_util.h"
 
 typedef struct _pb_istream_t pb_istream_t;
 
@@ -43,27 +26,23 @@ typedef struct _pb_istream_t pb_istream_t;
  * any pointers.
  */
 struct _pb_istream_t {
-    int (*callback)(pb_istream_t *stream, uint8_t *buf, size_t count);
-    void *state; /* Free field for use by callback implementation */
+    int (*callback)(pb_istream_t* stream, uint8_t* buf, size_t count);
+    void* state; /* Free field for use by callback implementation */
     size_t bytes_left;
-
-#ifndef PB_NO_ERRMSG
-    const char *errmsg;
-#endif
 };
 
-static int pb_decode(pb_istream_t *stream, const json_t *gprotos, const json_t *protos, json_t *result);
+static int pb_decode(pb_istream_t* stream, const pc_JSON* gprotos, const pc_JSON*protos, pc_JSON* result);
 
-static pb_istream_t pb_istream_from_buffer(uint8_t *buf, size_t bufsize);
-static int pb_read(pb_istream_t *stream, uint8_t *buf, size_t count);
+static pb_istream_t pb_istream_from_buffer(uint8_t* buf, size_t bufsize);
+static int pb_read(pb_istream_t* stream, uint8_t* buf, size_t count);
 
 
 /* --- Helper functions ---
  * You may want to use these from your caller or callbacks.
  */
-static int pb_decode_proto(pb_istream_t *stream, const json_t *gprotos, const json_t *proto, const json_t *protos, const char *key, json_t *result);
+static int pb_decode_proto(pb_istream_t *stream, const pc_JSON* gprotos, const pc_JSON* proto, const pc_JSON* protos, const char *key, pc_JSON* result);
 
-static int pb_decode_array(pb_istream_t *stream, const json_t *gprotos, const json_t *proto, const json_t *protos, const char *key, json_t *result);
+static int pb_decode_array(pb_istream_t *stream, const pc_JSON* gprotos, const pc_JSON* proto, const pc_JSON* protos, const char *key, pc_JSON* result);
 
 /* Decode the tag for the next field in the stream. Gives the wire type and
  * field tag. At end of the message, returns 0 and sets eof to 1. */
@@ -92,15 +71,15 @@ static int pb_make_string_substream(pb_istream_t *stream, pb_istream_t *substrea
 static void pb_close_string_substream(pb_istream_t *stream, pb_istream_t *substream);
 
 /* Decode a string */
-static int checkreturn pb_decode_strlen(pb_istream_t *stream, uint32_t *size);
+static int  pb_decode_strlen(pb_istream_t *stream, uint32_t *size);
 static int pb_decode_string(pb_istream_t *stream, void *dest, uint32_t size);
 
 /* Decode submessage in __messages protos */
-static int pb_decode_submessage(pb_istream_t *stream, const json_t *gprotos, const json_t *protos, void *dest);
+static int pb_decode_submessage(pb_istream_t *stream, const pc_JSON* gprotos, const pc_JSON* protos, void *dest);
 
-int pc_pb_decode(const uint8_t *buf, size_t len, const json_t *gprotos, const json_t *protos,
-        json_t *result) {
-    // TODO:
+int pc_pb_decode(const uint8_t *buf, size_t len, const pc_JSON* gprotos, const pc_JSON* protos,
+        pc_JSON* result) {
+    /* TODO: */
     pb_istream_t stream = pb_istream_from_buffer((uint8_t*)buf, len);
     if (!pb_decode(&stream, gprotos, protos, result)) {
         return 0;
@@ -112,7 +91,7 @@ int pc_pb_decode(const uint8_t *buf, size_t len, const json_t *gprotos, const js
  * pb_istream *
  **************/
 
-static int checkreturn buf_read(pb_istream_t *stream, uint8_t *buf,
+static int  buf_read(pb_istream_t *stream, uint8_t *buf,
         size_t count) {
     uint8_t *source = (uint8_t *) stream->state;
 
@@ -123,7 +102,7 @@ static int checkreturn buf_read(pb_istream_t *stream, uint8_t *buf,
     return 1;
 }
 
-static int checkreturn pb_read(pb_istream_t *stream, uint8_t *buf, size_t count) {
+static int  pb_read(pb_istream_t *stream, uint8_t *buf, size_t count) {
     if (buf == NULL && stream->callback != buf_read) {
         /* Skip input bytes */
         uint8_t tmp[16];
@@ -138,10 +117,10 @@ static int checkreturn pb_read(pb_istream_t *stream, uint8_t *buf, size_t count)
     }
 
     if (stream->bytes_left < count)
-        PB_RETURN_ERROR(stream, "end-of-stream");
+        return 0;
 
     if (!stream->callback(stream, buf, count))
-        PB_RETURN_ERROR(stream, "io error");
+        return 0;
 
     stream->bytes_left -= count;
     return 1;
@@ -152,9 +131,6 @@ static pb_istream_t pb_istream_from_buffer(uint8_t *buf, size_t bufsize) {
     stream.callback = &buf_read;
     stream.state = buf;
     stream.bytes_left = bufsize;
-#ifndef PB_NO_ERRMSG
-    stream.errmsg = NULL;
-#endif
     return stream;
 }
 
@@ -162,9 +138,9 @@ static pb_istream_t pb_istream_from_buffer(uint8_t *buf, size_t bufsize) {
  * Decode a single field *
  *************************/
 
-static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprotos, const json_t *proto,
-        const json_t *protos, const char *key, json_t *result) {
-    json_t *type, *_messages, *sub_msg, *sub_value;
+static int pb_decode_proto(pb_istream_t *stream, const pc_JSON* gprotos, const pc_JSON* proto,
+        const pc_JSON *protos, const char *key, pc_JSON* result) {
+    pc_JSON *type, *_messages, *sub_msg, *sub_value;
     const char *type_text;
 
     uint64_t int_value;
@@ -178,26 +154,27 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
     char* debug_log = NULL;
 #endif
 
-    type = json_object_get(proto, "type");
-    type_text = json_string_value(type);
+    type = pc_JSON_GetObjectItem(proto, "type");
+    type_text = type->valuestring;
 
 #ifdef PB_DEBUG
-    debug_log = json_dumps(result, JSON_ENCODE_ANY);
+    debug_log = pc_JSON_Print(result);
+    /* FIXME: memory leak */
     fprintf(stderr, "result %s\n", debug_log);
-    jsonp_free(debug_log);
+    /* jsonp_free(debug_log); */
     debug_log = NULL;
 #endif
 
-    _messages = json_object_get(protos, "__messages");
+    _messages = pc_JSON_GetObjectItem(protos, "__messages");
     switch (pb_get_type(type_text)) {
         case PB_uInt32:
             if (!pb_decode_varint(stream, &int_value)) {
                 return 0;
             }
-            if (json_is_object(result)) {
-                json_object_set_new(result, key, json_integer(int_value));
+            if (result->type == pc_JSON_Object) {
+                pc_JSON_AddNumberToObject(result, key, int_value);
             } else {
-                json_array_append_new(result, json_integer(int_value));
+                pc_JSON_AddItemToArray(result, pc_JSON_CreateNumber(int_value));
             }
             break;
         case PB_int32:
@@ -205,30 +182,30 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
             if (!pb_decode_svarint(stream, &sint_value)) {
                 return 0;
             }
-            if (json_is_object(result)) {
-                json_object_set_new(result, key, json_integer(sint_value));
+            if (result->type == pc_JSON_Object) {
+                pc_JSON_AddNumberToObject(result, key, sint_value);
             } else {
-                json_array_append_new(result, json_integer(sint_value));
+                pc_JSON_AddItemToArray(result, pc_JSON_CreateNumber(sint_value));
             }
             break;
         case PB_float:
             if (!pb_decode_fixed32(stream, &float_value)) {
                 return 0;
             }
-            if (json_is_object(result)) {
-                json_object_set_new(result, key, json_real(float_value));
+            if (result->type == pc_JSON_Object) {
+                pc_JSON_AddNumberToObject(result, key, float_value);
             } else {
-                json_array_append_new(result, json_real(float_value));
+                pc_JSON_AddItemToArray(result, pc_JSON_CreateNumber(float_value));
             }
             break;
         case PB_double:
             if (!pb_decode_fixed64(stream, &double_value)) {
                 return 0;
             }
-            if (json_is_object(result)) {
-                json_object_set_new(result, key, json_real(double_value));
+            if (result->type == pc_JSON_Object) {
+                pc_JSON_AddNumberToObject(result, key, double_value);
             } else {
-                json_array_append_new(result, json_real(double_value));
+                pc_JSON_AddItemToArray(result, pc_JSON_CreateNumber(double_value));
             }
             break;
         case PB_string:
@@ -244,16 +221,16 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
                 free(str_value);
                 return 0;
             }
-            if (json_is_object(result)) {
-                json_object_set_new(result, key, json_string(str_value));
+            if (result->type == pc_JSON_Object) {
+                pc_JSON_AddStringToObject(result, key, str_value);
             } else {
-                json_array_append_new(result, json_string(str_value));
+                pc_JSON_AddItemToArray(result, pc_JSON_CreateString(str_value));
             }
             free(str_value);
             break;
         default:
             if (_messages) {
-                sub_msg = json_object_get(_messages, type_text);
+                sub_msg = pc_JSON_GetObjectItem(_messages, type_text);
                 if (!sub_msg) {
                     const char *head = "message ";
                     size_t len = strlen(head) + strlen(type_text) + 1;
@@ -261,8 +238,8 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
                     memset(head_text, 0, len);
                     strcpy(head_text, head);
                     strcat(head_text, type_text);
-                    // check root msg in gprotos
-                    sub_msg = json_object_get(gprotos, head_text);
+                    /* check root msg in gprotos */
+                    sub_msg = pc_JSON_GetObjectItem(gprotos, head_text);
                     free(head_text);
                 }
 
@@ -272,12 +249,11 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
                             return 0;
                         }
                     } else {
-                        sub_value = json_object();
+                        sub_value = pc_JSON_CreateObject();
                         if (!pb_decode_submessage(stream, gprotos, sub_msg, sub_value)) {
                             return 0;
                         }
-                        json_object_set(result, key, sub_value);
-                        json_decref(sub_value);
+                        pc_JSON_AddItemToObject(result, key, sub_value);
                     }
                 } else {
                     return 0;
@@ -288,71 +264,69 @@ static int checkreturn pb_decode_proto(pb_istream_t *stream, const json_t *gprot
     return 1;
 }
 
-static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprotos, const json_t *proto, const json_t *protos,
-        const char *key, json_t *result) {
-    json_t *type, *array, *value;
+static int  pb_decode_array(pb_istream_t *stream, const pc_JSON *gprotos, const pc_JSON *proto, const pc_JSON *protos,
+        const char *key, pc_JSON *result) {
+    pc_JSON *type, *array, *value;
     const char *type_text;
     uint32_t size;
     uint32_t i;
-    int need_decref = 0;
+    int need_free = 0;
 
 #ifdef PB_DEBUG
     char* debug_log = NULL;
 #endif
 
-    type = json_object_get(proto, "type");
-    type_text = json_string_value(type);
+    type = pc_JSON_GetObjectItem(proto, "type");
+    type_text = type->valuestring;
     if (!result) {
         return 0;
     }
-    array = json_object_get(result, key);
+    array = pc_JSON_GetObjectItem(result, key);
 
     if (!array) {
-        array = json_array();
-        need_decref = 1;
+        array = pc_JSON_CreateArray();
+        need_free = 1;
     }
 
     if (pb_get_type(type_text) && pb_get_type(type_text) != PB_string) {
         if (!pb_decode_varint32(stream, &size)) {
-            if (need_decref)
-                json_decref(array);
+            if (need_free)
+                pc_JSON_Delete(array);
             return 0;
         }
         for (i = 0; i < size; i++) {
             if (!pb_decode_proto(stream, gprotos, proto, protos, key, array)) {
-                if (need_decref)
-                    json_decref(array);
+                if (need_free)
+                    pc_JSON_Delete(array);
                 return 0;
             }
         }
     } else if (pb_get_type(type_text) && pb_get_type(type_text) == PB_string) {
         if (!pb_decode_proto(stream, gprotos, proto, protos, key, array)) {
-            if (need_decref)
-                json_decref(array);
+            if (need_free)
+                pc_JSON_Delete(array);
             return 0;
         }
     } else {
-        value = json_object();
+        value = pc_JSON_CreateObject();
         if (!pb_decode_proto(stream, gprotos, proto, protos, NULL, value)) {
-            json_decref(value);
-            if (need_decref)
-                json_decref(array);
+            pc_JSON_Delete(value);
+            if (need_free)
+                pc_JSON_Delete(array);
             return 0;
         }
-        json_array_append(array, value);
-        json_decref(value);
+        pc_JSON_AddItemToArray(array, value);
     }
 
 #ifdef PB_DEBUG
-    debug_log = json_dumps(array, JSON_ENCODE_ANY);
+    debug_log = pc_JSON_Print(array);
     fprintf(stderr, "array %s\n", debug_log);
-    jsonp_free(debug_log);
+    /* FIXME: mem leak */
+    /* jsonp_free(debug_log); */
     debug_log = NULL;
 #endif
 
-    json_object_set(result, key, array);
-    if (need_decref)
-        json_decref(array);
+    pc_JSON_AddItemToObject(result, key, array);
 
     return 1;
 }
@@ -361,13 +335,13 @@ static int checkreturn pb_decode_array(pb_istream_t *stream, const json_t *gprot
  * Decode all fields *
  *********************/
 
-static int checkreturn pb_decode(pb_istream_t *stream, const json_t *gprotos,
-        const json_t *protos, json_t *result) {
+static int  pb_decode(pb_istream_t *stream, const pc_JSON *gprotos,
+        const pc_JSON *protos, pc_JSON *result) {
     while (stream->bytes_left) {
         uint32_t tag;
         int wire_type;
         int eof;
-        json_t *tags, *_tag, *option, *proto;
+        pc_JSON *tags, *_tag, *option, *proto;
         const char *name;
         const char *option_text;
         char buffer[64];
@@ -379,20 +353,20 @@ static int checkreturn pb_decode(pb_istream_t *stream, const json_t *gprotos,
         }
 
         memset(&buffer, 0, 64);
-        tags = json_object_get(protos, "__tags");
+        tags = pc_JSON_GetObjectItem(protos, "__tags");
         if (!tags)
             return 0;
 
         sprintf(buffer, "%u", tag);
-        _tag = json_object_get(tags, buffer);
+        _tag = pc_JSON_GetObjectItem(tags, buffer);
         if (!_tag)
             return 0;
-        name = json_string_value(_tag);
-        proto = json_object_get(protos, name);
+        name = _tag->valuestring;
+        proto = pc_JSON_GetObjectItem(protos, name);
         if (!proto)
             return 0;
-        option = json_object_get(proto, "option");
-        option_text = json_string_value(option);
+        option = pc_JSON_GetObjectItem(proto, "option");
+        option_text = option->valuestring;
         if (strcmp(option_text, "optional") == 0
                 || strcmp(option_text, "required") == 0) {
             if (!pb_decode_proto(stream, gprotos, proto, protos, name, result))
@@ -412,7 +386,7 @@ static int checkreturn pb_decode(pb_istream_t *stream, const json_t *gprotos,
  * Helper functions *
  ********************/
 
-static int checkreturn pb_decode_varint32(pb_istream_t *stream, uint32_t *dest) {
+static int  pb_decode_varint32(pb_istream_t *stream, uint32_t *dest) {
     uint64_t temp;
     int status = pb_decode_varint(stream, &temp);
     if (status) {
@@ -425,7 +399,7 @@ static int checkreturn pb_decode_varint32(pb_istream_t *stream, uint32_t *dest) 
 
 /* Decode an integer in the varint format. This works for bool, enum, int32,
  * int64, uint32 and uint64 field types. */
-int checkreturn pb_decode_varint(pb_istream_t *stream, uint64_t *dest) {
+int  pb_decode_varint(pb_istream_t *stream, uint64_t *dest) {
     uint8_t byte;
     int bitpos = 0;
     *dest = 0;
@@ -438,7 +412,7 @@ int checkreturn pb_decode_varint(pb_istream_t *stream, uint64_t *dest) {
             return 1;
     }
 
-    PB_RETURN_ERROR(stream, "varint overflow");
+    return 0;
 }
 
 /* Decode an integer in the zig-zagged svarint format. This works for sint32
@@ -500,12 +474,12 @@ static int pb_decode_fixed64(pb_istream_t *stream, void *dest) {
 #endif
 }
 
-static int checkreturn pb_decode_strlen(pb_istream_t *stream, uint32_t *size) {
+static int  pb_decode_strlen(pb_istream_t *stream, uint32_t *size) {
     return pb_decode_varint32(stream, size);
 }
 
 /* Decode a string */
-static int checkreturn pb_decode_string(pb_istream_t *stream,
+static int  pb_decode_string(pb_istream_t *stream,
         void *dest, uint32_t size) {
     int status;
 
@@ -516,7 +490,7 @@ static int checkreturn pb_decode_string(pb_istream_t *stream,
 
 /* Decode the tag for the next field in the stream. Gives the wire type and
  * field tag. At end of the message, returns 0 and sets eof to 1. */
-static int checkreturn pb_decode_tag(pb_istream_t *stream, int *wire_type,
+static int  pb_decode_tag(pb_istream_t *stream, int *wire_type,
         uint32_t *tag, int *eof) {
     uint32_t temp;
     *eof = 0;
@@ -543,7 +517,7 @@ static int checkreturn pb_decode_tag(pb_istream_t *stream, int *wire_type,
 /* Decode string length from stream and return a substream with limited length.
  * Remember to close the substream using pb_close_string_substream().
  */
-static int checkreturn pb_make_string_substream(pb_istream_t *stream,
+static int  pb_make_string_substream(pb_istream_t *stream,
         pb_istream_t *substream) {
     uint32_t size;
     if (!pb_decode_varint32(stream, &size)) {
@@ -552,7 +526,7 @@ static int checkreturn pb_make_string_substream(pb_istream_t *stream,
 
     *substream = *stream;
     if (substream->bytes_left < size)
-        PB_RETURN_ERROR(stream, "parent stream too short");
+        return 0;
 
     substream->bytes_left = size;
     stream->bytes_left -= size;
@@ -564,7 +538,7 @@ static void pb_close_string_substream(pb_istream_t *stream, pb_istream_t *substr
 }
 
 /* Decode submessage in __messages protos */
-static int pb_decode_submessage(pb_istream_t *stream, const json_t *gprotos, const json_t *protos,
+static int pb_decode_submessage(pb_istream_t *stream, const pc_JSON *gprotos, const pc_JSON *protos,
         void *dest) {
     int status;
     pb_istream_t substream;
@@ -574,7 +548,7 @@ static int pb_decode_submessage(pb_istream_t *stream, const json_t *gprotos, con
     }
     /* New array entries need to be initialized, while required and optional
      * submessages have already been initialized in the top-level pb_decode. */
-    status = pb_decode(&substream, gprotos, protos, (json_t *)dest);
+    status = pb_decode(&substream, gprotos, protos, (pc_JSON *)dest);
 
     pb_close_string_substream(stream, &substream);
     return status;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -14,7 +14,7 @@ public class TestPoll {
 
     Client c = new Client();
 
-    // tls, polling
+    /* tls, polling */
     c.init(false, true, new Client.LocalStorage() {
       public int write(String s) {return -1; }
       public String read() {return null;}
@@ -34,7 +34,7 @@ public class TestPoll {
     } catch (Exception e) {
 
     }
- 
+
     c.request("connector.entryHandler.entry", "{\"name\": \"test\"}", 10, new Client.RequestCallback() {
         public void handle(int rc, String resp) {
             System.out.println("get resp:" + resp);
