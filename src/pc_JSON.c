@@ -34,19 +34,12 @@
 #include <stdlib.h>
 #include <float.h>
 #include <limits.h>
-#include <ctype.h>
+
 #include "pc_JSON.h"
 
 static const char *ep;
 
 const char *pc_JSON_GetErrorPtr(void) {return ep;}
-
-static int pc_JSON_strcasecmp(const char *s1,const char *s2)
-{
-    if (!s1) return (s1==s2)?0:1;if (!s2) return 1;
-    for(; tolower(*s1) == tolower(*s2); ++s1, ++s2)    if(*s1 == 0)    return 0;
-    return tolower(*(const unsigned char *)s1) - tolower(*(const unsigned char *)s2);
-}
 
 static void *(*pc_JSON_malloc)(size_t sz) = malloc;
 static void (*pc_JSON_free)(void *ptr) = free;
@@ -514,7 +507,7 @@ static char *print_object(const pc_JSON *item,int depth,int fmt)
 /* Get Array size/item / object item. */
 int    pc_JSON_GetArraySize(const pc_JSON *array)                            {pc_JSON *c=array->child;int i=0;while(c)i++,c=c->next;return i;}
 pc_JSON *pc_JSON_GetArrayItem(const pc_JSON *array,int item)                {pc_JSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
-pc_JSON *pc_JSON_GetObjectItem(const pc_JSON *object,const char *string)    {pc_JSON *c=object->child; while (c && pc_JSON_strcasecmp(c->string,string)) c=c->next; return c;}
+pc_JSON *pc_JSON_GetObjectItem(const pc_JSON *object,const char *string)    {pc_JSON *c=object->child; while (c && strcmp(c->string,string)) c=c->next; return c;}
 
 /* Utility for array list handling. */
 static void suffix_object(pc_JSON *prev,pc_JSON *item) {prev->next=item;item->prev=prev;}
@@ -530,14 +523,14 @@ void    pc_JSON_AddItemReferenceToObject(pc_JSON *object,const char *string,pc_J
 pc_JSON *pc_JSON_DetachItemFromArray(pc_JSON *array,int which)            {pc_JSON *c=array->child;while (c && which>0) c=c->next,which--;if (!c) return 0;
     if (c->prev) c->prev->next=c->next;if (c->next) c->next->prev=c->prev;if (c==array->child) array->child=c->next;c->prev=c->next=0;return c;}
 void   pc_JSON_DeleteItemFromArray(pc_JSON *array,int which)            {pc_JSON_Delete(pc_JSON_DetachItemFromArray(array,which));}
-pc_JSON *pc_JSON_DetachItemFromObject(pc_JSON *object,const char *string) {int i=0;pc_JSON *c=object->child;while (c && pc_JSON_strcasecmp(c->string,string)) i++,c=c->next;if (c) return pc_JSON_DetachItemFromArray(object,i);return 0;}
+pc_JSON *pc_JSON_DetachItemFromObject(pc_JSON *object,const char *string) {int i=0;pc_JSON *c=object->child;while (c && strcmp(c->string,string)) i++,c=c->next;if (c) return pc_JSON_DetachItemFromArray(object,i);return 0;}
 void   pc_JSON_DeleteItemFromObject(pc_JSON *object,const char *string) {pc_JSON_Delete(pc_JSON_DetachItemFromObject(object,string));}
 
 /* Replace array/object items with new ones. */
 void   pc_JSON_ReplaceItemInArray(pc_JSON *array,int which,pc_JSON *newitem)        {pc_JSON *c=array->child;while (c && which>0) c=c->next,which--;if (!c) return;
     newitem->next=c->next;newitem->prev=c->prev;if (newitem->next) newitem->next->prev=newitem;
     if (c==array->child) array->child=newitem; else newitem->prev->next=newitem;c->next=c->prev=0;pc_JSON_Delete(c);}
-void   pc_JSON_ReplaceItemInObject(pc_JSON *object,const char *string,pc_JSON *newitem){int i=0;pc_JSON *c=object->child;while(c && pc_JSON_strcasecmp(c->string,string))i++,c=c->next;if(c){newitem->string=pc_JSON_strdup(string);pc_JSON_ReplaceItemInArray(object,i,newitem);}}
+void   pc_JSON_ReplaceItemInObject(pc_JSON *object,const char *string,pc_JSON *newitem){int i=0;pc_JSON *c=object->child;while(c && strcmp(c->string,string))i++,c=c->next;if(c){newitem->string=pc_JSON_strdup(string);pc_JSON_ReplaceItemInArray(object,i,newitem);}}
 
 /* Create basic types: */
 pc_JSON *pc_JSON_CreateNull(void)                    {pc_JSON *item=pc_JSON_New_Item();if(item)item->type=pc_JSON_NULL;return item;}
