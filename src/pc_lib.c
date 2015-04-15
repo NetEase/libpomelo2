@@ -38,7 +38,7 @@ static int pc__default_log_level = 0;
 
 /**
  * default malloc never return NULL
- * so we don't have to check its return value 
+ * so we don't have to check its return value
  *
  * if you customize malloc, please make sure that it never return NULL
  */
@@ -53,7 +53,7 @@ static void* default_malloc(size_t len)
     return d;
 }
 
-static void default_log(int level, const char* msg, ...) 
+static void default_log(int level, const char* msg, ...)
 {
     time_t t = time(NULL);
     char buf[32];
@@ -118,7 +118,7 @@ void pc_lib_init(void (*pc_log)(int level, const char* msg, ...), void* (*pc_all
 #endif
 }
 
-void pc_lib_cleanup() 
+void pc_lib_cleanup()
 {
 #if !defined(PC_NO_DUMMY_TRANS)
     pc_transport_plugin_deregister(PC_TR_NAME_DUMMY);
@@ -143,7 +143,7 @@ const char* pc_lib_strdup(const char* str)
     char* buf;
     size_t len;
 
-    if (!str) 
+    if (!str)
         return NULL;
 
     len = strlen(str);
@@ -159,7 +159,7 @@ static const char* state_str[] = {
     "PC_ST_NOT_INITED",
     "PC_ST_INITED",
     "PC_ST_CONNECTING",
-    "PC_ST_CONNECTED", 
+    "PC_ST_CONNECTED",
     "PC_ST_DISCONNECTING",
     "PC_ST_UNKNOWN",
     NULL
@@ -206,7 +206,7 @@ static const char* rc_str[] = {
     NULL
 };
 
-const char* pc_client_rc_str(int rc) 
+const char* pc_client_rc_str(int rc)
 {
     assert(rc <= 0 && rc > PC_RC_MIN);
     return rc_str[-rc];

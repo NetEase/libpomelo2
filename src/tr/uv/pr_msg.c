@@ -60,7 +60,7 @@ static PC_INLINE const char *pc__resolve_dictionary(const pc_JSON* code2route, u
 }
 
 
-static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf) 
+static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 {
     const char* data = buf->base;
     size_t len = buf->len;
@@ -69,7 +69,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     size_t body_len;
     size_t offset = 0;
 
-    uint8_t flag; 
+    uint8_t flag;
     uint8_t type;
     uint8_t is_route_compressed;
     uint16_t route_code = 0;
@@ -83,7 +83,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 
     int i = 0;
     uint8_t m;
- 
+
     if (len < PC_MSG_FLAG_BYTES) {
         return NULL;
     }
@@ -94,7 +94,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
 
     if (!PC_IS_VALID_TYPE(type)) {
         pc_lib_log(PC_LOG_ERROR, "pc_msg_decode_to_raw - unknow message type");
-        return NULL; 
+        return NULL;
     }
 
     if (PC_MSG_HAS_ID(type)) {
@@ -165,7 +165,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     return msg;
 }
 
-pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf) 
+pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf)
 {
     const char *route_str = NULL;
     const char *origin_route = NULL;
@@ -232,7 +232,7 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
         } else {
             pc_JSON* pb_def = pc_JSON_GetObjectItem(server_protos, msg.route);
             if (pb_def) {
-                /* pb definition found */ 
+                /* pb definition found */
                 json_msg = pc_body_pb_decode(body.base, 0, body.len, server_protos, pb_def);
             } else {
                 json_msg = pc_body_json_decode(body.base, 0, body.len);
@@ -244,7 +244,7 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
             msg.id = PC_INVALID_REQ_ID;
             msg.route = NULL;
         } else {
-            data = pc_JSON_PrintUnformatted(json_msg); 
+            data = pc_JSON_PrintUnformatted(json_msg);
 
             assert(data);
 
@@ -273,13 +273,13 @@ static PC_INLINE size_t pc__msg_encode_route(const char *route, uint16_t route_l
         char *base, size_t offset);
 
 pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
-        const char *route, const pc_buf_t msg) 
+        const char *route, const pc_buf_t msg)
 {
     pc_buf_t buf;
     uint8_t id_len = PC_MSG_HAS_ID(type) ? pc__msg_id_length(id) : 0;
     uint16_t route_len = PC_MSG_HAS_ROUTE(type) ? strlen(route) : 0;
 
-    size_t msg_len = PC_MSG_FLAG_BYTES + id_len + 
+    size_t msg_len = PC_MSG_FLAG_BYTES + id_len +
         PC_MSG_ROUTE_LEN_BYTES + route_len + msg.len;
     char *base = NULL;
     size_t offset = 0;
@@ -312,7 +312,7 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
         int route_code, const pc_buf_t body)
 {
     pc_buf_t buf;
- 
+
     uint8_t id_len = PC_MSG_HAS_ID(type) ? pc__msg_id_length(id) : 0;
     uint16_t route_len = PC_MSG_HAS_ROUTE(type) ? PC_MSG_ROUTE_CODE_BYTES : 0;
     size_t msg_len = PC_MSG_FLAG_BYTES + id_len + route_len + body.len;
@@ -443,7 +443,7 @@ pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_
     assert(body_buf.base && body_buf.len != -1);
 
     type = msg->id == PC_NOTIFY_PUSH_REQ_ID ? PC_MSG_NOTIFY : PC_MSG_REQUEST;
-    
+
     code = pc_JSON_GetObjectItem(route2code, msg->route);
     if (code && code->type == pc_JSON_Number) {
         route_code = code->valueint;
@@ -473,7 +473,7 @@ pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_
 }
 
 /* for transport plugin */
-uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)  
+uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)
 {
     pc_buf_t pb;
     uv_buf_t ub;
@@ -484,7 +484,7 @@ uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)
     return ub;
 }
 
-pc_msg_t pr_default_msg_decoder(tr_uv_tcp_transport_t* tt, const uv_buf_t* buf) 
+pc_msg_t pr_default_msg_decoder(tr_uv_tcp_transport_t* tt, const uv_buf_t* buf)
 {
     pc_buf_t pb;
     pb.base = buf->base;

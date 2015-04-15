@@ -9,7 +9,7 @@
 #include "tr_uv_tcp.h"
 #include "tr_uv_tcp_i.h"
 
-static tr_uv_tcp_transport_plugin_t instance = 
+static tr_uv_tcp_transport_plugin_t instance =
 {
     {
         tr_uv_tcp_create,

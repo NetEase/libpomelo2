@@ -193,8 +193,8 @@ static PyObject* lib_init(PyObject* self, PyObject* args)
     int log_level;
     char* ca_file = NULL;
     char* ca_path = NULL;
-    if (!PyArg_ParseTuple(args, "i|zz:lib_init", 
-                &log_level, &ca_file, &ca_path)) { 
+    if (!PyArg_ParseTuple(args, "i|zz:lib_init",
+                &log_level, &ca_file, &ca_path)) {
        return NULL;
     }
 
@@ -204,7 +204,7 @@ static PyObject* lib_init(PyObject* self, PyObject* args)
     }
 #endif
 
-    pc_lib_set_default_log_level(log_level); 
+    pc_lib_set_default_log_level(log_level);
     pc_lib_init(NULL, NULL, NULL, "Python Client");
 
     Py_INCREF(Py_None);
@@ -213,7 +213,7 @@ static PyObject* lib_init(PyObject* self, PyObject* args)
 
 static PyObject* lib_cleanup(PyObject* self, PyObject* args)
 {
-    if (!PyArg_ParseTuple(args, ":lib_cleanup")) { 
+    if (!PyArg_ParseTuple(args, ":lib_cleanup")) {
        return NULL;
     }
 
@@ -227,33 +227,33 @@ static PyObject* ev_to_str(PyObject* self, PyObject* args)
 {
     int ev = 0;
 
-    if (!PyArg_ParseTuple(args, "i:ev_to_str", &ev)) { 
+    if (!PyArg_ParseTuple(args, "i:ev_to_str", &ev)) {
        return NULL;
     }
 
-    return Py_BuildValue("s", pc_client_ev_str(ev)); 
+    return Py_BuildValue("s", pc_client_ev_str(ev));
 }
 
 static PyObject* rc_to_str(PyObject* self, PyObject* args)
 {
     int rc = 0;
 
-    if (!PyArg_ParseTuple(args, "i:rc_to_str", &rc)) { 
+    if (!PyArg_ParseTuple(args, "i:rc_to_str", &rc)) {
        return NULL;
     }
 
-    return Py_BuildValue("s", pc_client_rc_str(rc)); 
+    return Py_BuildValue("s", pc_client_rc_str(rc));
 }
 
 static PyObject* state_to_str(PyObject* self, PyObject* args)
 {
     int state = 0;
 
-    if (!PyArg_ParseTuple(args, "i:state_to_str", &state)) { 
+    if (!PyArg_ParseTuple(args, "i:state_to_str", &state)) {
        return NULL;
     }
 
-    return Py_BuildValue("s", pc_client_state_str(state)); 
+    return Py_BuildValue("s", pc_client_state_str(state));
 }
 
 static PyObject* create(PyObject* self, PyObject* args)
@@ -265,7 +265,7 @@ static PyObject* create(PyObject* self, PyObject* args)
     int ret;
     pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
 
-    if (!PyArg_ParseTuple(args, "|iiO:init", &tls, &polling, &lc_callback)) { 
+    if (!PyArg_ParseTuple(args, "|iiO:init", &tls, &polling, &lc_callback)) {
        return NULL;
     }
 
@@ -273,7 +273,7 @@ static PyObject* create(PyObject* self, PyObject* args)
         PyErr_SetString(PyExc_TypeError, "parameter lc_callback must be callable");
         return NULL;
     }
-    
+
     if (tls) {
         config.transport_name = PC_TR_NAME_UV_TLS;
     }
@@ -307,7 +307,7 @@ static PyObject* connect(PyObject* self, PyObject* args)
     int port = 0;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "ksi:connect", &addr, &host, &port)) { 
+    if (!PyArg_ParseTuple(args, "ksi:connect", &addr, &host, &port)) {
        return NULL;
     }
 
@@ -316,7 +316,7 @@ static PyObject* connect(PyObject* self, PyObject* args)
     Py_BEGIN_ALLOW_THREADS
 
     ret = pc_client_connect(client, host, port, NULL);
-    
+
     Py_END_ALLOW_THREADS
 
     return Py_BuildValue("i", ret);
@@ -328,15 +328,15 @@ static PyObject* state(PyObject* self, PyObject* args)
     pc_client_t* client;
     int state;
 
-    if (!PyArg_ParseTuple(args, "k:state", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:state", &addr)) {
        return NULL;
     }
     client = (pc_client_t* )addr;
-    
+
     Py_BEGIN_ALLOW_THREADS
 
     state = pc_client_state(client);
-    
+
     Py_END_ALLOW_THREADS
 
     return Py_BuildValue("i", state);
@@ -349,7 +349,7 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
     PyObject* ev_cb = NULL;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "kO:add_ev_handler", &addr, &ev_cb)) { 
+    if (!PyArg_ParseTuple(args, "kO:add_ev_handler", &addr, &ev_cb)) {
         return NULL;
     }
 
@@ -361,7 +361,7 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
     assert(ev_cb);
 
     client = (pc_client_t* )addr;
-    Py_XINCREF(ev_cb); 
+    Py_XINCREF(ev_cb);
 
     Py_BEGIN_ALLOW_THREADS
 
@@ -370,7 +370,7 @@ static PyObject* add_ev_handler(PyObject* self, PyObject* args)
     Py_END_ALLOW_THREADS
 
     if (ret == PC_EV_INVALID_HANDLER_ID) {
-        Py_XDECREF(ev_cb); 
+        Py_XDECREF(ev_cb);
     }
 
     return Py_BuildValue("i", ret);
@@ -383,7 +383,7 @@ static PyObject* rm_ev_handler(PyObject* self, PyObject* args)
     int handler_id;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "ki:rm_ev_handler", &addr, &handler_id)) { 
+    if (!PyArg_ParseTuple(args, "ki:rm_ev_handler", &addr, &handler_id)) {
         return NULL;
     }
 
@@ -408,8 +408,8 @@ static PyObject* request(PyObject* self, PyObject* args)
     PyObject* req_cb = NULL;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
-                &route, &msg, &timeout, &req_cb)) { 
+    if (!PyArg_ParseTuple(args, "kssiO:request", &addr,
+                &route, &msg, &timeout, &req_cb)) {
         return NULL;
     }
 
@@ -420,7 +420,7 @@ static PyObject* request(PyObject* self, PyObject* args)
 
     assert(req_cb);
 
-    Py_XINCREF(req_cb); 
+    Py_XINCREF(req_cb);
     client = (pc_client_t* )addr;
 
     Py_BEGIN_ALLOW_THREADS
@@ -443,8 +443,8 @@ static PyObject* notify(PyObject* self, PyObject* args)
     PyObject* notify_cb = NULL;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "kssiO:request", &addr, 
-                &route, &msg, &timeout, &notify_cb)) { 
+    if (!PyArg_ParseTuple(args, "kssiO:request", &addr,
+                &route, &msg, &timeout, &notify_cb)) {
         return NULL;
     }
 
@@ -455,7 +455,7 @@ static PyObject* notify(PyObject* self, PyObject* args)
 
     assert(notify_cb);
 
-    Py_XINCREF(notify_cb); 
+    Py_XINCREF(notify_cb);
     client = (pc_client_t* )addr;
 
     Py_BEGIN_ALLOW_THREADS
@@ -469,12 +469,12 @@ static PyObject* notify(PyObject* self, PyObject* args)
 }
 
 static PyObject* poll(PyObject* self, PyObject* args)
-{   
+{
     unsigned long addr;
     pc_client_t* client;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "k:poll", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:poll", &addr)) {
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -493,7 +493,7 @@ static PyObject* quality(PyObject* self, PyObject* args)
     unsigned long addr;
     pc_client_t* client;
 
-    if (!PyArg_ParseTuple(args, "k:quality", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:quality", &addr)) {
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -507,7 +507,7 @@ static PyObject* disconnect(PyObject* self, PyObject* args)
     pc_client_t* client;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "k:disconnect", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:disconnect", &addr)) {
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -528,7 +528,7 @@ static PyObject* destroy(PyObject* self, PyObject* args)
     PyObject* lc_cb;
     int ret;
 
-    if (!PyArg_ParseTuple(args, "k:destroy", &addr)) { 
+    if (!PyArg_ParseTuple(args, "k:destroy", &addr)) {
        return NULL;
     }
     client = (pc_client_t* )addr;
@@ -574,7 +574,7 @@ static PyMethodDef pypomelo_meths[] = {
 extern "C" {
 #endif
 
-PY_POMELO_EXPORT void initpypomelo() 
+PY_POMELO_EXPORT void initpypomelo()
 {
     if (!PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();

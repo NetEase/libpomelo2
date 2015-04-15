@@ -11,7 +11,7 @@
 #include "tr_uv_tls.h"
 #include "tr_uv_tls_i.h"
 
-static tr_uv_tls_transport_plugin_t instance = 
+static tr_uv_tls_transport_plugin_t instance =
 {
     {
         {

@@ -10,7 +10,7 @@
 
 #if defined(_WIN32) && !defined(__cplusplus)
 #define PC_INLINE __inline
-#else 
+#else
 #define PC_INLINE inline
 #endif
 

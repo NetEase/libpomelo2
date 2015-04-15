@@ -83,7 +83,7 @@ struct tr_uv_tcp_transport_s {
     uv_loop_t uv_loop;
     uv_tcp_t socket;
     uv_thread_t worker;
-    
+
     /* used for thread checking */
     unsigned long thread_id;
 
@@ -130,7 +130,7 @@ struct tr_uv_tcp_transport_s {
     char tcp_read_buf[PC_TCP_READ_BUFFER_SIZE];
 
     /**
-     * holds ownership of these json 
+     * holds ownership of these json
      */
     pc_JSON* route_to_code;
     pc_JSON* code_to_route;

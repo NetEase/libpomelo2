@@ -41,7 +41,7 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
     SSL_shutdown(tls->tls);
 
     /*
-     * here tls__write_to_tcp will write close_notify alert 
+     * here tls__write_to_tcp will write close_notify alert
      * or some other fatal alert that leads to error/disconnect
      */
     tls__write_to_tcp(tls);
@@ -70,7 +70,7 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
         QUEUE_INSERT_TAIL(&tt->writing_queue, &tls->should_retry->queue);
 
         tls->should_retry = NULL;
-    } 
+    }
 
     if (tls->retry_wb) {
         pc_lib_free(tls->retry_wb);
@@ -86,7 +86,7 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
 
         QUEUE_INSERT_TAIL(&tt->writing_queue, q);
     }
-    
+
     tcp__reset(tt);
 }
 
@@ -105,7 +105,7 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
         tls__read_from_bio(tls);
 
         /* write ClientHello out */
-        tls__write_to_tcp(tls); 
+        tls__write_to_tcp(tls);
     }
 }
 
@@ -113,9 +113,9 @@ static void tls__info_callback(const SSL* tls, int where, int ret)
 {
     char* str;
 
-    if (!(where & (SSL_CB_HANDSHAKE_START 
-                    | SSL_CB_HANDSHAKE_DONE 
-                    | SSL_CB_ALERT 
+    if (!(where & (SSL_CB_HANDSHAKE_START
+                    | SSL_CB_HANDSHAKE_DONE
+                    | SSL_CB_ALERT
                     | SSL_CB_EXIT)))
         return;
 
@@ -136,7 +136,7 @@ static void tls__info_callback(const SSL* tls, int where, int ret)
     } else if (where & SSL_CB_EXIT) {
         if (ret == 0) {
 
-            pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - tls failed in %s", 
+            pc_lib_log(PC_LOG_DEBUG, "tls__info_callback - tls failed in %s",
                     SSL_state_string_long(tls));
 
         } else if (ret < 0) {
@@ -147,7 +147,7 @@ static void tls__info_callback(const SSL* tls, int where, int ret)
 
 }
 
-static void tls__emit_error_event(tr_uv_tls_transport_t* tls) 
+static void tls__emit_error_event(tr_uv_tls_transport_t* tls)
 {
     GET_TT;
 
@@ -203,7 +203,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 tls->retry_wb = NULL;
                 tls->retry_wb_len = 0;
 
-                tls__emit_error_event(tls); 
+                tls__emit_error_event(tls);
 
                 return ;
             } else {
@@ -245,7 +245,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 if (tls__get_error(tls->tls, ret)) {
                     pc_lib_log(PC_LOG_ERROR, "tls__write_to_bio - SSL_write error, will reconn");
 
-                    tls__emit_error_event(tls); 
+                    tls__emit_error_event(tls);
 
                     return ;
                 } else {
@@ -258,7 +258,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 if (!tls->is_handshake_completed) {
                     tls->is_handshake_completed = 1;
                 }
-                
+
                 pc_lib_log(PC_LOG_DEBUG, "tls__write_to_bio - move wi to writing queue or tcp write queue, seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
                 QUEUE_INIT(&wi->queue);
                 QUEUE_INSERT_TAIL(head, &wi->queue);
@@ -266,17 +266,17 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
             }
         }
     }
-    
+
     /* enable check timeout timer */
     if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
-        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb,
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
     }
     if (flag)
         tls__write_to_tcp(tls);
 }
 
-static void tls__read_from_bio(tr_uv_tls_transport_t* tls) 
+static void tls__read_from_bio(tr_uv_tls_transport_t* tls)
 {
     int read;
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )tls;
@@ -292,7 +292,7 @@ static void tls__read_from_bio(tr_uv_tls_transport_t* tls)
             pc_pkg_parser_feed(&tt->pkg_parser, tls->rb, read);
         }
     } while (read > 0);
-   
+
     if (tls__get_error(tls->tls, read)) {
         pc_lib_log(PC_LOG_ERROR, "tls__read_from_bio - SSL_read error, will reconn");
 
@@ -343,7 +343,7 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
         assert(QUEUE_EMPTY(&tls->when_tcp_is_writing_queue));
         uv_async_send(&tt->write_async);
         return ;
-    } 
+    }
 
     while(!QUEUE_EMPTY(&tls->when_tcp_is_writing_queue)) {
         q = QUEUE_HEAD(&tls->when_tcp_is_writing_queue);
@@ -385,7 +385,7 @@ void tls__write_done_cb(uv_write_t* w, int status)
 
     pc_mutex_lock(&tt->wq_mutex);
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
-        q = QUEUE_HEAD(&tt->writing_queue); 
+        q = QUEUE_HEAD(&tt->writing_queue);
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
 
@@ -458,7 +458,7 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
         wi->buf.base = NULL;
         wi->buf.len = 0;
 
-        if (PC_IS_PRE_ALLOC(wi->type)) { 
+        if (PC_IS_PRE_ALLOC(wi->type)) {
             PC_PRE_ALLOC_SET_IDLE(wi->type);
         } else {
             pc_lib_free(wi);
@@ -492,7 +492,7 @@ void tls__cleanup_async_cb(uv_async_t* a)
     }
 }
 
-void tls__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) 
+void tls__on_tcp_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
     GET_TLS(stream);
 

@@ -20,7 +20,7 @@
 #include "tr_uv_tcp_i.h"
 #include "pr_pkg.h"
 
-#define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt) 
+#define GET_TT(x) tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(x->data); assert(tt)
 
 static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
 {
@@ -158,7 +158,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
             factor = 1;
         } else {
             factor = config->reconn_delay_max / config->reconn_delay;
-            if (factor <= 0) 
+            if (factor <= 0)
                 factor = 1;
         }
 
@@ -170,7 +170,7 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
                     break;
                 }
             }
-            
+
             tt->max_reconn_incr = i + 1;
         }
         pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - max reconn delay incr: %d", tt->max_reconn_incr);
@@ -186,10 +186,10 @@ void tcp__reconn(tr_uv_tcp_transport_t* tt)
         }
     }
 
-    timeout = (rand() % timeout) + timeout / 2; 
+    timeout = (rand() % timeout) + timeout / 2;
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__reconn - reconnect, delay: %d", timeout);
-    
+
     uv_timer_start(&tt->reconn_delay_timer, tcp__reconn_delay_timer_cb, timeout * 1000, 0);
 }
 
@@ -307,7 +307,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
          * NOTE: we hack uv here to get the rest timeout value of conn_timeout,
          *
          * and use it as the timeout value of handshake.
-         * 
+         *
          * it maybe lead to be non-compatiable to uv in future.
          */
 #ifdef _WIN32
@@ -322,7 +322,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         /* tcp connected. */
         tt->state = TR_UV_TCP_HANDSHAKEING;
 
-        ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
+        ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb);
 
         if (ret) {
             pc_lib_log(PC_LOG_ERROR, "tcp__conn_done_cb - start read from tcp error, reconn");
@@ -341,7 +341,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
             uv_timer_start( &tt->handshake_timer, tcp__handshake_timer_cb, hs_timeout, 0);
         }
         return ;
-    } 
+    }
 
     if (status == UV_ECANCELED) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect timeout");
@@ -351,7 +351,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Error", NULL);
     }
 
-    tt->reconn_fn(tt); 
+    tt->reconn_fn(tt);
 }
 
 void tcp__write_async_cb(uv_async_t* a)
@@ -376,7 +376,7 @@ void tcp__write_async_cb(uv_async_t* a)
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
-            
+
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
             if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
@@ -401,7 +401,7 @@ void tcp__write_async_cb(uv_async_t* a)
             need_check = 1;
         }
 
-        buf_cnt++; 
+        buf_cnt++;
     }
 
     if (buf_cnt == 0) {
@@ -410,14 +410,14 @@ void tcp__write_async_cb(uv_async_t* a)
             /* if there are pending req, we should start to check timeout */
             if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
                 pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
-                uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+                uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb,
                         PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
             }
         }
         return ;
     }
 
-    bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt); 
+    bufs = (uv_buf_t* )pc_lib_malloc(sizeof(uv_buf_t) * buf_cnt);
 
     i = 0;
     while (!QUEUE_EMPTY(&tt->write_wait_queue)) {
@@ -443,7 +443,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
     tt->write_req.data = tt;
 
-    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb); 
+    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, bufs, buf_cnt, tcp__write_done_cb);
 
     pc_lib_free(bufs);
 
@@ -452,7 +452,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
         pc_mutex_lock(&tt->wq_mutex);
         while(!QUEUE_EMPTY(&tt->writing_queue)) {
-            q = QUEUE_HEAD(&tt->writing_queue); 
+            q = QUEUE_HEAD(&tt->writing_queue);
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
 
@@ -486,10 +486,10 @@ void tcp__write_async_cb(uv_async_t* a)
     /* enable check timeout timer */
     if (need_check && !uv_is_active((uv_handle_t* )&tt->check_timeout)) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
-        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
+        uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb,
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
     }
-    
+
 }
 
 void tcp__write_done_cb(uv_write_t* w, int status)
@@ -513,7 +513,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
     pc_mutex_lock(&tt->wq_mutex);
 
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
-        q = QUEUE_HEAD(&tt->writing_queue); 
+        q = QUEUE_HEAD(&tt->writing_queue);
         QUEUE_REMOVE(q);
         QUEUE_INIT(q);
 
@@ -579,12 +579,12 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
                 }
 
                 /* if internal, just drop it. */
-                
+
                 pc_lib_free(wi->buf.base);
                 wi->buf.base = NULL;
                 wi->buf.len = 0;
 
-                if (PC_IS_PRE_ALLOC(wi->type)) { 
+                if (PC_IS_PRE_ALLOC(wi->type)) {
                     PC_PRE_ALLOC_SET_IDLE(wi->type);
                 } else {
                     pc_lib_free(wi);
@@ -593,11 +593,11 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
             } else {
                 /*
                  * continue to check timeout next tick
-                 * if there are wis has timeout configured but not triggered this time. 
+                 * if there are wis has timeout configured but not triggered this time.
                  */
                 cont = 1;
             }
-        } 
+        }
         /* add the non-timeout wi to queue tmp */
         QUEUE_INSERT_TAIL(&tmp, q);
     } /* while */
@@ -618,7 +618,7 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
 
     pc_lib_log(PC_LOG_DEBUG, "tcp__write_check_timeout_cb - start to check timeout");
     pc_mutex_lock(&tt->wq_mutex);
-    cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont); 
+    cont = tcp__check_queue_timeout(&tt->conn_pending_queue, tt->client, cont);
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
     pc_mutex_unlock(&tt->wq_mutex);
 
@@ -691,8 +691,8 @@ void tcp__disconnect_async_cb(uv_async_t* a)
     pc_trans_fire_event(tt->client, PC_EV_DISCONNECT, NULL, NULL);
 }
 
-void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt) 
-{ 
+void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
+{
     uv_buf_t buf;
     int i;
     tr_uv_wi_t* wi;
@@ -757,7 +757,7 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
 #else
     start = (int)(tt->hb_timeout_timer.timeout - tt->hb_timeout * 1000);
 #endif
-    
+
     rtt = (int)(tt->uv_loop.time - start);
 
     uv_timer_stop(&tt->hb_timeout_timer);
@@ -801,7 +801,7 @@ void tcp__heartbeat_timeout_cb(uv_timer_t* t)
     tt->reconn_fn(tt);
 }
 
-void tcp__handshake_timer_cb(uv_timer_t* t) 
+void tcp__handshake_timer_cb(uv_timer_t* t)
 {
     GET_TT(t);
 
@@ -927,7 +927,7 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     assert((tt->proto_ver && tt->client_protos && tt->server_protos)
             || (!tt->proto_ver && !tt->client_protos && !tt->server_protos));
 
-    assert((tt->dict_ver && tt->route_to_code && tt->code_to_route) 
+    assert((tt->dict_ver && tt->route_to_code && tt->code_to_route)
             || (!tt->dict_ver && !tt->route_to_code && !tt->code_to_route));
 
     if (tt->proto_ver) {
@@ -996,7 +996,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     pc_JSON* sys;
     int i;
     int need_sync = 0;
-    
+
     assert(tt->state == TR_UV_TCP_HANDSHAKEING);
 
     tt->reconn_times = 0;
@@ -1109,7 +1109,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         pc_JSON* client_protos = NULL;
         pc_JSON* proto_ver = NULL;
 
-        protos = pc_JSON_GetObjectItem(sys, "protos"); 
+        protos = pc_JSON_GetObjectItem(sys, "protos");
 
         if (protos) {
             server_protos = pc_JSON_DetachItemFromObject(protos, "server");
@@ -1128,7 +1128,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
                 tt->client_protos = NULL;
                 tt->proto_ver = NULL;
                 tt->server_protos = NULL;
-            }   
+            }
 
             tt->client_protos = client_protos;
             tt->server_protos = server_protos;
@@ -1174,7 +1174,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         pc_JSON_Delete(lc);
 
         if (!data) {
-            pc_lib_log(PC_LOG_WARN, 
+            pc_lib_log(PC_LOG_WARN,
                     "tcp__on_handshake_resp - serialize handshake data failed");
         } else {
             len = strlen(data);

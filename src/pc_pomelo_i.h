@@ -16,11 +16,11 @@
 #define PC_DYN_ALLOC 0x0
 #define PC_ALLOC_MASK 0x1
 
-#define PC_IS_PRE_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_PRE_ALLOC) 
+#define PC_IS_PRE_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_PRE_ALLOC)
 #define PC_IS_DYN_ALLOC(type) (((type) & PC_ALLOC_MASK) == PC_DYN_ALLOC)
 
 #define PC_PRE_ALLOC_ST_IDLE 0x0
-#define PC_PRE_ALLOC_ST_BUSY 0x2 
+#define PC_PRE_ALLOC_ST_BUSY 0x2
 #define PC_PRE_ALLOC_ST_MASK 0x2
 
 #define PC_PRE_ALLOC_IS_IDLE(type) (((type) & PC_PRE_ALLOC_ST_MASK) == PC_PRE_ALLOC_ST_IDLE)

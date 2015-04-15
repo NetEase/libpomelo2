@@ -24,7 +24,7 @@
 #define GET_TT tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t*)trans; assert(tt)
 
 pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
-{   
+{
     size_t len = sizeof(tr_uv_tcp_transport_t);
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(len);
     memset(tt, 0, len);
@@ -32,7 +32,7 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
     (void)plugin; /* unused */
     tt->base.connect = tr_uv_tcp_connect;
     tt->base.send = tr_uv_tcp_send;
-    tt->base.disconnect = tr_uv_tcp_disconnect; 
+    tt->base.disconnect = tr_uv_tcp_disconnect;
     tt->base.cleanup = tr_uv_tcp_cleanup;
     tt->base.quality = tr_uv_tcp_quality;
     tt->reconn_fn = tcp__reconn;
@@ -77,7 +77,7 @@ static void tr_uv_tcp_thread_fn(void* arg)
 {
     uv_loop_t* lp = (uv_loop_t* )arg;
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(lp->data);
-    
+
     tt->thread_id = uv_thread_self();
     pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_thread_fn - start uv loop thread");
     uv_run(lp, UV_RUN_DEFAULT);
@@ -87,7 +87,7 @@ static void tr_tcp_on_pkg_handler(pc_pkg_type type, const char* data, size_t len
 {
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* ) ex_data;
 
-    assert(type == PC_PKG_HANDSHAKE || type == PC_PKG_HEARBEAT 
+    assert(type == PC_PKG_HANDSHAKE || type == PC_PKG_HEARBEAT
            || type == PC_PKG_DATA || type == PC_PKG_KICK);
 
     switch(type) {
@@ -169,7 +169,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 
     tt->host = NULL;
     tt->port = 0;
-    tt->handshake_opts = NULL; 
+    tt->handshake_opts = NULL;
 
     /* onle write wait queue need a mutex. */
     pc_mutex_init(&tt->wq_mutex);
@@ -269,7 +269,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
                 tt->dict_ver = NULL;
                 tt->code_to_route = NULL;
                 tt->route_to_code = NULL;
-            } 
+            }
 
             tt->client_protos = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_PROTO_CLIENT);
             tt->server_protos = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_PROTO_SERVER);
@@ -303,7 +303,7 @@ int tr_uv_tcp_connect(pc_transport_t* trans, const char* host, int port, const c
     GET_TT;
 
     assert(host);
- 
+
     if (tt->handshake_opts) {
         pc_JSON_Delete(tt->handshake_opts);
         tt->handshake_opts = NULL;

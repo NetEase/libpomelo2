@@ -32,7 +32,7 @@ pc_buf_t pc_body_pb_encode(const pc_JSON* msg, const pc_JSON* gprotos, const pc_
 
     json_buf = pc_body_json_encode(msg);
 
-    if (json_buf.len == -1) { 
+    if (json_buf.len == -1) {
         pc_lib_log(PC_LOG_ERROR, "pc_body_pb_encode - dump json msg to buf error");
         buf.len = -1;
         return buf;
@@ -64,7 +64,7 @@ pc_buf_t pc_body_pb_encode(const pc_JSON* msg, const pc_JSON* gprotos, const pc_
 }
 
 pc_JSON* pc_body_pb_decode(const char *data, size_t offset, size_t len,
-                      const pc_JSON* gprotos, const pc_JSON* pb_def) 
+                      const pc_JSON* gprotos, const pc_JSON* pb_def)
 {
     pc_JSON *result = pc_JSON_CreateObject();
     if (!pc_pb_decode((const uint8_t *)(data + offset), len,
