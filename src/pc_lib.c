@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -24,9 +24,9 @@
 
 #  if !defined(PC_NO_UV_TLS_TRANS)
 #    include "tr/uv/tr_uv_tls.h"
-#  endif // tls
+#  endif /* tls */
 
-#endif // tcp
+#endif /* tcp */
 
 void (*pc_lib_log)(int level, const char* msg, ...) = NULL;
 void* (*pc_lib_malloc)(size_t len) = NULL;
@@ -46,7 +46,7 @@ static void* default_malloc(size_t len)
 {
     void* d = malloc(len);
 
-    // if oom, just abort
+    /* if oom, just abort */
     if (!d)
         abort();
 

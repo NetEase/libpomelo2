@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
+ * MIT Licensed.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -80,7 +80,7 @@ static int pb_encode_submessage(pb_ostream_t *stream, const pc_JSON *gprotos, co
 /* pb_ostream_t implementation */
 
 int pc_pb_encode(uint8_t *buf, size_t len, size_t *written, const pc_JSON *gprotos, const pc_JSON *protos, const pc_JSON *msg) {
-    // TODO: const 
+    /* TODO: const */
     pb_ostream_t stream = pb_ostream_from_buffer(buf, len);
     if (!pb_encode(&stream, gprotos, protos, (pc_JSON*)msg)) {
         return 0;
@@ -128,7 +128,7 @@ static int  pb_encode_array(pb_ostream_t *stream, const pc_JSON *gprotos, const 
     const char *type_text = type->valuestring;
     size_t len = pc_JSON_GetArraySize(array);
     size_t i;
-    // simple msg
+    /* simple msg */
     if (pb_get_type(type_text) && pb_get_type(type_text) != PB_string) {
         if (!pb_encode_tag_for_field(stream, proto)) {
             return 0;
@@ -244,7 +244,7 @@ static int  pb_encode_proto(pb_ostream_t *stream, const pc_JSON *gprotos, const 
             if (_messages) {
                 sub_msg = pc_JSON_GetObjectItem(_messages, type);
                 if (!sub_msg) {
-                    // check root msg in gprotos
+                    /* check root msg in gprotos */
                     const char *head = "message ";
                     size_t len = strlen(head) + strlen(type) + 1;
                     char *head_text = (char *)malloc(len);
@@ -346,7 +346,7 @@ static int  pb_encode_tag(pb_ostream_t *stream, int wiretype,
 
 /* Encode field header based on LTYPE and field number defined in the field structure.
  * Call this from the callback before writing out field contents. */
-static int  pb_encode_tag_for_field(pb_ostream_t *stream, const pc_JSON *field) { // type,tag
+static int  pb_encode_tag_for_field(pb_ostream_t *stream, const pc_JSON *field) { /* type,tag */
     int wiretype;
     pc_JSON *type = pc_JSON_GetObjectItem(field, "type");
     pc_JSON *tag = pc_JSON_GetObjectItem(field, "tag");

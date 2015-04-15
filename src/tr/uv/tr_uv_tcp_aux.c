@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -31,7 +31,7 @@ static void tcp__reset_wi(pc_client_t* client, tr_uv_wi_t* wi)
         pc_lib_log(PC_LOG_DEBUG, "tcp__reset_wi - reset notify, seq_num: %u", wi->seq_num);
         pc_trans_sent(client, wi->seq_num, PC_RC_RESET);
     }
-    // drop internal write item
+    /* drop internal write item */
 
     pc_lib_free(wi->buf.base);
     wi->buf.base = NULL;
@@ -303,10 +303,13 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     tt->is_connecting = 0;
     if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
 
-        // NOTE: we hack uv here to get the rest timeout value of conn_timeout,
-        // and use it as the timeout value of handshake.
-        //
-        // it maybe lead to be non-compatiable to uv in future.
+        /*
+         * NOTE: we hack uv here to get the rest timeout value of conn_timeout,
+         *
+         * and use it as the timeout value of handshake.
+         * 
+         * it maybe lead to be non-compatiable to uv in future.
+         */
 #ifdef _WIN32
         hs_timeout = (int)(tt->conn_timeout.due - tt->uv_loop.time);
 #else
@@ -316,7 +319,7 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     }
 
     if (status == 0) {
-        // tcp connected.
+        /* tcp connected. */
         tt->state = TR_UV_TCP_HANDSHAKEING;
 
         ret = uv_read_start((uv_stream_t* ) &tt->socket, tcp__alloc_cb, tt->on_tcp_read_cb); 
@@ -404,7 +407,7 @@ void tcp__write_async_cb(uv_async_t* a)
     if (buf_cnt == 0) {
         pc_mutex_unlock(&tt->wq_mutex);
         if (need_check) {
-            // if there are pending req, we should start to check timeout
+            /* if there are pending req, we should start to check timeout */
             if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
                 pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
                 uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
@@ -466,7 +469,7 @@ void tcp__write_async_cb(uv_async_t* a)
             if (TR_UV_WI_IS_RESP(wi->type)) {
                 pc_trans_resp(tt->client, wi->req_id, ret, NULL);
             }
-            // if internal, do nothing here.
+            /* if internal, do nothing here. */
 
             if (PC_IS_PRE_ALLOC(wi->type)) {
                 PC_PRE_ALLOC_SET_IDLE(wi->type);
@@ -480,7 +483,7 @@ void tcp__write_async_cb(uv_async_t* a)
 
     tt->is_writing = 1;
 
-    // enable check timeout timer
+    /* enable check timeout timer */
     if (need_check && !uv_is_active((uv_handle_t* )&tt->check_timeout)) {
         pc_lib_log(PC_LOG_DEBUG, "tcp__write_async_cb - start check timeout timer");
         uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
@@ -525,7 +528,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
             continue;
         };
 
-        // FIXME: review
+        /* FIXME: review */
         pc_lib_free(wi->buf.base);
         wi->buf.base = NULL;
         wi->buf.len = 0;
@@ -537,7 +540,7 @@ void tcp__write_done_cb(uv_write_t* w, int status)
         if (TR_UV_WI_IS_RESP(wi->type)) {
             pc_trans_resp(tt->client, wi->req_id, status, NULL);
         }
-        // if internal, do nothing here.
+        /* if internal, do nothing here. */
 
         if (PC_IS_PRE_ALLOC(wi->type)) {
             PC_PRE_ALLOC_SET_IDLE(wi->type);
@@ -575,7 +578,7 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
                     pc_trans_resp(client, wi->req_id, PC_RC_TIMEOUT, NULL);
                 }
 
-                // if internal, just drop it.
+                /* if internal, just drop it. */
                 
                 pc_lib_free(wi->buf.base);
                 wi->buf.base = NULL;
@@ -588,15 +591,17 @@ int tcp__check_queue_timeout(QUEUE* ql, pc_client_t* client, int cont)
                 }
                 continue;
             } else {
-                // continue to check timeout next tick
-                // if there are wis has timeout configured but not triggered this time. 
+                /*
+                 * continue to check timeout next tick
+                 * if there are wis has timeout configured but not triggered this time. 
+                 */
                 cont = 1;
             }
         } 
-        // add the non-timeout wi to queue tmp
+        /* add the non-timeout wi to queue tmp */
         QUEUE_INSERT_TAIL(&tmp, q);
-    } // while
-    // restore ql with the non-timeout wi
+    } /* while */
+    /* restore ql with the non-timeout wi */
     QUEUE_ADD(ql, &tmp);
     QUEUE_INIT(&tmp);
     return cont;
@@ -722,9 +727,9 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; // internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }
@@ -743,8 +748,10 @@ void tcp__on_heartbeat(tr_uv_tcp_transport_t* tt)
     assert(tt->state == TR_UV_TCP_DONE);
     assert(uv_is_active((uv_handle_t*)&tt->hb_timeout_timer));
 
-    // we hacking uv timer to get the heartbeat rtt, rtt in millisec
-    // int is enough to hold the value
+    /*
+     * we hacking uv timer to get the heartbeat rtt, rtt in millisec
+     * int is enough to hold the value
+     */
 #ifdef _WIN32
     start = (int)(tt->hb_timeout_timer.due - tt->hb_timeout * 1000);
 #else
@@ -863,7 +870,7 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_data_recieved - recived data, req_id: %d", msg.id);
     if (msg.id != PC_NOTIFY_PUSH_REQ_ID) {
-        // request
+        /* request */
         pc_trans_resp(tt->client, msg.id, PC_RC_OK, msg.msg);
 
         QUEUE_FOREACH(q, &tt->resp_pending_queue) {
@@ -965,15 +972,15 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     QUEUE_INIT(&wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
 
-    // insert to head
+    /* insert to head */
     QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; //internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
-    wi->ts = time(NULL); // TODO: time() 
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
+    wi->ts = time(NULL); /* TODO: time() */
 
     uv_async_send(&tt->write_async);
 }
@@ -1017,7 +1024,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         return ;
     }
 
-    // we just use sys here, ignore user field.
+    /* we just use sys here, ignore user field. */
     sys = pc_JSON_GetObjectItem(res, "sys");
     if (!sys) {
         pc_lib_log(PC_LOG_ERROR, "tcp__on_handshake_resp - handshake fail, no sys field");
@@ -1028,7 +1035,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     }
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake ok");
-    // setup heartbeat
+    /* setup heartbeat */
     tmp = pc_JSON_GetObjectItem(sys, "heartbeat");
     if (!tmp || tmp->type != pc_JSON_Number) {
         i = -1;
@@ -1037,7 +1044,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
     }
 
     if (i <= 0) {
-        // no need heartbeat
+        /* no need heartbeat */
         tt->hb_interval= -1;
         tt->hb_timeout = -1;
         pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - no heartbeat specified");
@@ -1227,9 +1234,9 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
-    wi->seq_num = -1; //internal data
-    wi->req_id = -1; // internal data 
-    wi->timeout = PC_WITHOUT_TIMEOUT; // internal timeout
+    wi->seq_num = -1; /* internal data */
+    wi->req_id = -1; /* internal data */
+    wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
     uv_async_send(&tt->write_async);
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -133,16 +133,16 @@ void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, co
             client->state = PC_ST_CONNECTING;
             break;
         case PC_EV_USER_DEFINED_PUSH:
-            // do nothing here.
+            /* do nothing here */
             break;
 
         default:
-            // never run to here
+            /* never run to here */
             pc_lib_log(PC_LOG_ERROR, "pc__trans_fire_event - unknown network event: %d", ev_type);
     }
     pc_mutex_unlock(&client->state_mutex);
 
-    // invoke handler
+    /* invoke handler */
     pc_mutex_lock(&client->handler_mutex);
     QUEUE_FOREACH(q, &client->ev_handlers) {
         handler = QUEUE_DATA(q, pc_ev_handler_t, queue);
@@ -208,7 +208,7 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
         return ;
     }
 
-    // callback immediately
+    /* callback immediately */
     pc_mutex_lock(&client->notify_mutex);
     target = NULL;
     QUEUE_FOREACH(q, &client->notify_queue) {
@@ -308,7 +308,7 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
         return ;
     }
 
-    // invoke callback immediately
+    /* invoke callback immediately */
     target = NULL;
     pc_mutex_lock(&client->req_mutex);
     QUEUE_FOREACH(q, &client->req_queue) {

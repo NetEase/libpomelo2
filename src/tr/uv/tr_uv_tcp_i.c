@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -29,7 +29,7 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )pc_lib_malloc(len);
     memset(tt, 0, len);
 
-    (void)plugin; // unused
+    (void)plugin; /* unused */
     tt->base.connect = tr_uv_tcp_connect;
     tt->base.send = tr_uv_tcp_send;
     tt->base.disconnect = tr_uv_tcp_disconnect; 
@@ -54,22 +54,23 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
 
 void tr_uv_tcp_release(pc_transport_plugin_t* plugin, pc_transport_t* trans)
 {
-    (void)plugin; // unused
+    (void)plugin; /* unused */
 
     pc_lib_free(trans);
 }
 
 void tr_uv_tcp_plugin_on_register(pc_transport_plugin_t* plugin)
 {
-    (void)plugin; // unused
-
-    // json_set_alloc_funcs(pc_lib_malloc, pc_lib_free);
+    (void)plugin; /* unused */
+    pc_JSON_Hooks h;
+    h.malloc_fn = pc_lib_malloc;
+    h.free_fn = pc_lib_free;
+    pc_JSON_InitHooks(&h);
 }
 
 void tr_uv_tcp_plugin_on_deregister(pc_transport_plugin_t* plugin)
 {
-    (void)plugin; // unused
-    // empty
+    (void)plugin; /* unused */
 }
 
 static void tr_uv_tcp_thread_fn(void* arg)
@@ -138,8 +139,10 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 
     tt->uv_loop.data = tt;
 
-    // we do not init tt->socket here, because
-    // tt->socket will be inited when to connect
+    /*
+     * we do not init tt->socket here, because
+     * tt->socket will be inited when to connect
+     */
     tt->socket.data = tt;
 
     tt->thread_id = -1;
@@ -168,7 +171,7 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
     tt->port = 0;
     tt->handshake_opts = NULL; 
 
-    // onle write wait queue need a mutex.
+    /* onle write wait queue need a mutex. */
     pc_mutex_init(&tt->wq_mutex);
     ret = uv_async_init(&tt->uv_loop, &tt->write_async, tt->write_async_cb);
     assert(!ret);
@@ -253,12 +256,11 @@ int tr_uv_tcp_init(pc_transport_t* trans, pc_client_t* client)
 
             pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_init - load local storage ok");
 
-            // route2code
             tt->route_to_code = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_ROUTE_2_CODE);
             tt->code_to_route = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_CODE_2_ROUTE);
             tt->dict_ver = pc_JSON_DetachItemFromObject(lc, TR_UV_LCK_DICT_VERSION);
 
-            // the local dict is complete
+            /* the local dict is complete */
             if (!tt->dict_ver || !tt->code_to_route || !tt->route_to_code) {
                 pc_JSON_Delete(tt->dict_ver);
                 pc_JSON_Delete(tt->code_to_route);
@@ -377,7 +379,7 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
 
     QUEUE_INIT(&wi->queue);
 
-    // if not done, push it to connecting queue.
+    /* if not done, push it to connecting queue. */
     if (tt->state == TR_UV_TCP_DONE) {
         QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
         pc_lib_log(PC_LOG_DEBUG, "tr_uv_tcp_send - put to write wait queue, seq_num: %u, req_id: %u", seq_num, req_id);

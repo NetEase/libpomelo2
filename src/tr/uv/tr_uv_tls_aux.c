@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -58,8 +58,10 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
     ret = BIO_reset(tls->out);
     assert(ret == 1);
 
-    // write should retry remained, insert it to writing queue
-    // then tcp__reset will recycle it.
+    /*
+     * write should retry remained, insert it to writing queue
+     * then tcp__reset will recycle it.
+     */
     if (tls->should_retry) {
         pc_lib_log(PC_LOG_DEBUG, "tls__reset - move should retry wi to writing queue, seq_num: %u, req_id: %u",
                 tls->should_retry->seq_num, tls->should_retry->req_id);
@@ -76,7 +78,7 @@ void tls__reset(tr_uv_tcp_transport_t* tt)
         tls->retry_wb_len = 0;
     }
 
-    // tcp reset will recycle following write item
+    /* tcp reset will recycle following write item */
     while(!QUEUE_EMPTY(&tls->when_tcp_is_writing_queue)) {
         q = QUEUE_HEAD(&tls->when_tcp_is_writing_queue);
         QUEUE_REMOVE(q);
@@ -98,11 +100,11 @@ void tls__conn_done_cb(uv_connect_t* conn, int status)
         pc_lib_log(PC_LOG_INFO, "tls__conn_done_cb - send client hello");
 
         SSL_set_info_callback(tls->tls, tls__info_callback);
-        // SSL_read will write ClientHello to bio. 
+        /* SSL_read will write ClientHello to bio. */
         SSL_set_connect_state(tls->tls);
         tls__read_from_bio(tls);
 
-        // write ClientHello out
+        /* write ClientHello out */
         tls__write_to_tcp(tls); 
     }
 }
@@ -205,7 +207,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
 
                 return ;
             } else {
-                // retry fails, do nothing.
+                /* retry fails, do nothing. */
             }
         } else {
 
@@ -213,7 +215,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
                 tls->is_handshake_completed = 1;
             }
 
-            // retry succeeds
+            /* retry succeeds */
             if (tls->should_retry) {
                 QUEUE_INIT(&tls->should_retry->queue);
                 QUEUE_INSERT_TAIL(head, &tls->should_retry->queue);
@@ -223,12 +225,12 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
             pc_lib_free(tls->retry_wb);
             tls->retry_wb = NULL;
             tls->retry_wb_len = 0;
-            // write to bio success.
+            /* write to bio success. */
             flag = 1;
         }
     }
 
-    // retry write buf has been written, try to write more data to bio.
+    /* retry write buf has been written, try to write more data to bio. */
     if (!tls->retry_wb) {
         while(!QUEUE_EMPTY(&tt->write_wait_queue)) {
             q = QUEUE_HEAD(&tt->write_wait_queue);
@@ -265,7 +267,7 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
         }
     }
     
-    // enable check timeout timer
+    /* enable check timeout timer */
     if (!uv_is_active((uv_handle_t* )&tt->check_timeout)) {
         uv_timer_start(&tt->check_timeout, tt->write_check_timeout_cb, 
                 PC_TIMEOUT_CHECK_INTERVAL * 1000, 0);
@@ -360,7 +362,7 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
     buf.base = ptr;
     buf.len = len;
 
-    // TODO: error handling
+    /* TODO: error handling */
     tt->write_req.data = tls;
     uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, &buf, 1, tls__write_done_cb);
     BIO_reset(tls->out);
@@ -407,7 +409,7 @@ void tls__write_done_cb(uv_write_t* w, int status)
         if (TR_UV_WI_IS_RESP(wi->type)) {
             pc_trans_resp(tt->client, wi->req_id, status, NULL);
         }
-        // if internal, do nothing here.
+        /* if internal, do nothing here. */
 
         if (PC_IS_PRE_ALLOC(wi->type)) {
             PC_PRE_ALLOC_SET_IDLE(wi->type);
@@ -437,7 +439,7 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
 {
     tr_uv_wi_t* wi = NULL;
     int cont = 0;
-    time_t ct = time(0); // TODO:
+    time_t ct = time(0); /* TODO: */
     GET_TLS(t);
 
     wi = tls->should_retry;
@@ -450,7 +452,7 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
             pc_trans_resp(tt->client, wi->req_id, PC_RC_TIMEOUT, NULL);
         }
 
-        // if internal, just drop it.
+        /* if internal, just drop it. */
 
         pc_lib_free(wi->buf.base);
         wi->buf.base = NULL;
@@ -484,7 +486,7 @@ void tls__cleanup_async_cb(uv_async_t* a)
     if (tls->tls) {
         SSL_free(tls->tls);
         tls->tls = NULL;
-        // BIO in and out will be freed by SSL_free
+        /* BIO in and out will be freed by SSL_free */
         tls->in = NULL;
         tls->out = NULL;
     }

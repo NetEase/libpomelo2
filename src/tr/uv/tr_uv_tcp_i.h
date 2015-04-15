@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -21,7 +21,7 @@
 #define TR_UV_WI_TYPE_NONE 0x10
 #define TR_UV_WI_TYPE_NOTIFY 0x20
 #define TR_UV_WI_TYPE_RESP 0x40
-#define TR_UV_WI_TYPE_INTERNAL 0x80 // handshake and heartbeat
+#define TR_UV_WI_TYPE_INTERNAL 0x80 /* handshake and heartbeat */
 #define TR_UV_WI_TYPE_MASK 0xf0
 
 #define TR_UV_WI_IS_NOTIFY(type) (((type) & TR_UV_WI_TYPE_MASK) == TR_UV_WI_TYPE_NOTIFY)
@@ -84,7 +84,7 @@ struct tr_uv_tcp_transport_s {
     uv_tcp_t socket;
     uv_thread_t worker;
     
-    // used for thread checking
+    /* used for thread checking */
     unsigned long thread_id;
 
     uv_connect_t conn_req;
@@ -92,7 +92,7 @@ struct tr_uv_tcp_transport_s {
     uv_timer_t reconn_delay_timer;
     uv_async_t conn_async;
     int reconn_times;
-    int is_connecting; // this flag is used for conn_req
+    int is_connecting; /* this flag is used for conn_req */
     int max_reconn_incr;
 
     uv_timer_t handshake_timer;
@@ -122,7 +122,7 @@ struct tr_uv_tcp_transport_s {
     uv_timer_t hb_timeout_timer;
     int is_waiting_hb;
 
-    // here, we use heartbeat round-trip time to evaluate the quality of connection.
+    /* here, we use heartbeat round-trip time to evaluate the quality of connection. */
     int hb_rtt;
 
     pc_pkg_parser_t pkg_parser;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 Pomelo Team, NetEase Inc
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 

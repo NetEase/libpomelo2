@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -38,7 +38,7 @@ pc_buf_t pc_body_pb_encode(const pc_JSON* msg, const pc_JSON* gprotos, const pc_
         return buf;
     }
 
-    // use double space of json_buf, it should be enough
+    /* use double space of json_buf, it should be enough */
     eval_size = json_buf.len * PC_PB_EVAL_FACTOR;
 
     pc_lib_free(json_buf.base);

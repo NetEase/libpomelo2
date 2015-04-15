@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -79,7 +79,7 @@ static int pb_decode_submessage(pb_istream_t *stream, const pc_JSON* gprotos, co
 
 int pc_pb_decode(const uint8_t *buf, size_t len, const pc_JSON* gprotos, const pc_JSON* protos,
         pc_JSON* result) {
-    // TODO:
+    /* TODO: */
     pb_istream_t stream = pb_istream_from_buffer((uint8_t*)buf, len);
     if (!pb_decode(&stream, gprotos, protos, result)) {
         return 0;
@@ -159,9 +159,9 @@ static int pb_decode_proto(pb_istream_t *stream, const pc_JSON* gprotos, const p
 
 #ifdef PB_DEBUG
     debug_log = pc_JSON_Print(result);
-    // FIXME: memory leak
+    /* FIXME: memory leak */
     fprintf(stderr, "result %s\n", debug_log);
-    // jsonp_free(debug_log);
+    /* jsonp_free(debug_log); */
     debug_log = NULL;
 #endif
 
@@ -238,7 +238,7 @@ static int pb_decode_proto(pb_istream_t *stream, const pc_JSON* gprotos, const p
                     memset(head_text, 0, len);
                     strcpy(head_text, head);
                     strcat(head_text, type_text);
-                    // check root msg in gprotos
+                    /* check root msg in gprotos */
                     sub_msg = pc_JSON_GetObjectItem(gprotos, head_text);
                     free(head_text);
                 }
@@ -321,8 +321,8 @@ static int  pb_decode_array(pb_istream_t *stream, const pc_JSON *gprotos, const 
 #ifdef PB_DEBUG
     debug_log = pc_JSON_Print(array);
     fprintf(stderr, "array %s\n", debug_log);
-    // FIXME: mem leak
-    // jsonp_free(debug_log);
+    /* FIXME: mem leak */
+    /* jsonp_free(debug_log); */
     debug_log = NULL;
 #endif
 

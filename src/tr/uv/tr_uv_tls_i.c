@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -18,7 +18,7 @@ pc_transport_t* tr_uv_tls_create(pc_transport_plugin_t* plugin)
     tr_uv_tls_transport_t* tls = (tr_uv_tls_transport_t* )pc_lib_malloc(len);
     memset(tls, 0, len);
 
-    // inherit from tr_uv_tcp
+    /* inherit from tr_uv_tcp */
     tls->base.base.connect = tr_uv_tcp_connect;
     tls->base.base.send = tr_uv_tcp_send;
     tls->base.base.disconnect = tr_uv_tcp_disconnect; 
@@ -26,7 +26,7 @@ pc_transport_t* tr_uv_tls_create(pc_transport_plugin_t* plugin)
     tls->base.base.quality = tr_uv_tcp_quality;
     tls->base.reconn_fn = tcp__reconn;
 
-    // reimplemetating method
+    /* reimplemetating method */
     tls->base.base.init = tr_uv_tls_init;
     tls->base.base.internal_data = tr_uv_tls_internal_data;
     tls->base.base.plugin = tr_uv_tls_plugin;
@@ -172,7 +172,7 @@ int tr_uv_tls_init(pc_transport_t* trans, pc_client_t* client)
 
     tls->is_handshake_completed = 0;
 
-    // oom, non-handling
+    /* oom, non-handling */
     if (!tls->in || !tls->out) 
         abort();
 

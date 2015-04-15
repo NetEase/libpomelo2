@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -75,8 +75,10 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     uint16_t route_code = 0;
     size_t route_len;
 
-    // invalid req id for error msg
-    // notify req id for push message
+    /*
+     * invalid req id for error msg
+     * notify req id for push message
+     */
     uint32_t id = PC_INVALID_REQ_ID;
 
     int i = 0;
@@ -111,7 +113,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
         id = PC_NOTIFY_PUSH_REQ_ID;
     }
 
-    // route
+    /* route */
     if (PC_MSG_HAS_ROUTE(type)) {
         if (is_route_compressed) {
             if (offset + PC_MSG_ROUTE_CODE_BYTES - 1 < len) {
@@ -155,7 +157,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
         msg->route.route_str = route_str;
     }
 
-    // borrow memory from original pc_buf_t 
+    /* borrow memory from original pc_buf_t */
     body_len = len - offset;
     msg->body.base = (char* )data + offset;
     msg->body.len = body_len;
@@ -189,9 +191,9 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
 
     msg.id = raw_msg->id;
 
-    // route
+    /* route */
     if (PC_MSG_HAS_ROUTE(raw_msg->type)) {
-        // uncompress route dictionary
+        /* uncompress route dictionary */
         route_str = NULL;
         if (raw_msg->is_route_compressed) {
             origin_route = pc__resolve_dictionary(code2route, raw_msg->route.route_code);
@@ -204,14 +206,14 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
                 strcpy((char*)route_str, origin_route);
             }
         } else {
-            // till now, raw_msg->route.route_str is hold by pc_msg_t
+            /* till now, raw_msg->route.route_str is hold by pc_msg_t */
             route_str = raw_msg->route.route_str;
             raw_msg->route.route_str = NULL;
         }
 
         msg.route = route_str;
     } else {
-        // FIXME: for resp, we can not get route here, so just set it to NULL
+        /* FIXME: for resp, we can not get route here, so just set it to NULL */
         msg.route = NULL;
     }
 
@@ -221,7 +223,7 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
         return msg;
     }
 
-    // body.base is within msg
+    /* body.base is within msg */
     body = raw_msg->body;
     if (body.len > 0) {
         json_msg = NULL;
@@ -247,7 +249,7 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
             assert(data);
 
             msg.msg = data;
-            // FIXME: review
+            /* FIXME: review */
             pc_JSON_Delete(json_msg);
         }
     }
@@ -288,20 +290,20 @@ pc_buf_t pc_msg_encode_route(uint32_t id, pc_msg_type type,
     base = buf.base = (char *)pc_lib_malloc(msg_len);
     buf.len = msg_len;
 
-    // flag
+    /* flag */
     offset = pc__msg_encode_flag(type, 0, base, offset);
 
-    // message id
+    /* message id */
     if(PC_MSG_HAS_ID(type)) {
         offset = pc__msg_encode_id(id, base, offset);
     }
 
-    // route
+    /* route */
     if(PC_MSG_HAS_ROUTE(type)) {
         offset = pc__msg_encode_route(route, route_len, base, offset);
     }
 
-    // body
+    /* body */
     memcpy(base + offset, msg.base, msg.len);
     return buf;
 }
@@ -323,21 +325,21 @@ pc_buf_t pc_msg_encode_code(uint32_t id, pc_msg_type type,
     base = buf.base = (char *)pc_lib_malloc(msg_len);
     buf.len = msg_len;
 
-    // flag
+    /* flag */
     offset = pc__msg_encode_flag(type, 1, base, offset);
 
-    // message id
+    /* message id */
     if(PC_MSG_HAS_ID(type)) {
         offset = pc__msg_encode_id(id, base, offset);
     }
 
-    // route code
+    /* route code */
     if(PC_MSG_HAS_ROUTE(type)) {
         base[offset++] = (route_code >> 8) & 0xff;
         base[offset++] = route_code & 0xff;
     }
 
-    // body
+    /* body */
     memcpy(base + offset, body.base, body.len);
     return buf;
 }
@@ -470,7 +472,7 @@ pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_
     return msg_buf;
 }
 
-// for transport plugin
+/* for transport plugin */
 uv_buf_t pr_default_msg_encoder(tr_uv_tcp_transport_t* tt, const pc_msg_t* msg)  
 {
     pc_buf_t pb;

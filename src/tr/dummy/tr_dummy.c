@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NetEase, Inc. and other Pomelo contributors
+ * Copyright (c) 2014,2015 NetEase, Inc. and other Pomelo contributors
  * MIT Licensed.
  */
 
@@ -104,8 +104,8 @@ static pc_transport_plugin_t instance =
 {
     dummy_trans_create,
     dummy_trans_release,
-    NULL, // on_register
-    NULL, // on_deregister
+    NULL, /* on_register */
+    NULL, /* on_deregister */
     PC_TR_NAME_DUMMY
 };
 
