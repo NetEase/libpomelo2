@@ -325,6 +325,7 @@ static int tls__get_error(SSL* ssl, int status)
 
 static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
 {
+    int ret;
     QUEUE* q;
     char* ptr;
     size_t len;
@@ -360,11 +361,20 @@ static void tls__write_to_tcp(tr_uv_tls_transport_t* tls)
     buf.base = ptr;
     buf.len = len;
 
-    // TODO: error handling
     tt->write_req.data = tls;
-    uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, &buf, 1, tls__write_done_cb);
+    ret = uv_write(&tt->write_req, (uv_stream_t* )&tt->socket, &buf, 1, tls__write_done_cb);
+
+    /*
+     * Just ignore error returned by `uv_write` here, and it is safe.
+     *
+     * it just occurs when SSL wants to write close_notify alert
+     * after `uv_tcp_t` is closed.
+     */
+    if (!ret) {
+        tt->is_writing = 1;
+    }
+
     BIO_reset(tls->out);
-    tt->is_writing = 1;
 }
 
 void tls__write_done_cb(uv_write_t* w, int status)
