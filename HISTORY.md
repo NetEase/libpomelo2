@@ -1,3 +1,8 @@
+2015-05-15 / 0.3.0
+====================
+- use cjson instead of jansson, cjson is more simple and bug-free
+- some other bugfixes
+
 2015-04-10 / 0.2.1
 ====================
 - upgrade libuv to 1.4.2 
