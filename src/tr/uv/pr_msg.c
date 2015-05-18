@@ -230,8 +230,8 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
         if (!msg.route) {
             json_msg = pc_body_json_decode(body.base, 0, body.len);
         } else {
-            pc_JSON* pb_def = pc_JSON_GetObjectItem(server_protos, msg.route);
-            if (pb_def) {
+            pc_JSON* pb_def;
+            if (server_protos && (pb_def = pc_JSON_GetObjectItem(server_protos, msg.route))) {
                 /* pb definition found */
                 json_msg = pc_body_pb_decode(body.base, 0, body.len, server_protos, pb_def);
             } else {
@@ -412,8 +412,7 @@ pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_
 
     assert(json_msg);
 
-    pb_def = pc_JSON_GetObjectItem(client_protos, msg->route);
-    if (pb_def) {
+    if (client_protos && (pb_def = pc_JSON_GetObjectItem(client_protos, msg->route))) {
         /* pb definition found */
         body_buf = pc_body_pb_encode(json_msg, client_protos, pb_def);
         if(body_buf.len == -1) {
@@ -444,8 +443,8 @@ pc_buf_t pc_default_msg_encode(const pc_JSON* route2code, const pc_JSON* client_
 
     type = msg->id == PC_NOTIFY_PUSH_REQ_ID ? PC_MSG_NOTIFY : PC_MSG_REQUEST;
 
-    code = pc_JSON_GetObjectItem(route2code, msg->route);
-    if (code && code->type == pc_JSON_Number) {
+    if (route2code && (code = pc_JSON_GetObjectItem(route2code, msg->route))
+            && code->type == pc_JSON_Number) {
         route_code = code->valueint;
     }
 
