@@ -582,6 +582,8 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
 
     pc_mutex_unlock(&client->req_mutex);
 
+    pc_lib_log(PC_LOG_INFO, "pc_request_with_timeout - add request to queue, req id: %u", req->req_id);
+
     ret = client->trans->send(client->trans, req->base.route, req->base.seq_num, req->base.msg, req->req_id, req->base.timeout);
 
     if (ret != PC_RC_OK) {
@@ -608,7 +610,6 @@ int pc_request_with_timeout(pc_client_t* client, const char* route, const char* 
         pc_mutex_unlock(&client->req_mutex);
     }
 
-    pc_lib_log(PC_LOG_INFO, "pc_request_with_timeout - add request to queue, req id: %u", req->req_id);
     return ret;
 }
 
@@ -710,6 +711,8 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
 
     pc_mutex_unlock(&client->req_mutex);
 
+    pc_lib_log(PC_LOG_INFO, "pc_notify_with_timeout - add notify to queue, seq num: %u", notify->base.seq_num);
+
     ret = client->trans->send(client->trans, notify->base.route, notify->base.seq_num,
             notify->base.msg, PC_NOTIFY_PUSH_REQ_ID, notify->base.timeout);
 
@@ -736,7 +739,6 @@ int pc_notify_with_timeout(pc_client_t* client, const char* route, const char* m
 
         pc_mutex_unlock(&client->req_mutex);
     }
-    pc_lib_log(PC_LOG_INFO, "pc_notify_with_timeout - add notify to queue, seq num: %u", notify->base.seq_num);
     return ret;
 }
 
