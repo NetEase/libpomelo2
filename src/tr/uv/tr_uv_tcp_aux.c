@@ -622,7 +622,6 @@ void tcp__write_check_timeout_cb(uv_timer_t* w)
     cont = tcp__check_queue_timeout(&tt->write_wait_queue, tt->client, cont);
     pc_mutex_unlock(&tt->wq_mutex);
 
-    cont = tcp__check_queue_timeout(&tt->writing_queue, tt->client, cont);
     cont = tcp__check_queue_timeout(&tt->resp_pending_queue, tt->client, cont);
 
     if (cont && !uv_is_active((uv_handle_t* )w)) {
