@@ -365,11 +365,14 @@ void tcp__write_async_cb(uv_async_t* a)
     uv_buf_t* bufs;
     GET_TT(a);
 
-    assert(tt->state == TR_UV_TCP_CONNECTING || tt->state == TR_UV_TCP_HANDSHAKEING || tt->state == TR_UV_TCP_DONE);
+    if (tt->state == TR_UV_TCP_NOT_CONN) {
+        return ;
+    }
+
     assert(a == &tt->write_async);
 
     if (tt->is_writing) {
-        return;
+        return ;
     }
 
     pc_mutex_lock(&tt->wq_mutex);
