@@ -1,3 +1,10 @@
+2015-05-21 / 0.3.1
+====================
+- fix a bug that leads reconnect failure for tls
+- add null check for client_proto, etc.
+- allow write_async\_cb to be invoked when NOT\_CONN
+- stop check timeout for writing queue
+
 2015-05-15 / 0.3.0
 ====================
 - use cjson instead of jansson, cjson is more simple and bug-free
