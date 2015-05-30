@@ -890,7 +890,9 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
             wi->buf.len = 0;
 
             if (PC_IS_PRE_ALLOC(wi->type)) {
+                pc_mutex_lock(&tt->wq_mutex);
                 PC_PRE_ALLOC_SET_IDLE(wi->type);
+                pc_mutex_unlock(&tt->wq_mutex);
             } else {
                 pc_lib_free(wi);
             }
