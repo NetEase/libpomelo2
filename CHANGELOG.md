@@ -1,3 +1,8 @@
+2015-05-30 / 0.3.2
+====================
+- fix a definitely race condition bug
+- fix serveral potential race condition bugs and tidy code
+
 2015-05-21 / 0.3.1
 ====================
 - fix a bug that leads reconnect failure for tls
