@@ -197,11 +197,12 @@ void pc__trans_sent(pc_client_t* client, unsigned int seq_num, int rc, int pendi
         }
 
         QUEUE_INIT(&ev->queue);
-        QUEUE_INSERT_TAIL(&client->pending_ev_queue, &ev->queue);
 
         PC_EV_SET_NOTIFY_SENT(ev->type);
         ev->data.notify.seq_num = seq_num;
         ev->data.notify.rc = rc;
+
+        QUEUE_INSERT_TAIL(&client->pending_ev_queue, &ev->queue);
 
         pc_mutex_unlock(&client->event_mutex);
 
@@ -298,11 +299,11 @@ void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char
         PC_EV_SET_RESP(ev->type);
 
         QUEUE_INIT(&ev->queue);
-        QUEUE_INSERT_TAIL(&client->pending_ev_queue, &ev->queue);
-
         ev->data.req.req_id = req_id;
         ev->data.req.rc = rc;
         ev->data.req.resp = pc_lib_strdup(resp);
+
+        QUEUE_INSERT_TAIL(&client->pending_ev_queue, &ev->queue);
 
         pc_mutex_unlock(&client->event_mutex);
         return ;

@@ -379,6 +379,8 @@ void tcp__write_async_cb(uv_async_t* a)
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
+            QUEUE_REMOVE(q);
+            QUEUE_INIT(q);
 
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
@@ -387,8 +389,6 @@ void tcp__write_async_cb(uv_async_t* a)
                     "seq_num: %u, req_id: %u", wi->seq_num, wi->req_id);
             }
 
-            QUEUE_REMOVE(q);
-            QUEUE_INIT(q);
             QUEUE_INSERT_TAIL(&tt->write_wait_queue, q);
         }
     } else {
@@ -425,6 +425,10 @@ void tcp__write_async_cb(uv_async_t* a)
     i = 0;
     while (!QUEUE_EMPTY(&tt->write_wait_queue)) {
         q = QUEUE_HEAD(&tt->write_wait_queue);
+
+        QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
+
         wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
 
         if (!TR_UV_WI_IS_INTERNAL(wi->type)) {
@@ -433,9 +437,6 @@ void tcp__write_async_cb(uv_async_t* a)
         }
 
         bufs[i++] = wi->buf;
-
-        QUEUE_REMOVE(q);
-        QUEUE_INIT(q);
 
         QUEUE_INSERT_TAIL(&tt->writing_queue, q);
     }
@@ -454,7 +455,7 @@ void tcp__write_async_cb(uv_async_t* a)
         pc_lib_log(PC_LOG_ERROR, "tcp__write_async_cb - uv write error: %s", uv_strerror(ret));
 
         pc_mutex_lock(&tt->wq_mutex);
-        while(!QUEUE_EMPTY(&tt->writing_queue)) {
+        while (!QUEUE_EMPTY(&tt->writing_queue)) {
             q = QUEUE_HEAD(&tt->writing_queue);
             QUEUE_REMOVE(q);
             QUEUE_INIT(q);
@@ -531,7 +532,6 @@ void tcp__write_done_cb(uv_write_t* w, int status)
             continue;
         };
 
-        /* FIXME: review */
         pc_lib_free(wi->buf.base);
         wi->buf.base = NULL;
         wi->buf.len = 0;
@@ -724,15 +724,18 @@ void tcp__send_heartbeat(tr_uv_tcp_transport_t* tt)
     }
 
     QUEUE_INIT(&wi->queue);
-    QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
-    pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
     wi->seq_num = -1; /* internal data */
     wi->req_id = -1; /* internal data */
     wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
+
+    QUEUE_INSERT_TAIL(&tt->write_wait_queue, &wi->queue);
+
+    pc_mutex_unlock(&tt->wq_mutex);
+
     uv_async_send(&tt->write_async);
 }
 
@@ -875,6 +878,10 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
         /* request */
         pc_trans_resp(tt->client, msg.id, PC_RC_OK, msg.msg);
 
+        /*
+         * As we will stop iterating if matched wi found,
+         * so it is safe to use `QUEUE_FOREACH` here.
+         */
         QUEUE_FOREACH(q, &tt->resp_pending_queue) {
             wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
             assert(TR_UV_WI_IS_RESP(wi->type));
@@ -976,15 +983,18 @@ void tcp__send_handshake(tr_uv_tcp_transport_t* tt)
     QUEUE_INIT(&wi->queue);
     TR_UV_WI_SET_INTERNAL(wi->type);
 
-    /* insert to head */
-    QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
-    pc_mutex_unlock(&tt->wq_mutex);
-
     wi->buf = buf;
     wi->seq_num = -1; /* internal data */
     wi->req_id = -1; /* internal data */
     wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL); /* TODO: time() */
+
+    /*
+     * insert to head, because handshake req should be sent
+     * before any application data.
+     */
+    QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
+    pc_mutex_unlock(&tt->wq_mutex);
 
     uv_async_send(&tt->write_async);
 }
@@ -1197,6 +1207,7 @@ void tcp__on_handshake_resp(tr_uv_tcp_transport_t* tt, const char* data, size_t 
         pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - start heartbeat interval timer");
         uv_timer_start(&tt->hb_timer, tcp__heartbeat_timer_cb, tt->hb_interval * 1000, 0);
     }
+
     tt->state = TR_UV_TCP_DONE;
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - handshake completely");
     pc_lib_log(PC_LOG_INFO, "tcp__on_handshake_resp - client connected");
@@ -1233,15 +1244,22 @@ void tcp__send_handshake_ack(tr_uv_tcp_transport_t* tt)
     }
 
     QUEUE_INIT(&wi->queue);
-    QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
-    TR_UV_WI_SET_INTERNAL(wi->type);
-    pc_mutex_unlock(&tt->wq_mutex);
 
     wi->buf = buf;
     wi->seq_num = -1; /* internal data */
     wi->req_id = -1; /* internal data */
     wi->timeout = PC_WITHOUT_TIMEOUT; /* internal timeout */
     wi->ts = time(NULL);
+    TR_UV_WI_SET_INTERNAL(wi->type);
+
+    /*
+     * insert to head, because handshake ack should be sent
+     * before any application data.
+     */
+    QUEUE_INSERT_HEAD(&tt->write_wait_queue, &wi->queue);
+
+    pc_mutex_unlock(&tt->wq_mutex);
+
     uv_async_send(&tt->write_async);
 }
 
