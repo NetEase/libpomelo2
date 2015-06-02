@@ -326,7 +326,8 @@ static int  pb_decode_array(pb_istream_t *stream, const pc_JSON *gprotos, const 
     debug_log = NULL;
 #endif
 
-    pc_JSON_AddItemToObject(result, key, array);
+    if (need_free)
+        pc_JSON_AddItemToObject(result, key, array);
 
     return 1;
 }
