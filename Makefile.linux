@@ -1,0 +1,138 @@
+CC = gcc
+AR = ar
+CFLAGS = -Wall -DPC_NO_UV_TLS_TRANS -D_GNU_SOURCE -I./include -I./deps/uv/include  -fPIC -I./src -I./deps/uv/src -I./deps/uv/src/unix
+
+ifeq (${debug}, 1)
+    CFLAGS := ${CFLAGS} -ggdb
+endif
+
+LIB = libpomelo2.a
+
+POMELO_OBJECT = pc_trans_repo.o pc_trans.o pc_pomelo.o pc_lib.o pc_JSON.o tr_uv_tcp.o tr_uv_tcp_i.o tr_uv_tcp_aux.o pr_pkg.o pr_msg_json.o pr_msg_pb.o pr_msg.o pb_decode.o pb_encode.o pb_i.o tr_dummy.o
+
+UV_OBJECT = inet.o threadpool.o uv-common.o version.o async.o core.o linux-core.o linux-inotify.o linux-syscalls.o loop-watcher.o loop.o signal.o stream.o tcp.o thread.o timer.o udp.o pipe.o fs-poll.o process.o  fs.o poll.o
+
+all: ${LIB}
+
+${LIB}: ${POMELO_OBJECT} ${UV_OBJECT}
+	${AR} r ${LIB} ${UV_OBJECT} ${POMELO_OBJECT} 
+
+inet.o: ./deps/uv/src/inet.c
+	${CC} ${CFLAGS} -c -o inet.o ./deps/uv/src/inet.c 
+
+threadpool.o: ./deps/uv/src/threadpool.c
+	${CC} ${CFLAGS} -c -o threadpool.o ./deps/uv/src/threadpool.c 
+
+uv-common.o: ./deps/uv/src/uv-common.c
+	${CC} ${CFLAGS} -c -o uv-common.o ./deps/uv/src/uv-common.c 
+
+version.o: ./deps/uv/src/version.c
+	${CC} ${CFLAGS} -c -o version.o ./deps/uv/src/version.c 
+
+async.o: ./deps/uv/src/unix/async.c
+	${CC} ${CFLAGS} -c -o async.o ./deps/uv/src/unix/async.c 
+
+core.o: ./deps/uv/src/unix/core.c
+	${CC} ${CFLAGS} -c -o core.o ./deps/uv/src/unix/core.c
+
+linux-core.o: ./deps/uv/src/unix/linux-core.c
+	${CC} ${CFLAGS} -c -o linux-core.o ./deps/uv/src/unix/linux-core.c
+
+linux-inotify.o: ./deps/uv/src/unix/linux-inotify.c
+	${CC} ${CFLAGS} -c -o linux-inotify.o ./deps/uv/src/unix/linux-inotify.c
+
+linux-syscalls.o: ./deps/uv/src/unix/linux-syscalls.c
+	${CC} ${CFLAGS} -c -o linux-syscalls.o ./deps/uv/src/unix/linux-syscalls.c
+
+loop-watcher.o: ./deps/uv/src/unix/loop-watcher.c
+	${CC} ${CFLAGS} -c -o loop-watcher.o ./deps/uv/src/unix/loop-watcher.c
+
+loop.o: ./deps/uv/src/unix/loop.c
+	${CC} ${CFLAGS} -c -o loop.o ./deps/uv/src/unix/loop.c
+
+fs.o: ./deps/uv/src/unix/fs.c
+	${CC} ${CFLAGS} -c -o fs.o ./deps/uv/src/unix/fs.c
+
+poll.o: ./deps/uv/src/unix/poll.c
+	${CC} ${CFLAGS} -c -o poll.o ./deps/uv/src/unix/poll.c
+
+signal.o: ./deps/uv/src/unix/signal.c
+	${CC} ${CFLAGS} -c -o signal.o ./deps/uv/src/unix/signal.c
+
+fs-poll.o: ./deps/uv/src/fs-poll.c
+	${CC} ${CFLAGS} -c -o fs-poll.o ./deps/uv/src/fs-poll.c
+
+process.o: ./deps/uv/src/unix/process.c
+	${CC} ${CFLAGS} -c -o process.o ./deps/uv/src/unix/process.c
+
+stream.o: ./deps/uv/src/unix/stream.c
+	${CC} ${CFLAGS} -c -o stream.o ./deps/uv/src/unix/stream.c
+
+tcp.o: ./deps/uv/src/unix/tcp.c
+	${CC} ${CFLAGS} -c -o tcp.o ./deps/uv/src/unix/tcp.c
+
+pipe.o: ./deps/uv/src/unix/pipe.c
+	${CC} ${CFLAGS} -c -o pipe.o ./deps/uv/src/unix/pipe.c
+
+udp.o: ./deps/uv/src/unix/udp.c
+	${CC} ${CFLAGS} -c -o udp.o ./deps/uv/src/unix/udp.c
+
+timer.o: ./deps/uv/src/unix/timer.c
+	${CC} ${CFLAGS} -c -o timer.o ./deps/uv/src/unix/timer.c
+
+thread.o: ./deps/uv/src/unix/thread.c
+	${CC} ${CFLAGS} -c -o thread.o ./deps/uv/src/unix/thread.c
+
+pc_trans_repo.o: ./src/pc_trans_repo.c 
+	${CC} ${CFLAGS} -c -o pc_trans_repo.o ./src/pc_trans_repo.c 
+
+pc_trans.o: ./src/pc_trans.c 
+	${CC} ${CFLAGS} -c -o pc_trans.o ./src/pc_trans.c 
+
+pc_pomelo.o: ./src/pc_pomelo.c 
+	${CC} ${CFLAGS} -c -o pc_pomelo.o ./src/pc_pomelo.c 
+
+pc_lib.o: ./src/pc_lib.c 
+	${CC} ${CFLAGS} -c -o pc_lib.o ./src/pc_lib.c 
+
+pc_JSON.o: ./src/pc_JSON.c 
+	${CC} ${CFLAGS} -c -o pc_JSON.o ./src/pc_JSON.c 
+
+tr_uv_tcp.o: ./src/tr/uv/tr_uv_tcp.c 
+	${CC} ${CFLAGS} -c -o tr_uv_tcp.o ./src/tr/uv/tr_uv_tcp.c 
+
+tr_uv_tcp_i.o: ./src/tr/uv/tr_uv_tcp_i.c
+	${CC} ${CFLAGS} -c -o tr_uv_tcp_i.o ./src/tr/uv/tr_uv_tcp_i.c 
+
+tr_uv_tcp_aux.o: ./src/tr/uv/tr_uv_tcp_aux.c
+	${CC} ${CFLAGS} -c -o tr_uv_tcp_aux.o ./src/tr/uv/tr_uv_tcp_aux.c 
+
+pr_pkg.o: ./src/tr/uv/pr_pkg.c 
+	${CC} ${CFLAGS} -c -o pr_pkg.o ./src/tr/uv/pr_pkg.c 
+
+pr_msg_json.o: ./src/tr/uv/pr_msg_json.c 
+	${CC} ${CFLAGS} -c -o pr_msg_json.o ./src/tr/uv/pr_msg_json.c 
+
+pr_msg_pb.o: ./src/tr/uv/pr_msg_pb.c 
+	${CC} ${CFLAGS} -c -o pr_msg_pb.o ./src/tr/uv/pr_msg_pb.c 
+
+pr_msg.o: ./src/tr/uv/pr_msg.c 
+	${CC} ${CFLAGS} -c -o pr_msg.o ./src/tr/uv/pr_msg.c 
+
+pb_decode.o: ./src/tr/uv/pb_decode.c 
+	${CC} ${CFLAGS} -c -o pb_decode.o ./src/tr/uv/pb_decode.c 
+
+pb_i.o: ./src/tr/uv/pb_i.c 
+	${CC} ${CFLAGS} -c -o pb_i.o ./src/tr/uv/pb_i.c 
+
+pb_encode.o: ./src/tr/uv/pb_encode.c 
+	${CC} ${CFLAGS} -c -o pb_encode.o ./src/tr/uv/pb_encode.c 
+
+tr_dummy.o: ./src/tr/dummy/tr_dummy.c 
+	${CC} ${CFLAGS} -c -o tr_dummy.o ./src/tr/dummy/tr_dummy.c 
+
+
+PHONY: clean
+
+clean:
+	-rm libpomelo2.a ${POMELO_OBJECT} ${UV_OBJECT}
