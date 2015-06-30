@@ -1,3 +1,7 @@
+2015-06-30 / 0.3.3
+====================
+- fix a definitely race condition bug
+
 2015-05-30 / 0.3.2
 ====================
 - fix a definitely race condition bug
