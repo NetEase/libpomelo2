@@ -183,6 +183,8 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
         head = &tt->writing_queue;
     }
 
+    pc_mutex_lock(&tt->wq_mutex);
+
     if (tt->state == TR_UV_TCP_DONE) {
         while (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
             q = QUEUE_HEAD(&tt->conn_pending_queue);
@@ -191,6 +193,8 @@ static void tls__write_to_bio(tr_uv_tls_transport_t* tls)
             QUEUE_INSERT_TAIL(&tt->write_wait_queue, q);
         }
     }
+
+    pc_mutex_unlock(&tt->wq_mutex);
 
     if (tls->retry_wb) {
         ret = SSL_write(tls->tls, tls->retry_wb, tls->retry_wb_len);
@@ -469,7 +473,9 @@ void tls__write_timeout_check_cb(uv_timer_t* t)
         wi->buf.len = 0;
 
         if (PC_IS_PRE_ALLOC(wi->type)) {
+            pc_mutex_lock(&tt->wq_mutex);
             PC_PRE_ALLOC_SET_IDLE(wi->type);
+            pc_mutex_unlock(&tt->wq_mutex);
         } else {
             pc_lib_free(wi);
         }
