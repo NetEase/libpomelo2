@@ -78,7 +78,7 @@ struct tr_uv_tcp_transport_s {
     pc_client_t* client;
     const pc_client_config_t* config;
 
-    tr_uv_tcp_state_t state;
+    volatile tr_uv_tcp_state_t state;
 
     uv_loop_t uv_loop;
     uv_tcp_t socket;

@@ -50,6 +50,9 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
     QUEUE* q;
 
     assert(tt);
+
+    tt->state = TR_UV_TCP_NOT_CONN;
+
     pc_pkg_parser_reset(&tt->pkg_parser);
 
     uv_timer_stop(&tt->hb_timeout_timer);
@@ -110,7 +113,6 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
 
     pc_mutex_unlock(&tt->wq_mutex);
 
-    tt->state = TR_UV_TCP_NOT_CONN;
 }
 
 void tcp__reconn_delay_timer_cb(uv_timer_t* t)

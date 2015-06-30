@@ -339,6 +339,10 @@ int tr_uv_tcp_send(pc_transport_t* trans, const char* route, unsigned int seq_nu
     uv_buf_t pkg_buf;
     GET_TT;
 
+    if (tt->state == TR_UV_TCP_NOT_CONN) {
+        return PC_RC_INVALID_STATE;
+    }
+
     assert(trans && route && msg && req_id != PC_INVALID_REQ_ID);
 
     m.id = req_id;
