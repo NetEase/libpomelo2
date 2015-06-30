@@ -430,6 +430,10 @@ static PyObject* request(PyObject* self, PyObject* args)
 
     Py_END_ALLOW_THREADS
 
+    if (ret != PC_RC_OK) {
+        Py_XDECREF(req_cb);
+    }
+
     return Py_BuildValue("i", ret);
 }
 
@@ -464,6 +468,10 @@ static PyObject* notify(PyObject* self, PyObject* args)
                 notify_cb, timeout, default_notify_cb);
 
     Py_END_ALLOW_THREADS
+
+    if (ret != PC_RC_OK) {
+        Py_XDECREF(notify_cb);
+    }
 
     return Py_BuildValue("i", ret);
 }
