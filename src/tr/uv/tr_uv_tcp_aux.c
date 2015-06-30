@@ -71,22 +71,23 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
 
     pc_mutex_lock(&tt->wq_mutex);
 
-    while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
-        q = QUEUE_HEAD(&tt->conn_pending_queue);
-        QUEUE_REMOVE(q);
-        QUEUE_INIT(q);
-
-        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
-        tcp__reset_wi(tt->client, wi);
+    /*
+     * As the callback invoked in tcp__reset_wi may send notify/request,
+     * that means `tcp__reset_wi` will fill conn_pending/write_wait queue,
+     * which would lead to infinite loop, if reseting wis directly on
+     * conn_pending/write_wait queue.
+     *
+     * So, we move all the wis inside conn_pending/write_wait queue to
+     * writing_queue.
+     */
+    if (!QUEUE_EMPTY(&tt->conn_pending_queue)) {
+        QUEUE_ADD(&tt->writing_queue, &tt->conn_pending_queue);
+        QUEUE_INIT(&tt->conn_pending_queue);
     }
 
-    while(!QUEUE_EMPTY(&tt->write_wait_queue)) {
-        q = QUEUE_HEAD(&tt->write_wait_queue);
-        QUEUE_REMOVE(q);
-        QUEUE_INIT(q);
-
-        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
-        tcp__reset_wi(tt->client, wi);
+    if (!QUEUE_EMPTY(&tt->write_wait_queue)) {
+        QUEUE_ADD(&tt->writing_queue, &tt->write_wait_queue);
+        QUEUE_INIT(&tt->write_wait_queue);
     }
 
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
