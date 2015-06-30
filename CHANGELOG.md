@@ -1,3 +1,9 @@
+2015-06-30 / 0.3.5
+====================
+- revert commit 798b2504 and re-fix it
+- refuse to send req/noti if not connected
+- py: decrease refcount if req/noti failed
+
 2015-06-30 / 0.3.4
 ====================
 - do not reset {conn_pending|write_wait} queue before reconnecting
