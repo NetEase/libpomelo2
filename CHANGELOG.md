@@ -1,3 +1,8 @@
+2015-06-30 / 0.3.4
+====================
+- do not reset {conn_pending|write_wait} queue before reconnecting
+- fix a protential race condition bug
+
 2015-06-30 / 0.3.3
 ====================
 - fix a definitely race condition bug

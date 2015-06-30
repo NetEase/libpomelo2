@@ -24,7 +24,7 @@ extern "C" {
 
 #define PC_MAJOR_VERSION 0
 #define PC_MINOR_VERSION 3 
-#define PC_REVISION 3
+#define PC_REVISION 4
 #define PC_VERSION_SUFFIX "release"
 
 #define PC_T(x) PC__T(x)
