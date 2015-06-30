@@ -69,11 +69,25 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
         uv_close((uv_handle_t*)&tt->socket, NULL);
     }
 
-    /*
-     * conn_pending_queue and write_wait_queue should
-     * not be reset here, as it may leads to infinite loop.
-     */
     pc_mutex_lock(&tt->wq_mutex);
+
+    while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
+        q = QUEUE_HEAD(&tt->conn_pending_queue);
+        QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
+
+        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+        tcp__reset_wi(tt->client, wi);
+    }
+
+    while(!QUEUE_EMPTY(&tt->write_wait_queue)) {
+        q = QUEUE_HEAD(&tt->write_wait_queue);
+        QUEUE_REMOVE(q);
+        QUEUE_INIT(q);
+
+        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
+        tcp__reset_wi(tt->client, wi);
+    }
 
     while(!QUEUE_EMPTY(&tt->writing_queue)) {
         q = QUEUE_HEAD(&tt->writing_queue);
@@ -629,40 +643,11 @@ static void tcp__cleanup_pc_json(pc_JSON** j)
 
 void tcp__cleanup_async_cb(uv_async_t* a)
 {
-    tr_uv_wi_t* wi;
-    QUEUE* q;
-
     GET_TT(a);
 
     assert(a == &tt->cleanup_async);
 
     tt->reset_fn(tt);
-
-    /*
-     * conn_pending_queue and write_wait_queue
-     * should be reset here
-     */
-    pc_mutex_lock(&tt->wq_mutex);
-
-    while(!QUEUE_EMPTY(&tt->conn_pending_queue)) {
-        q = QUEUE_HEAD(&tt->conn_pending_queue);
-        QUEUE_REMOVE(q);
-        QUEUE_INIT(q);
-
-        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
-        tcp__reset_wi(tt->client, wi);
-    }
-
-    while(!QUEUE_EMPTY(&tt->write_wait_queue)) {
-        q = QUEUE_HEAD(&tt->write_wait_queue);
-        QUEUE_REMOVE(q);
-        QUEUE_INIT(q);
-
-        wi = (tr_uv_wi_t* )QUEUE_DATA(q, tr_uv_wi_t, queue);
-        tcp__reset_wi(tt->client, wi);
-    }
-
-    pc_mutex_unlock(&tt->wq_mutex);
 
     if (tt->host) {
         pc_lib_free((char *)tt->host);
