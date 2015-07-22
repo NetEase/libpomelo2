@@ -465,7 +465,7 @@ static char *print_object(const pc_JSON *item,int depth,int fmt)
 
     /* Collect all the results into our arrays: */
     child=item->child;depth++;if (fmt) len+=depth;
-    while (child)
+    while (child && !fail)
     {
         names[i]=str=print_string_ptr(child->string);
         entries[i++]=ret=print_value(child,depth,fmt);
