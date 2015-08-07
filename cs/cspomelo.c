@@ -192,7 +192,7 @@ CS_POMELO_EXPORT pc_client_t* create(int enable_tls, int enable_poll, char* (*re
 {
     pc_client_t* client = NULL;
     pc_client_config_t config = PC_CLIENT_CONFIG_DEFAULT;
-
+    lc_callback_t* lc_cb = NULL;
     if (enable_tls) {
         config.transport_name = PC_TR_NAME_UV_TLS;
     }
@@ -200,7 +200,7 @@ CS_POMELO_EXPORT pc_client_t* create(int enable_tls, int enable_poll, char* (*re
         config.enable_polling = 1;
     }
 
-    lc_callback_t* lc_cb= (lc_callback_t*)malloc(sizeof(lc_callback_t));
+    lc_cb= (lc_callback_t*)malloc(sizeof(lc_callback_t));
     if (!lc_cb) {
         return NULL;
     }
