@@ -3,7 +3,14 @@ libpomelo2
 
 ### How to compile 
 
-#### gyp
+#### Install [gyp](https://gyp.gsrc.io/)
+```
+git clone https://chromium.googlesource.com/external/gyp
+cd gyp
+python setup.py install
+
+```
+#### Generate native IDE project files by [gyp](https://gyp.gsrc.io/)
 
     $ gyp --depth=. pomelo.gyp [options]
 
