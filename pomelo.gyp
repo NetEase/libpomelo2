@@ -277,7 +277,7 @@
             '-fPIC',
           ],
           'sources': [
-            './cs/cspomelo.c',
+            './cs/contrib/cspomelo.c',
           ],
         },],
 
