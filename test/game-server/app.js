@@ -30,7 +30,8 @@ if (app.serverId === 'connector-server-1') {
           type: 'tls',
           key: fs.readFileSync('./server.key'),
           cert: fs.readFileSync('./server.crt'),
-          ca: [fs.readFileSync('./server.crt') ]
+          ca: [fs.readFileSync('./server.crt')],
+          handshakeTimeout: 5000
         } 
       });
   });
