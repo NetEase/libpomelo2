@@ -78,7 +78,7 @@ static void tr_uv_tcp_thread_fn(void* arg)
     uv_loop_t* lp = (uv_loop_t* )arg;
     tr_uv_tcp_transport_t* tt = (tr_uv_tcp_transport_t* )(lp->data);
 
-    tt->thread_id = uv_thread_self();
+    tt->thread_id = (unsigned long)uv_thread_self();
     pc_lib_log(PC_LOG_INFO, "tr_uv_tcp_thread_fn - start uv loop thread");
     uv_run(lp, UV_RUN_DEFAULT);
 }
@@ -426,7 +426,7 @@ int tr_uv_tcp_cleanup(pc_transport_t* trans)
 {
     GET_TT;
 
-    if (tt->thread_id == uv_thread_self()) {
+    if (tt->thread_id == (unsigned long)uv_thread_self()) {
         pc_lib_log(PC_LOG_ERROR, "tr_uv_tcp_cleanup - can not cleanup a client in its callback");
         return PC_RC_INVALID_THREAD;
     }
