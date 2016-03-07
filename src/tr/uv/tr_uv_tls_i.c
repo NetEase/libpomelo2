@@ -83,7 +83,7 @@ static void crypto_lock_init(void)
 
 static void crypto_threadid_cb(CRYPTO_THREADID* tid)
 {
-    CRYPTO_THREADID_set_numeric(tid, uv_thread_self());
+    CRYPTO_THREADID_set_numeric(tid, (unsigned long)uv_thread_self());
 }
 
 void tr_uv_tls_plugin_on_register(pc_transport_plugin_t* plugin)
