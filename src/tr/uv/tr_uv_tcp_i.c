@@ -40,7 +40,6 @@ pc_transport_t* tr_uv_tcp_create(pc_transport_plugin_t* plugin)
     tt->base.init = tr_uv_tcp_init;
     tt->base.internal_data = tr_uv_tcp_internal_data;
     tt->base.plugin = tr_uv_tcp_plugin;
-    tt->base.quality = tr_uv_tcp_quality;
 
     tt->reset_fn = tcp__reset;
     tt->conn_done_cb = tcp__conn_done_cb;
