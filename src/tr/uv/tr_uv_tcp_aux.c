@@ -68,7 +68,8 @@ void tcp__reset(tr_uv_tcp_transport_t* tt)
 
     uv_read_stop((uv_stream_t* )&tt->socket);
 
-    if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
+    if (tt->client->state != PC_ST_INITED
+            && !uv_is_closing((uv_handle_t*)&tt->socket)) {
         uv_close((uv_handle_t*)&tt->socket, NULL);
     }
 
