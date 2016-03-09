@@ -658,10 +658,6 @@ void tcp__cleanup_async_cb(uv_async_t* a)
     }
 
     tcp__cleanup_pc_json(&tt->handshake_opts);
-
-    if (!uv_is_closing((uv_handle_t*)&tt->socket)) {
-        uv_close((uv_handle_t*)&tt->socket, NULL);
-    }
     tt->reconn_times = 0;
 
 #define C(x) uv_close((uv_handle_t*)&tt->x, NULL)
