@@ -307,18 +307,18 @@ static void pc__handle_event(pc_client_t* client, pc_event_t* ev)
     assert(PC_EV_IS_RESP(ev->type) || PC_EV_IS_NOTIFY_SENT(ev->type) || PC_EV_IS_NET_EVENT(ev->type));
 
     if (PC_EV_IS_RESP(ev->type)) {
-        pc__trans_resp(client, ev->data.req.req_id, ev->data.req.rc, ev->data.req.resp, 0/* not pending */);
+        pc__trans_resp(client, ev->data.req.req_id, ev->data.req.rc, ev->data.req.resp);
         pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans resp, req_id: %u, rc: %s",
                 ev->data.req.req_id, pc_client_rc_str(ev->data.req.rc));
         pc_lib_free((char* )ev->data.req.resp);
         ev->data.req.resp = NULL;
 
     } else if (PC_EV_IS_NOTIFY_SENT(ev->type)) {
-        pc__trans_sent(client, ev->data.notify.seq_num, ev->data.notify.rc, 0/* not pending */);
+        pc__trans_sent(client, ev->data.notify.seq_num, ev->data.notify.rc);
         pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans sent, seq_num: %u, rc: %s",
                 ev->data.notify.seq_num, pc_client_rc_str(ev->data.notify.rc));
     } else {
-        pc__trans_fire_event(client, ev->data.ev.ev_type, ev->data.ev.arg1, ev->data.ev.arg2, 0/* not pending */);
+        pc__trans_fire_event(client, ev->data.ev.ev_type, ev->data.ev.arg1, ev->data.ev.arg2);
         pc_lib_log(PC_LOG_DEBUG, "pc__handle_event - fire pending trans event: %s, arg1: %s",
                 pc_client_ev_str(ev->data.ev.ev_type), ev->data.ev.arg1 ? ev->data.ev.arg1 : "");
         pc_lib_free((char* )ev->data.ev.arg1);
