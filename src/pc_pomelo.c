@@ -368,10 +368,12 @@ int pc_client_poll(pc_client_t* client)
 
             QUEUE_REMOVE(&ev->queue);
             QUEUE_INIT(&ev->queue);
+            pc_mutex_unlock(&client->event_mutex);
 
             assert((PC_IS_PRE_ALLOC(ev->type) && PC_PRE_ALLOC_IS_BUSY(ev->type)) || PC_IS_DYN_ALLOC(ev->type));
 
             pc__handle_event(client, ev);
+            pc_mutex_lock(&client->event_mutex);
         }
         client->is_in_poll = 0;
     }
