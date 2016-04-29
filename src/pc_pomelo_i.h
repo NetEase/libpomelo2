@@ -142,9 +142,9 @@ struct pc_client_s {
     int is_in_poll;
 };
 
-void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char* resp, int pending);
-void pc__trans_sent(pc_client_t* client, unsigned int req_num, int rc, int pending);
-void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, const char* arg2, int pending);
+void pc__trans_resp(pc_client_t* client, unsigned int req_id, int rc, const char* resp);
+void pc__trans_sent(pc_client_t* client, unsigned int req_num, int rc);
+void pc__trans_fire_event(pc_client_t* client, int ev_type, const char* arg1, const char* arg2);
 
 #endif /* PC_POMELO_I_H */
 
