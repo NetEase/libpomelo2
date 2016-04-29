@@ -34,26 +34,26 @@ void pc__trans_queue_event(pc_client_t* client, int ev_type, const char* arg1, c
     int i;
 
     if (ev_type >= PC_EV_COUNT || ev_type < 0) {
-        pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - error event type");
+        pc_lib_log(PC_LOG_ERROR, "pc__trans_queue_event - error event type");
         return;
     }
 
     if (ev_type == PC_EV_USER_DEFINED_PUSH && (!arg1 || !arg2)) {
-        pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - push msg but without a route or msg");
+        pc_lib_log(PC_LOG_ERROR, "pc__trans_queue_event - push msg but without a route or msg");
         return;
     }
 
     if (ev_type == PC_EV_CONNECT_ERROR || ev_type == PC_EV_UNEXPECTED_DISCONNECT
         || ev_type == PC_EV_PROTO_ERROR || ev_type == PC_EV_CONNECT_FAILED) {
         if (!arg1) {
-            pc_lib_log(PC_LOG_ERROR, "pc__transport_fire_event - event should be with a reason description");
+            pc_lib_log(PC_LOG_ERROR, "pc__trans_queue_event - event should be with a reason description");
             return ;
         }
     }
 
     assert(client->config.enable_polling);
 
-    pc_lib_log(PC_LOG_INFO, "pc__trans_fire_event - add pending event: %s", pc_client_ev_str(ev_type));
+    pc_lib_log(PC_LOG_INFO, "pc__trans_queue_event - add pending event: %s", pc_client_ev_str(ev_type));
     pc_mutex_lock(&client->event_mutex);
 
     ev = NULL;
@@ -193,7 +193,7 @@ void pc__trans_queue_sent(pc_client_t* client, unsigned int seq_num, int rc)
 
     pc_mutex_lock(&client->event_mutex);
 
-    pc_lib_log(PC_LOG_INFO, "pc__trans_sent - add pending sent event, seq_num: %u, rc: %s",
+    pc_lib_log(PC_LOG_INFO, "pc__trans_queue_sent - add pending sent event, seq_num: %u, rc: %s",
             seq_num, pc_client_rc_str(rc));
 
     ev = NULL;
@@ -293,7 +293,7 @@ void pc__trans_queue_resp(pc_client_t* client, unsigned int req_id, int rc, cons
 
     pc_mutex_lock(&client->event_mutex);
 
-    pc_lib_log(PC_LOG_INFO, "pc__trans_resp - add pending resp event, req_id: %u, rc: %s",
+    pc_lib_log(PC_LOG_INFO, "pc__trans_queue_resp - add pending resp event, req_id: %u, rc: %s",
             req_id, pc_client_rc_str(rc));
     ev = NULL;
     for (i = 0; i < PC_PRE_ALLOC_EVENT_SLOT_COUNT; ++i) {
