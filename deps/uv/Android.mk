@@ -16,6 +16,7 @@ src/unix/dl.c \
 src/unix/fs.c \
 src/unix/getaddrinfo.c \
 src/unix/getnameinfo.c \
+src/unix/android-ifaddrs.c \
 src/unix/linux-core.c \
 src/unix/linux-inotify.c \
 src/unix/linux-syscalls.c \
