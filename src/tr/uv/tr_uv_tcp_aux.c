@@ -871,7 +871,7 @@ void tcp__on_data_recieved(tr_uv_tcp_transport_t* tt, const char* data, size_t l
     }
 
     assert((msg.id == PC_NOTIFY_PUSH_REQ_ID && msg.route)
-            || (msg.id != PC_NOTIFY_PUSH_REQ_ID && !msg.route));
+            || (msg.id != PC_NOTIFY_PUSH_REQ_ID && msg.route));
 
     pc_lib_log(PC_LOG_INFO, "tcp__on_data_recieved - recived data, req_id: %d", msg.id);
     if (msg.id != PC_NOTIFY_PUSH_REQ_ID) {
