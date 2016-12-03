@@ -12,6 +12,7 @@
 
 #include "pr_msg.h"
 #include "tr_uv_tcp_i.h"
+#include "pc_pomelo_i.h"
 
 #define PC_MSG_FLAG_BYTES 1
 #define PC_MSG_ROUTE_LEN_BYTES 1
@@ -165,7 +166,7 @@ static pc__msg_raw_t *pc_msg_decode_to_raw(const pc_buf_t* buf)
     return msg;
 }
 
-pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf)
+pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_protos, const pc_buf_t* buf, QUEUE* requestQueue)
 {
     const char *route_str = NULL;
     const char *origin_route = NULL;
@@ -194,7 +195,22 @@ pc_msg_t pc_default_msg_decode(const pc_JSON* code2route, const pc_JSON* server_
     /* route */
     if (PC_MSG_HAS_ROUTE(raw_msg->type)) {
         /* uncompress route dictionary */
-        route_str = NULL;
+        QUEUE* q;
+        pc_request_t* req;
+        QUEUE_FOREACH(q, requestQueue) {
+            req = (pc_request_t* )QUEUE_DATA(q, pc_common_req_t, queue);
+            if (req->req_id == msg.id) {
+                msg.route = (char* )pc_lib_malloc(strlen(req->base.route) + 1);
+                strcpy((char* )msg.route, req->base.route);
+                break;
+            }
+        }
+        if (msg.route == NULL) {
+            msg.id = PC_INVALID_REQ_ID;
+            pc_lib_free(raw_msg);
+            return msg;
+        }
+        
         if (raw_msg->is_route_compressed) {
             origin_route = pc__resolve_dictionary(code2route, raw_msg->route.route_code);
             if (!origin_route) {
@@ -489,5 +505,5 @@ pc_msg_t pr_default_msg_decoder(tr_uv_tcp_transport_t* tt, const uv_buf_t* buf)
     pb.base = buf->base;
     pb.len = buf->len;
 
-    return pc_default_msg_decode(tt->code_to_route, tt->server_protos, &pb);
+    return pc_default_msg_decode(tt->code_to_route, tt->server_protos, &pb, &tt->client->req_queue);
 }
