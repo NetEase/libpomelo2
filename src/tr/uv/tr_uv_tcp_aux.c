@@ -271,6 +271,13 @@ void tcp__conn_async_cb(uv_async_t* t)
         return ;
     }
 
+#ifdef __linux__
+    {
+        static int on = 1;
+        setsockopt(tt->socket.io_watcher.fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    }
+#endif
+
     tt->is_connecting = 1;
 
     if (tt->config->conn_timeout != PC_WITHOUT_TIMEOUT) {
