@@ -348,8 +348,10 @@ void tcp__conn_done_cb(uv_connect_t* conn, int status)
     }
 
     if (status == UV_ECANCELED) {
-        pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect timeout");
-        pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Timeout", NULL);
+        if (tt->client->state != PC_ST_INITED) { // not disconnected by user, so it's timeout.
+            pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect timeout");
+            pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Timeout", NULL);
+        }
     } else {
         pc_lib_log(PC_LOG_DEBUG, "tcp__conn_done_cb - connect error, error: %s", uv_strerror(status));
         pc_trans_fire_event(tt->client, PC_EV_CONNECT_ERROR, "Connect Error", NULL);
